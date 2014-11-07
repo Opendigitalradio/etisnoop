@@ -53,7 +53,9 @@ void decodeFIG(unsigned char* figdata,
         unsigned short int figtype,
         unsigned short int indent);
 
-int eti_analyse(int etifd, int verbosity);
+int eti_analyse(int etifd,
+        int verbosity,
+        bool ignore_error);
 
 #define no_argument 0
 #define required_argument 1
@@ -61,6 +63,7 @@ int eti_analyse(int etifd, int verbosity);
 const struct option longopts[] = {
     {"help",               no_argument,        0, 'h'},
     {"verbose",            no_argument,        0, 'v'},
+    {"ignore-error",       no_argument,        0, 'e'},
     {"input",              required_argument,  0, 'i'},
     {"save-msc",           required_argument,  0, 's'}
 };
@@ -81,6 +84,7 @@ int main(int argc, char *argv[])
     string file_name("-");
 
     int verbosity = 0;
+    bool ignore_error = false;
 
     while(ch != -1) {
         ch = getopt_long(argc, argv, "hvi:s:", longopts, &index);
@@ -92,6 +96,9 @@ int main(int argc, char *argv[])
                 break;
             case 'v':
                 verbosity++;
+                break;
+            case 'e':
+                ignore_error = true;
                 break;
             case 'h':
                 usage();
@@ -113,11 +120,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    eti_analyse(etifd, verbosity);
+    eti_analyse(etifd, verbosity, ignore_error);
     close(etifd);
 }
 
-int eti_analyse(int etifd, int verbosity)
+int eti_analyse(int etifd, int verbosity, bool ignore_error)
 {
     unsigned char p[ETINIPACKETSIZE];
     string desc;
@@ -141,11 +148,17 @@ int eti_analyse(int etifd, int verbosity)
         printbuf("SYNC", 0, p, 4);
 
         // SYNC - ERR
-        if (p[0] == 0xFF)
+        if (p[0] == 0xFF) {
             desc = "No error";
-        else
+            printbuf("ERR", 1, p, 1, desc);
+        }
+        else {
             desc = "Error";
-        printbuf("ERR", 1, p, 1, desc);
+            printbuf("ERR", 1, p, 1, desc);
+            if (!ignore_error) {
+                break;
+            }
+        }
 
         // SYNC - FSYNC
 
@@ -531,11 +544,11 @@ void decodeFIG(unsigned char* f, unsigned char figlen,unsigned short int figtype
 
                                 if (pd == 0)
                                     sprintf(desc,
-                                            "Service ID=0x%02X (Country id=%d, Service referemce=%d), Number of components=%d, Local flag=%d, CAID=%d",
+                                            "Service ID=0x%02X (Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
                                             sid, cid, sref, ncomp, local, caid);
                                 else
                                     sprintf(desc,
-                                            "Service ID=0x%02X (ECC=%d, Country id=%d, Service referemce=%d), Number of components=%d, Local flag=%d, CAID=%d",
+                                            "Service ID=0x%02X (ECC=%d, Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
                                             sid, ecc, cid, sref, ncomp, local, caid);
                                 printbuf(desc, indent+1, NULL, 0);
 
