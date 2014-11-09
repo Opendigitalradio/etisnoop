@@ -27,8 +27,11 @@
 #include <string.h>
 #include <string>
 #include <sstream>
+#include <algorithm>
+#include <vector>
 #include "dabplussnoop.h"
 #include "firecode.h"
+#include "lib_crc.h"
 
 #define DPS_INDENT "\t\t"
 #define DPS_PREFIX "DABPLUS:"
@@ -42,11 +45,17 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
 
     memcpy(&m_data[original_size], streamdata, streamsize);
 
-    check();
+    if (seek_valid_firecode()) {
+        // m_data now points to a valid header
+        if (decode()) {
+            // We have been able to decode the AUs
+            m_data.clear();
+        }
+    }
 }
 
 // Idea and some code taken from Xpadxpert
-int DabPlusSnoop::check()
+bool DabPlusSnoop::seek_valid_firecode()
 {
     if (m_data.size() < 10) {
         // Not enough data
@@ -54,7 +63,7 @@ int DabPlusSnoop::check()
     }
 
     bool crc_ok = false;
-    int i;
+    size_t i;
 
     for (i = 0; i < m_data.size() - 10; i++) {
         uint8_t* b = &m_data[i];
@@ -73,22 +82,24 @@ int DabPlusSnoop::check()
     }
 
     if (crc_ok) {
-        fprintf(stderr, DPS_PREFIX " Found valid FireCode at %d\n", i);
+        fprintf(stderr, DPS_PREFIX " Found valid FireCode at %zu\n", i);
 
         m_data.erase(m_data.begin(), m_data.begin() + i);
-        return decode();
+        return true;
     }
     else {
         fprintf(stderr, DPS_PREFIX " No valid FireCode found\n");
-        return -1;
+
+        m_data.clear();
+        return false;
     }
 }
 
-int DabPlusSnoop::decode()
+bool DabPlusSnoop::decode()
 {
-    if (m_subchannel_index && m_data.size() >= m_subchannel_index * 110) {
-        fprintf(stderr, DPS_PREFIX " We have %zu bytes of data\n", m_data.size());
+    fprintf(stderr, DPS_PREFIX " We have %zu bytes of data\n", m_data.size());
 
+    if (m_subchannel_index && m_data.size() >= m_subchannel_index * 110) {
         uint8_t* b = &m_data[0];
 
         // -- Parse he_aac_super_frame
@@ -169,12 +180,61 @@ int DabPlusSnoop::decode()
                     au_start[au]);
         }
 
-        m_data.clear();
-
-        return 0;
+        return analyse_au(au_start);
     }
     else {
-        return -1;
+        return false;
     }
+}
+
+bool DabPlusSnoop::analyse_au(vector<int> au_start)
+{
+
+    /*
+    for (int i = 0; i < au_start.length - 1; i++) {
+        byte[] new_frame = Arrays.copyOfRange(frame, au_start[i], au_start[i+1] - 2);
+
+        int current_crc = MiscTools.getUInt16(frame, au_start[i+1] - 2);
+        int crc = MiscTools.calcCRC(new_frame, MiscTools.crc_mode.CRC_16_CCITT);
+    }
+*/
+
+    vector<vector<uint8_t> > aus(au_start.size());
+
+    au_start.push_back(m_data.size());
+
+    for (size_t au = 0; au < aus.size(); au++)
+    {
+        fprintf(stderr, DPS_PREFIX DPS_INDENT
+                "Copy au %zu of size %zu\n",
+                au,
+                au_start[au+1] - au_start[au] );
+
+        aus[au].resize(au_start[au+1] - au_start[au]-2);
+        std::copy(
+                m_data.begin() + au_start[au],
+                m_data.begin() + au_start[au+1]-2,
+                aus[au].begin() );
+
+        /* Check CRC */
+        uint16_t au_crc = m_data[au_start[au+1]-2] << 8 | \
+                          m_data[au_start[au+1]-1];
+
+        uint16_t calc_crc = 0xFFFF;
+        for (vector<uint8_t>::iterator au_data = aus[au].begin();
+                au_data != aus[au].end();
+                ++au_data) {
+            calc_crc = update_crc_ccitt(calc_crc, *au_data);
+        }
+        calc_crc =~ calc_crc;
+
+        fprintf(stderr, DPS_PREFIX DPS_INDENT
+                "  AU H: %04x C: %04x\n"
+                "  DAU H: %u C: %u\n",
+                au_crc, calc_crc,
+                au_crc, calc_crc);
+    }
+
+    return true;
 }
 

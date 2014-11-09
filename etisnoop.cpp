@@ -468,6 +468,7 @@ int eti_analyse(eti_analyse_config_t& config)
 
         printf("-------------------------------------------------------------------------------------------------------------\n");
     }
+    return 0;
 }
 
 void printbuf(string header,

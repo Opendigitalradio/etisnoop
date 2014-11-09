@@ -30,3 +30,4 @@
 uint16_t firecode_crc(uint8_t* buf, size_t size);
 
 #endif
+

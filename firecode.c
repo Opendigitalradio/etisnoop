@@ -31,7 +31,7 @@ uint16_t firecode_crc(uint8_t* buf, size_t size)
     crc = 0x0000;
     gen_poly = 0x782F;	// 0111 1000 0010 1111 (16, 14, 13, 12, 11, 5, 3, 2, 1, 0)
 
-    for (int len = 0; len < size; len++) {
+    for (size_t len = 0; len < size; len++) {
         for (int i = 0x80; i != 0; i >>= 1) {
             if ((crc & 0x8000) != 0) {
                 crc = (crc << 1) ^ gen_poly;

@@ -26,6 +26,10 @@
 subchannel_index = MSC sub-channel size (kbps) / 8
 audio_super_frame_size (bytes) = subchannel_index * 110
 
+// Derived from
+// au_start[n] = au_start[n - 1] + au_size[n - 1] + 2;
+// 2 bytes for CRC
+au_size[n] = au_start[n+1] - au_start[n] - 2;
 
 he_aac_super_frame(subchannel_index)
 {
@@ -61,6 +65,7 @@ he_aac_super_frame(subchannel_index)
         au[n]                  8 * au_size[n]
         au_crc[n]             16
     }
+
 }
 */
 
@@ -90,8 +95,9 @@ class DabPlusSnoop
         void push(uint8_t* streamdata, size_t streamsize);
 
     private:
-        int decode(void);
-        int check(void);
+        bool seek_valid_firecode(void);
+        bool decode(void);
+        bool analyse_au(std::vector<int> au_start);
 
         unsigned m_subchannel_index;
         std::vector<uint8_t> m_data;
