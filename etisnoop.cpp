@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    etisnoop.c
+    etisnoop.cpp
           Parse ETI NI G.703 file
 
     Authors:
@@ -34,8 +34,12 @@
 #include <fcntl.h>
 #include <string.h>
 #include <string>
+#include <vector>
+#include <map>
 #include <sstream>
 #include "lib_crc.h"
+
+#include "dabplussnoop.h"
 
 
 #define ETINIPACKETSIZE 6144
@@ -53,9 +57,15 @@ void decodeFIG(unsigned char* figdata,
         unsigned short int figtype,
         unsigned short int indent);
 
-int eti_analyse(int etifd,
-        int verbosity,
-        bool ignore_error);
+struct eti_analyse_config_t {
+    int etifd;
+    int verbosity;
+    bool ignore_error;
+    std::map<int, DabPlusSnoop> streams_to_decode;
+};
+
+int eti_analyse(eti_analyse_config_t& config);
+
 
 #define no_argument 0
 #define required_argument 1
@@ -64,8 +74,8 @@ const struct option longopts[] = {
     {"help",               no_argument,        0, 'h'},
     {"verbose",            no_argument,        0, 'v'},
     {"ignore-error",       no_argument,        0, 'e'},
-    {"input",              required_argument,  0, 'i'},
-    {"save-msc",           required_argument,  0, 's'}
+    {"decode-stream",      required_argument,  0, 'd'},
+    {"input",              required_argument,  0, 'i'}
 };
 
 void usage(void)
@@ -74,7 +84,7 @@ void usage(void)
             "ETISnoop analyser\n\n"
             "The ETSnoop analyser decodes and prints out a RAW ETI file in a\n"
             "form that makes analysis easier.\n"
-            "Usage: etisnoop [-v] [-i filename]\n");
+            "Usage: etisnoop [-v] [-i filename] [-d stream_index]\n");
 }
 
 int main(int argc, char *argv[])
@@ -82,13 +92,23 @@ int main(int argc, char *argv[])
     int index;
     int ch = 0;
     string file_name("-");
+    map<int, DabPlusSnoop> streams_to_decode;
 
     int verbosity = 0;
     bool ignore_error = false;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "hvi:s:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:ehvi:s:", longopts, &index);
         switch (ch) {
+            case 'd':
+                {
+                DabPlusSnoop dps;
+                streams_to_decode[atoi(optarg)] = dps;
+                }
+                break;
+            case 'e':
+                ignore_error = true;
+                break;
             case 'i':
                 file_name = optarg;
                 break;
@@ -96,9 +116,6 @@ int main(int argc, char *argv[])
                 break;
             case 'v':
                 verbosity++;
-                break;
-            case 'e':
-                ignore_error = true;
                 break;
             case 'h':
                 usage();
@@ -120,11 +137,17 @@ int main(int argc, char *argv[])
         }
     }
 
-    eti_analyse(etifd, verbosity, ignore_error);
+    eti_analyse_config_t config = {
+        .etifd = etifd,
+        .verbosity = verbosity,
+        .ignore_error = ignore_error,
+        .streams_to_decode = streams_to_decode
+    };
+    eti_analyse(config);
     close(etifd);
 }
 
-int eti_analyse(int etifd, int verbosity, bool ignore_error)
+int eti_analyse(eti_analyse_config_t& config)
 {
     unsigned char p[ETINIPACKETSIZE];
     string desc;
@@ -138,7 +161,7 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
 
     while (1) {
 
-        int ret = read(etifd, p, ETINIPACKETSIZE);
+        int ret = read(config.etifd, p, ETINIPACKETSIZE);
         if (ret != ETINIPACKETSIZE) {
             fprintf(stderr, "End of ETI\n");
             break;
@@ -155,7 +178,7 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
         else {
             desc = "Error";
             printbuf("ERR", 1, p, 1, desc);
-            if (!ignore_error) {
+            if (!config.ignore_error) {
                 break;
             }
         }
@@ -204,7 +227,7 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
 
         {
             stringstream ss;
-            ss << ficf;
+            ss << (int)ficf;
             if (ficf == 1) {
                 ss << "- FIC Information are present";
             }
@@ -219,7 +242,7 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
         nst = p[5] & 0x7F;
         {
             stringstream ss;
-            ss << nst;
+            ss << (int)nst;
             printbuf("NST  - Number of streams", 2, NULL, 0, ss.str());
         }
 
@@ -227,7 +250,7 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
         fp = (p[6] & 0xE0) >> 5;
         {
             stringstream ss;
-            ss << fp;
+            ss << (int)fp;
             printbuf("FP   - Frame Phase", 2, &fp, 1, ss.str());
         }
 
@@ -237,7 +260,7 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
             stringstream ss;
             ss << "Mode ";
             if (mid != 0) {
-                ss << mid;
+                ss << (int)mid;
             }
             else {
                 ss << "4";
@@ -308,16 +331,22 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
                     plevelstr = ss.str();
                 }
                 sprintf(sdesc, "0x%02x - Equal Error Protection. %s", tpl, plevelstr.c_str());
-            } else {
+            }
+            else {
                 unsigned char tsw, uepidx;
                 tsw = (tpl & 0x08);
                 uepidx = tpl & 0x07;
                 sprintf(sdesc, "0x%02x - Unequal Error Protection. Table switch %d,  UEP index %d", tpl, tsw, uepidx);
             }
             printbuf("TPL  - Sub-channel Type and Protection Level", 3, NULL, 0, sdesc);
-            stl[i] = (p[10+4*i] & 0x03) * 256 + p[11+4*i];
+            stl[i] = (p[10+4*i] & 0x03) * 256 + \
+                      p[11+4*i];
             sprintf(sdesc, "%d => %d kbit/s", stl[i], stl[i]*8/3);
             printbuf("STL  - Sub-channel Stream Length", 3, NULL, 0, sdesc);
+
+            if (config.streams_to_decode.count(i) > 0) {
+                config.streams_to_decode[i].set_subchannel_index(stl[i]/3);
+            }
         }
 
         // EOH
@@ -402,8 +431,13 @@ int eti_analyse(int etifd, int verbosity, bool ignore_error)
             unsigned char streamdata[684*8];
             memcpy(streamdata, p + 12 + 4*nst + ficf*ficl*4 + offset, stl[i]*8);
             offset += stl[i] * 8;
-            sprintf(sdesc, "%d", i);
+            sprintf(sdesc, "id %d, len %d", i, stl[i]*8);
             printbuf("Stream Data", 1, streamdata, stl[i]*8, sdesc);
+
+            if (config.streams_to_decode.count(i) > 0) {
+                config.streams_to_decode[i].push(streamdata, stl[i]*8);
+            }
+
         }
 
         // EOF
@@ -584,7 +618,7 @@ void decodeFIG(unsigned char* f, unsigned char figlen,unsigned short int figtype
                                         else if (scty == 1)
                                             sprintf(sctydesc, "MPEG Background sound (%d)", scty);
                                         else if (scty == 2)
-                                            sprintf(sctydesc, "Multi Chaneel sound (%d)", scty);
+                                            sprintf(sctydesc, "Multi Channel sound (%d)", scty);
                                         else if (scty == 63)
                                             sprintf(sctydesc, "AAC sound (%d)", scty);
                                         else
@@ -594,7 +628,7 @@ void decodeFIG(unsigned char* f, unsigned char figlen,unsigned short int figtype
                                         printbuf(desc, indent+3, NULL, 0);
                                     }
                                     else if (timd == 1) {
-                                        //MSC stream data 
+                                        // MSC stream data
                                         sprintf(sctydesc, "DSCTy=%d", scty);
                                         sprintf(desc, "Stream data mode, %s, %s, SubChannel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
                                         printbuf(desc, indent+3, NULL, 0);
@@ -606,7 +640,7 @@ void decodeFIG(unsigned char* f, unsigned char figlen,unsigned short int figtype
                                         printbuf(desc, indent+3, NULL, 0);
                                     }
                                     else if (timd == 3) {
-                                        // MSC PAcket mode
+                                        // MSC Packet mode
                                         sprintf(desc, "MSC Packet Mode, %s, Service Component ID=%02X, CA=%d", psdesc.c_str(), subchid, ca);
                                         printbuf(desc, indent+3, NULL, 0);
                                     }
