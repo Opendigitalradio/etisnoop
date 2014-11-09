@@ -100,6 +100,7 @@ bool DabPlusSnoop::decode()
     fprintf(stderr, DPS_PREFIX " We have %zu bytes of data\n", m_data.size());
 
     if (m_subchannel_index && m_data.size() >= m_subchannel_index * 110) {
+
         uint8_t* b = &m_data[0];
 
         // -- Parse he_aac_super_frame
@@ -141,15 +142,28 @@ bool DabPlusSnoop::decode()
         // ------ Parse au_start
         b += 3;
 
-        vector<uint8_t> au_start_nibbles(3*(num_aus-1));
+        vector<uint8_t> au_start_nibbles(0);
 
-        size_t nib = 0;
-        for (int i = 0; i < (num_aus-1)*3/2; i++) {
-            au_start_nibbles[nib]   = b[i] >> 4;
-            au_start_nibbles[nib+1] = 0x0F & (b[i]);
-            nib += 2;
-            fprintf(stderr, "0x%1x 0x%1x ", b[i] >> 4, 0x0F & b[i]);
+        /* Each AU_START is encoded in three nibbles.
+         * When we have n AUs, we have n-1 au_start values. */
+        for (int i = 0; i < (num_aus-1)*3; i++) {
+            if (i % 2 == 0) {
+                char nibble = b[i/2] >> 4;
+
+                au_start_nibbles.push_back( nibble );
+
+                fprintf(stderr, "0x%1x", nibble);
+            }
+            else {
+                char nibble = b[i/2] & 0x0F;
+
+                au_start_nibbles.push_back( nibble );
+
+                fprintf(stderr, "0x%1x", nibble);
+            }
+
         }
+
         fprintf(stderr, "\n");
 
         vector<int> au_start(num_aus);
@@ -164,7 +178,7 @@ bool DabPlusSnoop::decode()
             au_start[0] = 11;
 
 
-        nib = 0;
+        int nib = 0;
         fprintf(stderr, DPS_INDENT DPS_PREFIX " AU start\n");
         for (int au = 1; au < num_aus; au++) {
             au_start[au] = au_start_nibbles[nib]   << 8 | \
@@ -201,14 +215,14 @@ bool DabPlusSnoop::analyse_au(vector<int> au_start)
 
     vector<vector<uint8_t> > aus(au_start.size());
 
-    au_start.push_back(m_data.size());
+    au_start.push_back(m_subchannel_index * 110);
 
     for (size_t au = 0; au < aus.size(); au++)
     {
         fprintf(stderr, DPS_PREFIX DPS_INDENT
                 "Copy au %zu of size %zu\n",
                 au,
-                au_start[au+1] - au_start[au] );
+                au_start[au+1] - au_start[au]-2 );
 
         aus[au].resize(au_start[au+1] - au_start[au]-2);
         std::copy(
