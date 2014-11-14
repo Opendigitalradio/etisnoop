@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <cassert>
 #include <sstream>
 #include <algorithm>
 #include <vector>
@@ -34,7 +35,9 @@
 #include "lib_crc.h"
 
 #define DPS_INDENT "\t\t"
-#define DPS_PREFIX "DABPLUS:"
+#define DPS_PREFIX "DAB+ decode:"
+
+#define DPS_DEBUG 0
 
 using namespace std;
 
@@ -82,13 +85,17 @@ bool DabPlusSnoop::seek_valid_firecode()
     }
 
     if (crc_ok) {
-        fprintf(stderr, DPS_PREFIX " Found valid FireCode at %zu\n", i);
+#if DPS_DEBUG
+        printf(DPS_PREFIX " Found valid FireCode at %zu\n", i);
+#endif
 
         m_data.erase(m_data.begin(), m_data.begin() + i);
         return true;
     }
     else {
-        fprintf(stderr, DPS_PREFIX " No valid FireCode found\n");
+#if DPS_DEBUG
+        printf(DPS_PREFIX " No valid FireCode found\n");
+#endif
 
         m_data.clear();
         return false;
@@ -97,9 +104,11 @@ bool DabPlusSnoop::seek_valid_firecode()
 
 bool DabPlusSnoop::decode()
 {
-    fprintf(stderr, DPS_PREFIX " We have %zu bytes of data\n", m_data.size());
+#if DPS_DEBUG
+    printf(DPS_PREFIX " We have %zu bytes of data\n", m_data.size());
+#endif
 
-    if (m_subchannel_index && m_data.size() >= m_subchannel_index * 110) {
+    if (m_subchannel_index && m_data.size() >= m_subchannel_index * 120) {
 
         uint8_t* b = &m_data[0];
 
@@ -125,8 +134,7 @@ bool DabPlusSnoop::decode()
         else if ((dac_rate == 1) && (sbr_flag == 0)) num_aus = 6;
         // AAC core sampling rate 48 kHz
 
-        fprintf(stderr,
-                DPS_INDENT DPS_PREFIX "\n"
+        printf( DPS_INDENT DPS_PREFIX "\n"
                 DPS_INDENT "\tfirecode           0x%x\n"
                 DPS_INDENT "\trfa                  %d\n"
                 DPS_INDENT "\tdac_rate             %d\n"
@@ -151,20 +159,15 @@ bool DabPlusSnoop::decode()
                 char nibble = b[i/2] >> 4;
 
                 au_start_nibbles.push_back( nibble );
-
-                fprintf(stderr, "0x%1x", nibble);
             }
             else {
                 char nibble = b[i/2] & 0x0F;
 
                 au_start_nibbles.push_back( nibble );
-
-                fprintf(stderr, "0x%1x", nibble);
             }
 
         }
 
-        fprintf(stderr, "\n");
 
         vector<int> au_start(num_aus);
 
@@ -179,7 +182,6 @@ bool DabPlusSnoop::decode()
 
 
         int nib = 0;
-        fprintf(stderr, DPS_INDENT DPS_PREFIX " AU start\n");
         for (int au = 1; au < num_aus; au++) {
             au_start[au] = au_start_nibbles[nib]   << 8 | \
                            au_start_nibbles[nib+1] << 4 | \
@@ -188,41 +190,41 @@ bool DabPlusSnoop::decode()
             nib += 3;
         }
 
+#if DPS_DEBUG
+        printf(DPS_INDENT DPS_PREFIX " AU start\n");
         for (int au = 0; au < num_aus; au++) {
-            fprintf(stderr, DPS_INDENT "\tAU[%d] %d 0x%x\n", au,
+            printf(DPS_INDENT "\tAU[%d] %d 0x%x\n", au,
                     au_start[au],
                     au_start[au]);
         }
+#endif
 
-        return analyse_au(au_start);
+        return extract_au(au_start);
     }
     else {
         return false;
     }
 }
 
-bool DabPlusSnoop::analyse_au(vector<int> au_start)
+bool DabPlusSnoop::extract_au(vector<int> au_start)
 {
-
-    /*
-    for (int i = 0; i < au_start.length - 1; i++) {
-        byte[] new_frame = Arrays.copyOfRange(frame, au_start[i], au_start[i+1] - 2);
-
-        int current_crc = MiscTools.getUInt16(frame, au_start[i+1] - 2);
-        int crc = MiscTools.calcCRC(new_frame, MiscTools.crc_mode.CRC_16_CCITT);
-    }
-*/
-
     vector<vector<uint8_t> > aus(au_start.size());
 
+    // The last entry of au_start must the end of valid
+    // AU data. We stop at m_subchannel_index * 110 because
+    // what comes after is RS parity
     au_start.push_back(m_subchannel_index * 110);
+
+    bool all_crc_ok = true;
 
     for (size_t au = 0; au < aus.size(); au++)
     {
-        fprintf(stderr, DPS_PREFIX DPS_INDENT
+#if DPS_DEBUG
+        printf(DPS_PREFIX DPS_INDENT
                 "Copy au %zu of size %zu\n",
                 au,
                 au_start[au+1] - au_start[au]-2 );
+#endif
 
         aus[au].resize(au_start[au+1] - au_start[au]-2);
         std::copy(
@@ -242,11 +244,94 @@ bool DabPlusSnoop::analyse_au(vector<int> au_start)
         }
         calc_crc =~ calc_crc;
 
-        fprintf(stderr, DPS_PREFIX DPS_INDENT
-                "  AU H: %04x C: %04x\n"
-                "  DAU H: %u C: %u\n",
-                au_crc, calc_crc,
-                au_crc, calc_crc);
+        if (calc_crc != au_crc) {
+            printf(DPS_INDENT DPS_PREFIX
+                    "Erroneous CRC for au %zu\n", au);
+
+            all_crc_ok = false;
+        }
+    }
+
+    if (all_crc_ok) {
+        return analyse_au(aus);
+    }
+    else {
+        return false;
+    }
+}
+
+bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
+{
+    for (size_t i_au = 0; i_au < aus.size(); i_au++) {
+        size_t i = 0;
+
+        vector<uint8_t>& au = aus[i_au];
+
+        bool continue_au = true;
+        while (continue_au && i < au.size()) {
+            printf("R at %zu\n", i);
+            int id_syn_ele = (au[i] & 0xE0) >> 5;
+
+            /* Debugging print */
+            stringstream ss;
+            ss << DPS_INDENT << "\tID_SYN_ELE: ";
+
+            switch (id_syn_ele) {
+                case ID_SCE:  ss << "Single Channel Element"; break;
+                case ID_CPE:  ss << "Channel Pair Element"; break;
+                case ID_CCE:  ss << "Coupling Channel Element"; break;
+                case ID_LFE:  ss << "LFE Channel Element"; break;
+                case ID_DSE:  ss << "Data Stream Element"; break;
+                case ID_PCE:  ss << "Program Config Element"; break;
+                case ID_FIL:  ss << "Fill Element"; break;
+                case ID_END:  ss << "Terminator"; break;
+                case ID_EXT:  ss << "Extension Payload"; break;
+                case ID_SCAL: ss << "AAC scalable element"; break;
+                default:      ss << "Unknown (" << id_syn_ele << ")"; break;
+            }
+
+            int element_instance_tag = (au[i] & 0x78) >> 1;
+            ss << " [" << element_instance_tag << "]";
+
+
+            // Keep track of index increment in bits
+            size_t inc = 7; // eat id_syn_ele, element_instance_tag
+
+            if (id_syn_ele == ID_DSE) {
+                bool data_byte_align_flag = (au[i] & 0x01);
+                inc++;
+
+                ss << "\n" DPS_INDENT "\t\t";
+                if (data_byte_align_flag) {
+                    ss << " <byte align flag>";
+                }
+
+
+                uint8_t count = au[1];
+                int cnt = count;
+                inc += 8;
+
+                if (count == 255) {
+                    uint8_t esc_count = au[2];
+                    inc += 8;
+
+                    cnt += esc_count;
+                }
+
+                ss << " cnt:" << cnt;
+                inc += 8*cnt;
+
+            }
+            else
+            {
+                continue_au = false;
+            }
+
+            printf("%s\n", ss.str().c_str());
+
+            assert (inc % 8 == 0);
+            i += inc / 8;
+        }
     }
 
     return true;

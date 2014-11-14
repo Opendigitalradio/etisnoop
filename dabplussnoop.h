@@ -80,6 +80,23 @@ he_aac_super_frame(subchannel_index)
 #ifndef __DABPLUSSNOOP_H_
 #define __DABPLUSSNOOP_H_
 
+/** MP4 Element IDs. */
+typedef enum
+{
+  ID_NONE = -1,   /**< Invalid Element helper ID.             */
+  ID_SCE = 0,     /**< Single Channel Element.                */
+  ID_CPE = 1,     /**< Channel Pair Element.                  */
+  ID_CCE = 2,     /**< Coupling Channel Element.              */
+  ID_LFE = 3,     /**< LFE Channel Element.                   */
+  ID_DSE = 4,     /**< Currently one Data Stream Element for ancillary data is supported. */
+  ID_PCE = 5,     /**< Program Config Element.                */
+  ID_FIL = 6,     /**< Fill Element.                          */
+  ID_END = 7,     /**< Arnie (End Element = Terminator).      */
+  ID_EXT = 8,     /**< Extension Payload (ER only).           */
+  ID_SCAL = 9,    /**< AAC scalable element (ER only).        */
+  ID_LAST
+} MP4_ELEMENT_ID;
+
 class DabPlusSnoop
 {
     public:
@@ -97,7 +114,8 @@ class DabPlusSnoop
     private:
         bool seek_valid_firecode(void);
         bool decode(void);
-        bool analyse_au(std::vector<int> au_start);
+        bool extract_au(std::vector<int> au_start);
+        bool analyse_au(std::vector<std::vector<uint8_t> >& aus);
 
         unsigned m_subchannel_index;
         std::vector<uint8_t> m_data;

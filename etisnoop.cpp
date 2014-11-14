@@ -46,6 +46,8 @@
 
 using namespace std;
 
+static int verbosity;
+
 void printbuf(string header,
         int indent_level,
         unsigned char* buffer,
@@ -59,7 +61,6 @@ void decodeFIG(unsigned char* figdata,
 
 struct eti_analyse_config_t {
     int etifd;
-    int verbosity;
     bool ignore_error;
     std::map<int, DabPlusSnoop> streams_to_decode;
 };
@@ -94,7 +95,7 @@ int main(int argc, char *argv[])
     string file_name("-");
     map<int, DabPlusSnoop> streams_to_decode;
 
-    int verbosity = 0;
+    verbosity = 0;
     bool ignore_error = false;
 
     while(ch != -1) {
@@ -139,7 +140,6 @@ int main(int argc, char *argv[])
 
     eti_analyse_config_t config = {
         .etifd = etifd,
-        .verbosity = verbosity,
         .ignore_error = ignore_error,
         .streams_to_decode = streams_to_decode
     };
@@ -431,8 +431,18 @@ int eti_analyse(eti_analyse_config_t& config)
             unsigned char streamdata[684*8];
             memcpy(streamdata, p + 12 + 4*nst + ficf*ficl*4 + offset, stl[i]*8);
             offset += stl[i] * 8;
-            sprintf(sdesc, "id %d, len %d", i, stl[i]*8);
-            printbuf("Stream Data", 1, streamdata, stl[i]*8, sdesc);
+            if (config.streams_to_decode.count(i) > 0) {
+                sprintf(sdesc, "id %d, len %d, selected for decoding", i, stl[i]*8);
+            }
+            else {
+                sprintf(sdesc, "id %d, len %d, not selected for decoding", i, stl[i]*8);
+            }
+            if (verbosity > 1) {
+                printbuf("Stream Data", 1, streamdata, stl[i]*8, sdesc);
+            }
+            else {
+                printbuf("Stream Data", 1, streamdata, 0, sdesc);
+            }
 
             if (config.streams_to_decode.count(i) > 0) {
                 config.streams_to_decode[i].push(streamdata, stl[i]*8);
@@ -466,7 +476,9 @@ int eti_analyse(eti_analyse_config_t& config)
         printbuf("TIST - Time Stamp", 1, p+12+4*nst+ficf*ficl*4+offset+4, 4, sdesc);
 
 
-        printf("-------------------------------------------------------------------------------------------------------------\n");
+        if (verbosity) {
+            printf("-------------------------------------------------------------------------------------------------------------\n");
+        }
     }
     return 0;
 }
@@ -477,28 +489,34 @@ void printbuf(string header,
         size_t size,
         string desc)
 {
-    for (int i = 0; i < indent_level; i++) {
-        printf("\t");
-    }
+    if (verbosity > 0) {
+        for (int i = 0; i < indent_level; i++) {
+            printf("\t");
+        }
 
-    printf("%s", header.c_str());
-    if (size != 0) {
-        printf(": ");
-    }
+        printf("%s", header.c_str());
+        if (size != 0) {
+            printf(": ");
+        }
 
-    for (size_t i = 0; i < size; i++) {
-        printf("%02x ", buffer[i]);
-    }
+        for (size_t i = 0; i < size; i++) {
+            printf("%02x ", buffer[i]);
+        }
 
-    if (desc != "") {
-        printf(" [%s] ", desc.c_str());
-    }
+        if (desc != "") {
+            printf(" [%s] ", desc.c_str());
+        }
 
-    printf("\n");
+        printf("\n");
+    }
 }
 
 
-void decodeFIG(unsigned char* f, unsigned char figlen,unsigned short int figtype, unsigned short int indent) {
+void decodeFIG(unsigned char* f,
+               unsigned char figlen,
+               unsigned short int figtype,
+               unsigned short int indent)
+{
 
     char desc[256];
 
