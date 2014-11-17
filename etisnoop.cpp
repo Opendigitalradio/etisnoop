@@ -48,6 +48,10 @@ using namespace std;
 
 static int verbosity;
 
+void printinfo(string header,
+        int indent_level,
+        int min_verb=0);
+
 void printbuf(string header,
         int indent_level,
         unsigned char* buffer,
@@ -129,6 +133,7 @@ int main(int argc, char *argv[])
     int etifd;
 
     if (file_name == "-") {
+        printf("Analysing stdin\n");
         etifd = STDIN_FILENO;
     }
     else {
@@ -494,34 +499,6 @@ int eti_analyse(eti_analyse_config_t& config)
     return 0;
 }
 
-void printbuf(string header,
-        int indent_level,
-        unsigned char* buffer,
-        size_t size,
-        string desc)
-{
-    if (verbosity > 0) {
-        for (int i = 0; i < indent_level; i++) {
-            printf("\t");
-        }
-
-        printf("%s", header.c_str());
-        if (size != 0) {
-            printf(": ");
-        }
-
-        for (size_t i = 0; i < size; i++) {
-            printf("%02x ", buffer[i]);
-        }
-
-        if (desc != "") {
-            printf(" [%s] ", desc.c_str());
-        }
-
-        printf("\n");
-    }
-}
-
 
 void decodeFIG(unsigned char* f,
                unsigned char figlen,
@@ -706,11 +683,11 @@ void decodeFIG(unsigned char* f,
 
                 switch (ext) {
                     case 0:
-                        { // ENSAMBLE LABEL
+                        { // ENSEMBLE LABEL
                             unsigned short int eid;
                             eid = f[1] * 256 + f[2];
                             sprintf(desc, "Ensemble ID 0x%04X label: \"%s\", Short label mask: 0x%04X", eid, label, flag);
-                            printbuf(desc, indent+1, NULL, 0);
+                            printinfo(desc, indent+1);
                         }
                         break;
 
@@ -719,7 +696,7 @@ void decodeFIG(unsigned char* f,
                             unsigned short int sid;
                             sid = f[1] * 256 + f[2];
                             sprintf(desc, "Service ID 0x%04X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
-                            printbuf(desc, indent+1, NULL, 0);
+                            printinfo(desc, indent+1);
                         }
                         break;
 
@@ -742,7 +719,7 @@ void decodeFIG(unsigned char* f,
                             sprintf(desc,
                                     "Service ID  0x%08X , Service Component ID 0x%04X Short, label: \"%s\", label mask: 0x%04X",
                                     sid, SCIdS, label, flag);
-                            printbuf(desc, indent+1, NULL, 0);
+                            printinfo(desc, indent+1);
                         }
                         break;
 
@@ -757,7 +734,7 @@ void decodeFIG(unsigned char* f,
                             sprintf(desc,
                                     "Service ID 0x%08X label: \"%s\", Short label mask: 0x%04X",
                                     sid, label, flag);
-                            printbuf(desc, indent+1, NULL, 0, "");
+                            printinfo(desc, indent+1);
                         }
                         break;
 
@@ -804,4 +781,45 @@ void decodeFIG(unsigned char* f,
             break;
     }
 }
+
+void printinfo(string header,
+        int indent_level,
+        int min_verb)
+{
+    if (verbosity >= min_verb) {
+        for (int i = 0; i < indent_level; i++) {
+            printf("\t");
+        }
+        printf("%s\n", header.c_str());
+    }
+}
+
+void printbuf(string header,
+        int indent_level,
+        unsigned char* buffer,
+        size_t size,
+        string desc)
+{
+    if (verbosity > 0) {
+        for (int i = 0; i < indent_level; i++) {
+            printf("\t");
+        }
+
+        printf("%s", header.c_str());
+        if (size != 0) {
+            printf(": ");
+        }
+
+        for (size_t i = 0; i < size; i++) {
+            printf("%02x ", buffer[i]);
+        }
+
+        if (desc != "") {
+            printf(" [%s] ", desc.c_str());
+        }
+
+        printf("\n");
+    }
+}
+
 
