@@ -76,31 +76,17 @@ he_aac_super_frame(subchannel_index)
 #include <string>
 #include <sstream>
 #include <vector>
+#include "faad_decoder.h"
 
 #ifndef __DABPLUSSNOOP_H_
 #define __DABPLUSSNOOP_H_
 
-/** MP4 Element IDs. */
-typedef enum
-{
-  ID_NONE = -1,   /**< Invalid Element helper ID.             */
-  ID_SCE = 0,     /**< Single Channel Element.                */
-  ID_CPE = 1,     /**< Channel Pair Element.                  */
-  ID_CCE = 2,     /**< Coupling Channel Element.              */
-  ID_LFE = 3,     /**< LFE Channel Element.                   */
-  ID_DSE = 4,     /**< Currently one Data Stream Element for ancillary data is supported. */
-  ID_PCE = 5,     /**< Program Config Element.                */
-  ID_FIL = 6,     /**< Fill Element.                          */
-  ID_END = 7,     /**< Arnie (End Element = Terminator).      */
-  ID_EXT = 8,     /**< Extension Payload (ER only).           */
-  ID_SCAL = 9,    /**< AAC scalable element (ER only).        */
-  ID_LAST
-} MP4_ELEMENT_ID;
 
 class DabPlusSnoop
 {
     public:
         DabPlusSnoop() :
+            m_index(0),
             m_subchannel_index(0),
             m_data(0) {}
 
@@ -109,9 +95,25 @@ class DabPlusSnoop
             m_subchannel_index = subchannel_index;
         }
 
+        void set_index(int index)
+        {
+            m_index = index;
+        }
+
         void push(uint8_t* streamdata, size_t streamsize);
 
     private:
+        /* Data needed for FAAD */
+        FaadDecoder faad_decoder;
+        int  m_index;
+
+        bool m_ps_flag;
+        bool m_aac_channel_mode;
+        bool m_dac_rate;
+        bool m_sbr_flag;
+        int  m_mpeg_surround_config;
+
+        /* Functions */
         bool seek_valid_firecode(void);
         bool decode(void);
         bool extract_au(std::vector<int> au_start);

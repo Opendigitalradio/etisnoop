@@ -103,8 +103,9 @@ int main(int argc, char *argv[])
         switch (ch) {
             case 'd':
                 {
+                    int subchix = atoi(optarg);
                 DabPlusSnoop dps;
-                streams_to_decode[atoi(optarg)] = dps;
+                streams_to_decode[subchix] = dps;
                 }
                 break;
             case 'e':
@@ -346,6 +347,7 @@ int eti_analyse(eti_analyse_config_t& config)
 
             if (config.streams_to_decode.count(i) > 0) {
                 config.streams_to_decode[i].set_subchannel_index(stl[i]/3);
+                config.streams_to_decode[i].set_index(i);
             }
         }
 

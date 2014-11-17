@@ -33,6 +33,7 @@
 #include "dabplussnoop.h"
 #include "firecode.h"
 #include "lib_crc.h"
+#include "faad_decoder.h"
 
 #define DPS_INDENT "\t\t"
 #define DPS_PREFIX "DAB+ decode:"
@@ -117,21 +118,21 @@ bool DabPlusSnoop::decode()
         // ------ Parse firecode and audio params
         uint16_t header_firecode = (b[0] << 8) | b[1];
         uint8_t  audio_params    = b[2];
-        int rfa                  = (audio_params & 0x80) ? 1 : 0;
-        int dac_rate             = (audio_params & 0x40) ? 1 : 0;
-        int sbr_flag             = (audio_params & 0x20) ? 1 : 0;
-        int aac_channel_mode     = (audio_params & 0x10) ? 1 : 0;
-        int ps_flag              = (audio_params & 0x08) ? 1 : 0;
-        int mpeg_surround_config = (audio_params & 0x07) ? 1 : 0;
+        int rfa                  = (audio_params & 0x80) ? true : false;
+        m_dac_rate               = (audio_params & 0x40) ? true : false;
+        m_sbr_flag               = (audio_params & 0x20) ? true : false;
+        m_aac_channel_mode       = (audio_params & 0x10) ? true : false;
+        m_ps_flag                = (audio_params & 0x08) ? true : false;
+        m_mpeg_surround_config   = (audio_params & 0x07);
 
         int num_aus;
-        if ((dac_rate == 0) && (sbr_flag == 1)) num_aus = 2;
+        if (!m_dac_rate && m_sbr_flag) num_aus = 2;
         // AAC core sampling rate 16 kHz
-        else if ((dac_rate == 1) && (sbr_flag == 1)) num_aus = 3;
+        else if (m_dac_rate && m_sbr_flag) num_aus = 3;
         //  AAC core sampling rate 24 kHz
-        else if ((dac_rate == 0) && (sbr_flag == 0)) num_aus = 4;
+        else if (m_dac_rate && !m_sbr_flag) num_aus = 4;
         // AAC core sampling rate 32 kHz
-        else if ((dac_rate == 1) && (sbr_flag == 0)) num_aus = 6;
+        else if (m_dac_rate && !m_sbr_flag) num_aus = 6;
         // AAC core sampling rate 48 kHz
 
         printf( DPS_INDENT DPS_PREFIX "\n"
@@ -143,8 +144,9 @@ bool DabPlusSnoop::decode()
                 DPS_INDENT "\tps_flag              %d\n"
                 DPS_INDENT "\tmpeg_surround_config %d\n"
                 DPS_INDENT "\tnum_aus              %d\n",
-                header_firecode, rfa, dac_rate, sbr_flag, aac_channel_mode,
-                ps_flag, mpeg_surround_config, num_aus);
+                header_firecode, rfa, m_dac_rate, m_sbr_flag,
+                m_aac_channel_mode, m_ps_flag, m_mpeg_surround_config,
+                num_aus);
 
 
         // ------ Parse au_start
@@ -262,78 +264,15 @@ bool DabPlusSnoop::extract_au(vector<int> au_start)
 
 bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
 {
-    for (size_t i_au = 0; i_au < aus.size(); i_au++) {
-        size_t i = 0;
+    stringstream ss_filename;
 
-        vector<uint8_t>& au = aus[i_au];
+    ss_filename << "stream-" << m_index << ".wav";
 
-        bool continue_au = true;
-        while (continue_au && i < au.size()) {
-            printf("R at %zu\n", i);
-            int id_syn_ele = (au[i] & 0xE0) >> 5;
+    FaadDecoder new_decoder(ss_filename.str(), m_ps_flag, m_aac_channel_mode,
+            m_dac_rate, m_sbr_flag, m_mpeg_surround_config);
 
-            /* Debugging print */
-            stringstream ss;
-            ss << DPS_INDENT << "\tID_SYN_ELE: ";
+    faad_decoder = new_decoder;
 
-            switch (id_syn_ele) {
-                case ID_SCE:  ss << "Single Channel Element"; break;
-                case ID_CPE:  ss << "Channel Pair Element"; break;
-                case ID_CCE:  ss << "Coupling Channel Element"; break;
-                case ID_LFE:  ss << "LFE Channel Element"; break;
-                case ID_DSE:  ss << "Data Stream Element"; break;
-                case ID_PCE:  ss << "Program Config Element"; break;
-                case ID_FIL:  ss << "Fill Element"; break;
-                case ID_END:  ss << "Terminator"; break;
-                case ID_EXT:  ss << "Extension Payload"; break;
-                case ID_SCAL: ss << "AAC scalable element"; break;
-                default:      ss << "Unknown (" << id_syn_ele << ")"; break;
-            }
-
-            int element_instance_tag = (au[i] & 0x78) >> 1;
-            ss << " [" << element_instance_tag << "]";
-
-
-            // Keep track of index increment in bits
-            size_t inc = 7; // eat id_syn_ele, element_instance_tag
-
-            if (id_syn_ele == ID_DSE) {
-                bool data_byte_align_flag = (au[i] & 0x01);
-                inc++;
-
-                ss << "\n" DPS_INDENT "\t\t";
-                if (data_byte_align_flag) {
-                    ss << " <byte align flag>";
-                }
-
-
-                uint8_t count = au[1];
-                int cnt = count;
-                inc += 8;
-
-                if (count == 255) {
-                    uint8_t esc_count = au[2];
-                    inc += 8;
-
-                    cnt += esc_count;
-                }
-
-                ss << " cnt:" << cnt;
-                inc += 8*cnt;
-
-            }
-            else
-            {
-                continue_au = false;
-            }
-
-            printf("%s\n", ss.str().c_str());
-
-            assert (inc % 8 == 0);
-            i += inc / 8;
-        }
-    }
-
-    return true;
+    return faad_decoder.Decode(aus);
 }
 
