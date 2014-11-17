@@ -482,6 +482,15 @@ int eti_analyse(eti_analyse_config_t& config)
             printf("-------------------------------------------------------------------------------------------------------------\n");
         }
     }
+
+
+    std::map<int, DabPlusSnoop>::iterator it;
+    for (it = config.streams_to_decode.begin();
+            it != config.streams_to_decode.end();
+            ++it) {
+        it->second.close();
+    }
+
     return 0;
 }
 

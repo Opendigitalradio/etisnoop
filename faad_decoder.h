@@ -54,22 +54,55 @@ struct adts_variable_header {
     unsigned int no_raw_data_blocks     :2;
 };
 
+class FaadHandle
+{
+    public:
+        FaadHandle()
+        {
+            decoder = NeAACDecOpen();
+        }
+
+        FaadHandle(const FaadHandle& other)
+        {
+            this->decoder = NeAACDecOpen();
+        }
+
+        FaadHandle& operator=(const FaadHandle& other)
+        {
+            this->decoder = NeAACDecOpen();
+            return *this;
+        }
+
+        ~FaadHandle()
+        {
+            NeAACDecClose(decoder);
+            decoder = NULL;
+        }
+
+        NeAACDecHandle decoder;
+};
+
 class FaadDecoder
 {
     public:
         FaadDecoder();
 
-        FaadDecoder(std::string filename, bool ps_flag, bool aac_channel_mode,
+        void open(std::string filename, bool ps_flag, bool aac_channel_mode,
                 bool dac_rate, bool sbr_flag, int mpeg_surround_config);
 
-        size_t Decode(std::vector<std::vector<uint8_t> > aus);
+        void close(void);
 
-        ~FaadDecoder(void);
+        bool decode(std::vector<std::vector<uint8_t> > aus);
 
+        bool is_initialised(void) { return m_initialised; }
 
     private:
+        void update_header(void);
+        size_t m_data_len;
+
         std::string m_filename;
         FILE* m_fd;
+        FILE* m_aac;
 
         /* Data needed for FAAD */
         bool m_ps_flag;
@@ -78,8 +111,11 @@ class FaadDecoder
         bool m_sbr_flag;
         int  m_mpeg_surround_config;
 
+        int  m_channels;
+        int  m_sample_rate;
+
         bool m_initialised;
-        NeAACDecHandle m_decoder;
+        FaadHandle m_faad_handle;
 };
 
 #endif

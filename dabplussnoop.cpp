@@ -53,7 +53,7 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
         // m_data now points to a valid header
         if (decode()) {
             // We have been able to decode the AUs
-            m_data.clear();
+            m_data.erase(m_data.begin(), m_data.begin() + m_subchannel_index * 120);
         }
     }
 }
@@ -130,7 +130,7 @@ bool DabPlusSnoop::decode()
         // AAC core sampling rate 16 kHz
         else if (m_dac_rate && m_sbr_flag) num_aus = 3;
         //  AAC core sampling rate 24 kHz
-        else if (m_dac_rate && !m_sbr_flag) num_aus = 4;
+        else if (!m_dac_rate && !m_sbr_flag) num_aus = 4;
         // AAC core sampling rate 32 kHz
         else if (m_dac_rate && !m_sbr_flag) num_aus = 6;
         // AAC core sampling rate 48 kHz
@@ -266,13 +266,18 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
 {
     stringstream ss_filename;
 
-    ss_filename << "stream-" << m_index << ".wav";
+    ss_filename << "stream-" << m_index;
 
-    FaadDecoder new_decoder(ss_filename.str(), m_ps_flag, m_aac_channel_mode,
-            m_dac_rate, m_sbr_flag, m_mpeg_surround_config);
+    if (!m_faad_decoder.is_initialised()) {
+        m_faad_decoder.open(ss_filename.str(), m_ps_flag,
+                m_aac_channel_mode, m_dac_rate, m_sbr_flag,
+                m_mpeg_surround_config);
+    }
 
-    faad_decoder = new_decoder;
-
-    return faad_decoder.Decode(aus);
+    return m_faad_decoder.decode(aus);
 }
 
+void DabPlusSnoop::close()
+{
+    m_faad_decoder.close();
+}

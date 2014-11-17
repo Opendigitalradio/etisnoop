@@ -102,9 +102,11 @@ class DabPlusSnoop
 
         void push(uint8_t* streamdata, size_t streamsize);
 
+        void close(void);
+
     private:
         /* Data needed for FAAD */
-        FaadDecoder faad_decoder;
+        FaadDecoder m_faad_decoder;
         int  m_index;
 
         bool m_ps_flag;

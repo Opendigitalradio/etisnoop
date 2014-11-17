@@ -22,11 +22,13 @@
 */
 
 #include "faad_decoder.h"
+#include "wavfile.h"
 #include "utils.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cassert>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -34,53 +36,30 @@
 using namespace std;
 
 FaadDecoder::FaadDecoder() :
-            m_filename(""),
-            m_ps_flag(0),
-            m_aac_channel_mode(0),
-            m_dac_rate(0),
-            m_sbr_flag(0),
-            m_mpeg_surround_config(0),
-            m_initialised(false)
+    m_data_len(0),
+    m_initialised(false)
 {
-    m_decoder = NULL;
+    m_aac = NULL;
 }
 
-FaadDecoder::FaadDecoder(string filename, bool ps_flag, bool aac_channel_mode,
-        bool dac_rate, bool sbr_flag, int mpeg_surround_config) :
-            m_filename(filename),
-            m_ps_flag(ps_flag),
-            m_aac_channel_mode(aac_channel_mode),
-            m_dac_rate(dac_rate),
-            m_sbr_flag(sbr_flag),
-            m_mpeg_surround_config(mpeg_surround_config),
-            m_initialised(false)
+void FaadDecoder::open(string filename, bool ps_flag, bool aac_channel_mode,
+        bool dac_rate, bool sbr_flag, int mpeg_surround_config)
 {
+    m_filename             = filename;
+    m_ps_flag              = ps_flag;
+    m_aac_channel_mode     = aac_channel_mode;
+    m_dac_rate             = dac_rate;
+    m_sbr_flag             = sbr_flag;
+    m_mpeg_surround_config = mpeg_surround_config;
 
-    m_decoder = NeAACDecOpen();
+    stringstream ss;
+    ss << filename << ".aac";
 
-    m_fd = fopen(m_filename.c_str(), "w");
-
-#if 0
-    NeAACDecConfigurationPtr config;
-
-    config = NeAACDecGetCurrentConfiguration(m_decoder);
-    if (def_srate)
-        config->defSampleRate = def_srate;
-    config->defObjectType = object_type;
-    config->outputFormat = outputFormat;
-    config->downMatrix = downMatrix;
-    config->useOldADTSFormat = old_format;
-    //config->dontUpSampleImplicitSBR = 1;
-    NeAACDecSetConfiguration(m_decoder, config);
-#endif
+    m_aac = fopen(ss.str().c_str(), "w");
 }
 
-size_t FaadDecoder::Decode(vector<vector<uint8_t> > aus)
+bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
 {
-    if (!m_decoder) {
-        return 2;
-    }
-
     /* ADTS header creation taken from SDR-J */
     adts_fixed_header fh;
     adts_variable_header vh;
@@ -122,7 +101,7 @@ size_t FaadDecoder::Decode(vector<vector<uint8_t> > aus)
     // AAC core sampling rate 16 kHz
     else if (m_dac_rate && m_sbr_flag) fh.sampling_freq_idx = 6;
     //  AAC core sampling rate 24 kHz
-    else if (m_dac_rate && !m_sbr_flag) fh.sampling_freq_idx = 5;
+    else if (!m_dac_rate && !m_sbr_flag) fh.sampling_freq_idx = 5;
     // AAC core sampling rate 32 kHz
     else if (m_dac_rate && !m_sbr_flag) fh.sampling_freq_idx = 3;
     // AAC core sampling rate 48 kHz
@@ -140,11 +119,10 @@ size_t FaadDecoder::Decode(vector<vector<uint8_t> > aus)
     }
     else {
         printf("Unrecognized mpeg surround config (ignored)\n");
-        return 1;
+        return false;
     }
 
     setBits (&d_header[2], fh.channel_conf, 7, 3);
-
 
     for (size_t au_ix = 0; au_ix < aus.size(); au_ix++) {
 
@@ -153,91 +131,98 @@ size_t FaadDecoder::Decode(vector<vector<uint8_t> > aus)
         uint8_t helpBuffer[960];
         memset(helpBuffer, 0, sizeof(helpBuffer));
 
-        // Set length in header
-        vh.aac_frame_length = au.size();
+        // Set length in header (header + au)
+        vh.aac_frame_length = 7 + au.size();
         setBits(&d_header[3], vh.aac_frame_length, 6, 13);
 
         memcpy(helpBuffer, d_header, 7 * sizeof(uint8_t));
         memcpy(&helpBuffer[7],
                 &au[0], vh.aac_frame_length * sizeof (uint8_t));
 
+        fwrite(helpBuffer, 1, vh.aac_frame_length, m_aac);
 
-
-        long unsigned samplerate;
-        unsigned char channels;
         NeAACDecFrameInfo hInfo;
         int16_t* outBuffer;
 
         if (!m_initialised) {
+            long unsigned samplerate;
+            unsigned char channels;
+
             int len;
 
-            if ((len = NeAACDecInit(m_decoder, helpBuffer,
+            if ((len = NeAACDecInit(m_faad_handle.decoder, helpBuffer,
                             vh.aac_frame_length, &samplerate, &channels)) < 0)
             {
                 /* If some error initializing occured, skip the file */
                 printf("Error initializing decoder library (%d).\n",
                         len);
-                NeAACDecClose(m_decoder);
-                return 1;
+                NeAACDecClose(m_faad_handle.decoder);
+                return false;
             }
 
             m_initialised = true;
 
             outBuffer = (int16_t *)NeAACDecDecode(
-                    m_decoder, &hInfo,
+                    m_faad_handle.decoder, &hInfo,
                     helpBuffer + len, vh.aac_frame_length - len );
         }
         else {
             outBuffer = (int16_t *)NeAACDecDecode(
-                    m_decoder, &hInfo,
+                    m_faad_handle.decoder, &hInfo,
                     helpBuffer, vh.aac_frame_length );
         }
 
-        int sample_rate = hInfo.samplerate;
+        assert(outBuffer != NULL);
+
+        m_sample_rate = hInfo.samplerate;
+        m_channels    = hInfo.channels;
         size_t samples  = hInfo.samples;
 
         printf("bytes consumed %d\n", (int)(hInfo.bytesconsumed));
         printf("samplerate = %d, samples = %zu, channels = %d,"
-                " error = %d, sbr = %d\n", sample_rate, samples,
-                hInfo.channels, hInfo.error, hInfo.sbr);
+                " error = %d, sbr = %d\n", m_sample_rate, samples,
+                m_channels, hInfo.error, hInfo.sbr);
         printf("header = %d\n", hInfo.header_type);
 
-        //channels = hInfo.channels;
         if (hInfo.error != 0) {
             printf("FAAD Warning: %s\n",
                     faacDecGetErrorMessage(hInfo.error));
-            return 1;
+            return false;
         }
 
-        if (channels == 2) {
-            fwrite(outBuffer, 1, samples, m_fd);
+        if (m_fd == NULL) {
+            stringstream ss;
+            ss << m_filename << ".wav";
+            m_fd = wavfile_open(ss.str().c_str(), m_sample_rate);
         }
-        else {
-            if (channels == 1) {
+
+        if (samples) {
+            if (m_channels == 1) {
                 int16_t *buffer = (int16_t *)alloca (2 * samples);
                 int16_t i;
                 for (i = 0; i < samples; i ++) {
                     buffer [2 * i]  = ((int16_t *)outBuffer) [i];
                     buffer [2 * i + 1] = buffer [2 * i];
                 }
-                fwrite(outBuffer, 2, samples, m_fd);
+                wavfile_write(m_fd, buffer, 2*samples);
+            }
+            else if (m_channels == 2) {
+                wavfile_write(m_fd, outBuffer, samples);
             }
             else {
-                printf("Cannot handle these channels\n");
+                printf("Cannot handle %d channels\n", m_channels);
             }
         }
 
     }
-    return 0;
+    return true;
 }
 
-
-FaadDecoder::~FaadDecoder()
+void FaadDecoder::close()
 {
-    if (m_decoder) {
-        NeAACDecClose(m_decoder);
-
-        fclose(m_fd);
+    if (m_initialised) {
+        wavfile_close(m_fd);
     }
 }
+
 
