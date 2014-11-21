@@ -77,7 +77,7 @@ struct eti_analyse_config_t {
 
 int eti_analyse(eti_analyse_config_t& config);
 
-char* get_fig_0_13_userapp(int user_app_type)
+std::string get_fig_0_13_userapp(int user_app_type)
 {
     switch (user_app_type) {
         case 0x000: return "Reserved for future definition";
@@ -721,7 +721,7 @@ void decodeFIG(unsigned char* f,
 
                                 sprintf(desc, "User Application %d '%s'; length %u",
                                         user_app_type,
-                                        get_fig_0_13_userapp(user_app_type),
+                                        get_fig_0_13_userapp(user_app_type).c_str(),
                                         user_app_len);
                                 printbuf(desc, indent+2, NULL, 0);
                             }
