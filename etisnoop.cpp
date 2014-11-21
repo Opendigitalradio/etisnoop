@@ -41,6 +41,12 @@
 
 #include "dabplussnoop.h"
 
+struct FIG {
+    unsigned short int type;
+    unsigned short int ext;
+};
+
+
 struct FIG0_13_shortAppInfo {
     uint16_t SId;
     uint8_t No:4;
@@ -52,8 +58,17 @@ struct FIG0_13_shortAppInfo {
 
 using namespace std;
 
+struct eti_analyse_config_t {
+    int etifd;
+    bool ignore_error;
+    std::map<int, DabPlusSnoop> streams_to_decode;
+    bool analyse_fic_carousel;
+};
+
+// Globals
 static int verbosity;
 
+// Function prototypes
 void printinfo(string header,
         int indent_level,
         int min_verb=0);
@@ -64,16 +79,13 @@ void printbuf(string header,
         size_t size,
         string desc="");
 
-void decodeFIG(unsigned char* figdata,
-        unsigned char figlen,
-        unsigned short int figtype,
-        unsigned short int indent);
+void decodeFIG(std::vector<FIG> &figs,
+               unsigned char* figdata,
+               unsigned char figlen,
+               unsigned short int figtype,
+               unsigned short int indent);
 
-struct eti_analyse_config_t {
-    int etifd;
-    bool ignore_error;
-    std::map<int, DabPlusSnoop> streams_to_decode;
-};
+void analyse_fic(std::vector<FIG> &figs);
 
 int eti_analyse(eti_analyse_config_t& config);
 
@@ -111,7 +123,11 @@ void usage(void)
             "ETISnoop analyser\n\n"
             "The ETSnoop analyser decodes and prints out a RAW ETI file in a\n"
             "form that makes analysis easier.\n"
-            "Usage: etisnoop [-v] [-i filename] [-d stream_index]\n");
+            "Usage: etisnoop [-v] [-f] [-i filename] [-d stream_index]\n"
+            "\n"
+            "   -v      increase verbosity (can be given more than once)\n"
+            "   -d N    decode subchannel N into .dabp, .aac and .wav files\n"
+            "   -f      analyse FIC carousel\n");
 }
 
 int main(int argc, char *argv[])
@@ -123,9 +139,10 @@ int main(int argc, char *argv[])
 
     verbosity = 0;
     bool ignore_error = false;
+    bool analyse_fic_carousel = false;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:ehvi:s:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efhvi:", longopts, &index);
         switch (ch) {
             case 'd':
                 {
@@ -140,7 +157,8 @@ int main(int argc, char *argv[])
             case 'i':
                 file_name = optarg;
                 break;
-            case 's':
+            case 'f':
+                analyse_fic_carousel = true;
                 break;
             case 'v':
                 verbosity++;
@@ -169,7 +187,8 @@ int main(int argc, char *argv[])
     eti_analyse_config_t config = {
         .etifd = etifd,
         .ignore_error = ignore_error,
-        .streams_to_decode = streams_to_decode
+        .streams_to_decode = streams_to_decode,
+        .analyse_fic_carousel = analyse_fic_carousel
     };
     eti_analyse(config);
     close(etifd);
@@ -412,6 +431,8 @@ int eti_analyse(eti_analyse_config_t& config)
             unsigned char *fib, *fig;
             unsigned short int figcrc;
 
+            std::vector<FIG> figs;
+
             unsigned char ficdata[32*4];
             memcpy(ficdata, p + 12 + 4*nst, ficl*4);
             sprintf(sdesc, "FIC Data (%d bytes)", ficl*4);
@@ -429,7 +450,7 @@ int eti_analyse(eti_analyse_config_t& config)
                         figlen = fig[0] & 0x1F;
                         sprintf(sdesc, "FIG %d [%d bytes]", figtype, figlen);
                         printbuf(sdesc, 3, fig+1, figlen);
-                        decodeFIG(fig+1, figlen, figtype, 4);
+                        decodeFIG(figs, fig+1, figlen, figtype, 4);
                         fig += figlen + 1;
                         figcount += figlen + 1;
                         if (figcount >= 29)
@@ -453,6 +474,11 @@ int eti_analyse(eti_analyse_config_t& config)
                 printbuf("FIB CRC",3,fib+30,2,sdesc);
                 fib += 32;
             }
+
+            if (config.analyse_fic_carousel) {
+                analyse_fic(figs);
+            }
+            figs.clear();
         }
 
         int offset = 0;
@@ -521,12 +547,14 @@ int eti_analyse(eti_analyse_config_t& config)
     return 0;
 }
 
-
-void decodeFIG(unsigned char* f,
+void decodeFIG(std::vector<struct FIG> &figs,
+               unsigned char* f,
                unsigned char figlen,
                unsigned short int figtype,
                unsigned short int indent)
 {
+    struct FIG fig;
+    fig.type = figtype;
 
     char desc[256];
 
@@ -542,6 +570,10 @@ void decodeFIG(unsigned char* f,
                 sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d",
                         figtype, ext, cn, oe, pd);
                 printbuf(desc, indent, f+1, figlen-1);
+
+                fig.ext = ext;
+                figs.push_back(fig);
+
                 switch (ext) {
 
                     case 0: // FIG 0/0
@@ -741,7 +773,7 @@ void decodeFIG(unsigned char* f,
                 char label[17];
 
                 charset = (f[0] & 0xF0) >> 4;
-                oe = (f[0] & 0x80) >> 3;
+                oe = (f[0] & 0x08) >> 3;
                 ext = f[0] & 0x07;
                 sprintf(desc,
                         "FIG %d/%d: OE=%d, Charset=%d",
@@ -752,6 +784,9 @@ void decodeFIG(unsigned char* f,
                 label[16] = 0x00;
                 flag = f[figlen-2] * 256 + \
                        f[figlen-1];
+
+                fig.ext = ext;
+                figs.push_back(fig);
 
                 switch (ext) {
                     case 0:
@@ -851,7 +886,58 @@ void decodeFIG(unsigned char* f,
                 }
             }
             break;
+        case 2:
+            {// LONG LABELS
+                unsigned short int ext,oe;
+
+                uint8_t toggle_flag = (f[0] & 0x80) >> 7;
+                uint8_t segment_index = (f[0] & 0x70) >> 4;
+                oe = (f[0] & 0x08) >> 3;
+                ext = f[0] & 0x07;
+                sprintf(desc,
+                        "FIG %d/%d: OE=%d, Segment_index=%d",
+                        figtype, ext, oe, segment_index);
+
+                printbuf(desc, indent, f+1, figlen-1);
+
+                fig.ext = ext;
+                figs.push_back(fig);
+            }
+            break;
+        case 5:
+            {// FIDC
+                unsigned short int ext;
+
+                uint8_t d1 = (f[0] & 0x80) >> 7;
+                uint8_t d2 = (f[0] & 0x40) >> 6;
+                uint8_t tcid = (f[0] & 0x38) >> 5;
+                ext = f[0] & 0x07;
+                sprintf(desc,
+                        "FIG %d/%d: D1=%d, D2=%d, TCId=%d",
+                        figtype, ext, d1, d2, tcid);
+
+                printbuf(desc, indent, f+1, figlen-1);
+
+                fig.ext = ext;
+                figs.push_back(fig);
+            }
+            break;
+        case 6:
+            {// Conditional access
+                fprintf(stderr, "ERROR: ETI contains unsupported FIG 6");
+            }
+            break;
     }
+}
+
+void analyse_fic(std::vector<FIG> &figs)
+{
+    printf("FIG");
+    for (size_t i = 0; i < figs.size(); i++) {
+        FIG &f = figs[i];
+        printf(" %01d/%02d", f.type, f.ext);
+    }
+    printf("\n");
 }
 
 void printinfo(string header,
