@@ -41,6 +41,12 @@
 
 #include "dabplussnoop.h"
 
+struct FIG0_13_shortAppInfo {
+    uint16_t SId;
+    uint8_t No:4;
+    uint8_t SCIdS:4;
+} PACKED;
+
 
 #define ETINIPACKETSIZE 6144
 
@@ -71,6 +77,22 @@ struct eti_analyse_config_t {
 
 int eti_analyse(eti_analyse_config_t& config);
 
+char* get_fig_0_13_userapp(int user_app_type)
+{
+    switch (user_app_type) {
+        case 0x000: return "Reserved for future definition";
+        case 0x001: return "Not used";
+        case 0x002: return "MOT Slideshow";
+        case 0x003: return "MOT Broadacst Web Site";
+        case 0x004: return "TPEG";
+        case 0x005: return "DGPS";
+        case 0x006: return "TMC";
+        case 0x007: return "EPG";
+        case 0x008: return "DAB Java";
+        case 0x44a: return "Journaline";
+        default: return "Reserved for future applications";
+    }
+}
 
 #define no_argument 0
 #define required_argument 1
@@ -517,11 +539,12 @@ void decodeFIG(unsigned char* f,
                 oe = (f[0] & 0x40) >> 6;
                 pd = (f[0] & 0x20) >> 5;
                 ext = f[0] & 0x1F;
-                sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d", figtype, ext, cn, oe, pd);
+                sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d",
+                        figtype, ext, cn, oe, pd);
                 printbuf(desc, indent, f+1, figlen-1);
                 switch (ext) {
 
-                    case 0:
+                    case 0: // FIG 0/0
                         {
                             unsigned char cid, al, ch, hic, lowc, occ;
                             unsigned short int eid, eref;
@@ -549,7 +572,7 @@ void decodeFIG(unsigned char* f,
 
                         }
                         break;
-                    case 2:
+                    case 2: // FIG 0/2
                         {
                             unsigned short int sref, scid, sid;
                             unsigned char cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
@@ -655,9 +678,55 @@ void decodeFIG(unsigned char* f,
                                 }
                             }
                         }
-
                         break;
+                    case 13: // FIG 0/13
+                        {
+                            uint32_t SId;
+                            uint8_t  SCIdS;
+                            uint8_t  No;
 
+                            int k = 1;
+
+                            if (pd == 0) { // Programme services, 16 bit SId
+                                SId   = (f[k] << 8) |
+                                         f[k+1];
+                                k+=2;
+
+                                SCIdS = f[k] >> 4;
+                                No    = f[k] & 0x0F;
+                                k++;
+                            }
+                            else { // Data services, 32 bit SId
+                                SId   = (f[k]   << 24) |
+                                        (f[k+1] << 16) |
+                                        (f[k+2] << 8) |
+                                         f[k+3];
+                                k+=4;
+
+                                SCIdS = f[k] >> 4;
+                                No    = f[k] & 0x0F;
+                                k++;
+
+                            }
+
+                            sprintf(desc, "FIG %d/%d: SId=%u SCIdS=%u No=%u",
+                                    figtype, ext, SId, SCIdS, No);
+                            printbuf(desc, indent+1, NULL, 0);
+
+                            for (int numapp = 0; numapp < No; numapp++) {
+                                uint16_t user_app_type = ((f[k] << 8) |
+                                                         (f[k+1] & 0xE0)) >> 5;
+                                uint8_t  user_app_len  = f[k+1] & 0x1F;
+                                k+=2;
+
+                                sprintf(desc, "User Application %d '%s'; length %u",
+                                        user_app_type,
+                                        get_fig_0_13_userapp(user_app_type),
+                                        user_app_len);
+                                printbuf(desc, indent+2, NULL, 0);
+                            }
+                        }
+                        break;
                 }
             }
             break;
@@ -806,12 +875,15 @@ void printbuf(string header,
         }
 
         printf("%s", header.c_str());
-        if (size != 0) {
-            printf(": ");
-        }
 
-        for (size_t i = 0; i < size; i++) {
-            printf("%02x ", buffer[i]);
+        if (verbosity > 1) {
+            if (size != 0) {
+                printf(": ");
+            }
+
+            for (size_t i = 0; i < size; i++) {
+                printf("%02x ", buffer[i]);
+            }
         }
 
         if (desc != "") {
