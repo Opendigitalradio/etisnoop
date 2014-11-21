@@ -37,9 +37,10 @@ using namespace std;
 
 FaadDecoder::FaadDecoder() :
     m_data_len(0),
+    m_fd(NULL),
+    m_aac(NULL),
     m_initialised(false)
 {
-    m_aac = NULL;
 }
 
 void FaadDecoder::open(string filename, bool ps_flag, bool aac_channel_mode,
@@ -137,7 +138,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
 
         memcpy(helpBuffer, d_header, 7 * sizeof(uint8_t));
         memcpy(&helpBuffer[7],
-                &au[0], vh.aac_frame_length * sizeof (uint8_t));
+                &au[0], au.size() * sizeof (uint8_t));
 
         fwrite(helpBuffer, 1, vh.aac_frame_length, m_aac);
 
@@ -178,11 +179,13 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
         m_channels    = hInfo.channels;
         size_t samples  = hInfo.samples;
 
+#if 0
         printf("bytes consumed %d\n", (int)(hInfo.bytesconsumed));
         printf("samplerate = %d, samples = %zu, channels = %d,"
                 " error = %d, sbr = %d\n", m_sample_rate, samples,
                 m_channels, hInfo.error, hInfo.sbr);
         printf("header = %d\n", hInfo.header_type);
+#endif
 
         if (hInfo.error != 0) {
             printf("FAAD Warning: %s\n",

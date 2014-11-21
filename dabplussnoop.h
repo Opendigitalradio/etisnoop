@@ -88,7 +88,8 @@ class DabPlusSnoop
         DabPlusSnoop() :
             m_index(0),
             m_subchannel_index(0),
-            m_data(0) {}
+            m_data(0),
+            m_raw_data_stream_fd(NULL) {}
 
         void set_subchannel_index(unsigned subchannel_index)
         {
@@ -123,6 +124,8 @@ class DabPlusSnoop
 
         unsigned m_subchannel_index;
         std::vector<uint8_t> m_data;
+
+        FILE* m_raw_data_stream_fd;
 };
 
 #endif

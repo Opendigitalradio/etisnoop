@@ -53,6 +53,21 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
         // m_data now points to a valid header
         if (decode()) {
             // We have been able to decode the AUs
+
+            // First dump to file
+            if (m_raw_data_stream_fd == NULL) {
+                stringstream dump_filename;
+                dump_filename << "stream-" << m_index << ".dabp";
+
+                m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
+
+                if (m_raw_data_stream_fd == NULL) {
+                    perror("File open failed");
+                }
+            }
+
+            fwrite(&m_data[0], m_subchannel_index, 120, m_raw_data_stream_fd);
+
             m_data.erase(m_data.begin(), m_data.begin() + m_subchannel_index * 120);
         }
     }
@@ -135,6 +150,7 @@ bool DabPlusSnoop::decode()
         else if (m_dac_rate && !m_sbr_flag) num_aus = 6;
         // AAC core sampling rate 48 kHz
 
+#if DPS_DEBUG
         printf( DPS_INDENT DPS_PREFIX "\n"
                 DPS_INDENT "\tfirecode           0x%x\n"
                 DPS_INDENT "\trfa                  %d\n"
@@ -147,6 +163,7 @@ bool DabPlusSnoop::decode()
                 header_firecode, rfa, m_dac_rate, m_sbr_flag,
                 m_aac_channel_mode, m_ps_flag, m_mpeg_surround_config,
                 num_aus);
+#endif
 
 
         // ------ Parse au_start
@@ -280,4 +297,8 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
 void DabPlusSnoop::close()
 {
     m_faad_decoder.close();
+
+    if (m_raw_data_stream_fd) {
+        fclose(m_raw_data_stream_fd);
+    }
 }
