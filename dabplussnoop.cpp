@@ -163,6 +163,10 @@ bool DabPlusSnoop::decode()
                 header_firecode, rfa, m_dac_rate, m_sbr_flag,
                 m_aac_channel_mode, m_ps_flag, m_mpeg_surround_config,
                 num_aus);
+#else
+        // Avoid "unused variable" warning
+        (void)header_firecode;
+        (void)rfa;
 #endif
 
 

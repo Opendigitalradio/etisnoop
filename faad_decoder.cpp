@@ -202,7 +202,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
         if (samples) {
             if (m_channels == 1) {
                 int16_t *buffer = (int16_t *)alloca (2 * samples);
-                int16_t i;
+                size_t i;
                 for (i = 0; i < samples; i ++) {
                     buffer [2 * i]  = ((int16_t *)outBuffer) [i];
                     buffer [2 * i + 1] = buffer [2 * i];

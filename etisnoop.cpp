@@ -574,7 +574,7 @@ void decodeFIG(unsigned char* f,
                         break;
                     case 2: // FIG 0/2
                         {
-                            unsigned short int sref, scid, sid;
+                            unsigned short int sref, sid;
                             unsigned char cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
                             int k=1;
                             string psdesc;
@@ -629,9 +629,12 @@ void decodeFIG(unsigned char* f,
                                     scty    =  scomp[0] & 0x3F;
                                     subchid = (scomp[1] & 0xFC) >> 2;
 
+                                    /* useless, kept as reference
                                     if (timd == 3) {
+                                        unsigned short int scid;
                                         scid = scty*64 + subchid;
                                     }
+                                    */
 
                                     if (ps == 0) {
                                         psdesc = "Secondary service";
