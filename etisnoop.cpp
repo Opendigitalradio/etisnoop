@@ -604,6 +604,63 @@ void decodeFIG(std::vector<struct FIG> &figs,
 
                         }
                         break;
+                    case 1: // FIG 0/1 basic subchannel organisation
+                        {
+                            int i = 1;
+
+                            while (i < figlen-3) {
+                                // iterate over subchannels
+                                int subch_id = f[i] >> 2;
+                                int start_addr = (f[i] << 6) |
+                                                 (f[i+1]);
+                                int long_flag  = (f[i+2] >> 7);
+
+                                if (long_flag) {
+                                    int option = (f[i+2] >> 4) & 0x0F;
+                                    int protection_level = (f[i+2] >> 2) & 0x03;
+                                    int subchannel_size  = ((f[i+2] & 0x03) << 6 ) |
+                                                           f[i+3];
+
+                                    i += 4;
+
+                                    if (option = 0x00) {
+                                        sprintf(desc,
+                                                "Subch 0x%x, start_addr %d, long, EEP %d-A, subch size %d",
+                                                subch_id, start_addr, protection_level, subchannel_size);
+                                    }
+                                    else if (option = 0x01) {
+                                        sprintf(desc,
+                                                "Subch 0x%x, start_addr %d, long, EEP %d-B, subch size %d",
+                                                subch_id, start_addr, protection_level, subchannel_size);
+                                    }
+                                    else {
+                                        sprintf(desc,
+                                                "Subch 0x%x, start_addr %d, long, invalid option %d, protection %d, subch size %d",
+                                                subch_id, start_addr, option, protection_level, subchannel_size);
+                                    }
+                                }
+                                else {
+                                    int table_switch = (f[i+2] >> 6) & 0x01;
+                                    unsigned int table_index  = (f[i+2] & 0x3F);
+
+
+                                    if (table_switch == 0) {
+                                        sprintf(desc,
+                                                "Subch 0x%x, start_addr %d, short, table index %d",
+                                                subch_id, start_addr, table_index);
+                                    }
+                                    else {
+                                        sprintf(desc,
+                                                "Subch 0x%x, start_addr %d, short, invalid table_switch(=1), table index %d",
+                                                subch_id, start_addr, table_index);
+                                    }
+
+                                    i += 3;
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                            }
+
+                        }
                     case 2: // FIG 0/2
                         {
                             unsigned short int sref, sid;
