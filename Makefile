@@ -10,7 +10,7 @@ etisnoop: $(SOURCES) $(HEADERS)
 	$(CC) -Wall -ggdb $(SOURCES) $(HEADERS) -lfaad -o etisnoop
 
 etisnoop-static: libfaad $(SOURCES) $(HEADERS)
-	$(CC) -Wall -ggdb $(SOURCES) $(HEADERS) faad2-2.7/libfaad/.libs/libfaad.a -o etisnoop
+	$(CC) -Wall -ggdb $(SOURCES) $(HEADERS) -Ifaad2-2.7/include faad2-2.7/libfaad/.libs/libfaad.a -o etisnoop
 
 libfaad:
 	make -C ./faad2-2.7
