@@ -592,12 +592,12 @@ void decodeFIG(std::vector<struct FIG> &figs,
                             if (ch != 0) {
                                 occ = f[5];
                                 sprintf(desc,
-                                        "Ensamble ID=0x%02x (Country id=%d, Ensamble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d, Occurance change=%d",
+                                        "Ensemble ID=0x%02x (Country id=%d, Ensemble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d, Occurance change=%d",
                                         eid, cid, eref, ch, al, hic, lowc, occ);
                             }
                             else {
                                 sprintf(desc,
-                                        "Ensamble ID=0x%02x (Country id=%d, Ensamble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d",
+                                        "Ensemble ID=0x%02x (Country id=%d, Ensemble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d",
                                         eid, cid, eref, ch, al, hic, lowc);
                             }
                             printbuf(desc, indent+1, NULL, 0);
