@@ -1,8 +1,8 @@
 
 CC=g++
 
-SOURCES=etisnoop.cpp dabplussnoop.cpp lib_crc.c firecode.c faad_decoder.cpp wavfile.c
-HEADERS=dabplussnoop.h lib_crc.h firecode.h faad_decoder.h wavfile.h
+SOURCES=etisnoop.cpp dabplussnoop.cpp lib_crc.c firecode.c faad_decoder.cpp wavfile.c etiinput.cpp
+HEADERS=dabplussnoop.h lib_crc.h firecode.h faad_decoder.h wavfile.h etiinput.h
 
 all: etisnoop
 

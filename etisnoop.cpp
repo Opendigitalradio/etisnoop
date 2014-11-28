@@ -40,6 +40,7 @@
 #include "lib_crc.h"
 
 #include "dabplussnoop.h"
+#include "etiinput.h"
 
 struct FIG {
     unsigned short int type;
@@ -59,7 +60,7 @@ struct FIG0_13_shortAppInfo {
 using namespace std;
 
 struct eti_analyse_config_t {
-    int etifd;
+    FILE* etifd;
     bool ignore_error;
     std::map<int, DabPlusSnoop> streams_to_decode;
     bool analyse_fic_carousel;
@@ -170,15 +171,15 @@ int main(int argc, char *argv[])
         }
     }
 
-    int etifd;
+    FILE* etifd;
 
     if (file_name == "-") {
         printf("Analysing stdin\n");
-        etifd = STDIN_FILENO;
+        etifd = stdin;
     }
     else {
-        etifd = open(file_name.c_str(), O_RDONLY);
-        if (etifd == -1) {
+        etifd = fopen(file_name.c_str(), "r");
+        if (etifd == NULL) {
             perror("File open failed");
             return 1;
         }
@@ -191,7 +192,7 @@ int main(int argc, char *argv[])
         .analyse_fic_carousel = analyse_fic_carousel
     };
     eti_analyse(config);
-    close(etifd);
+    fclose(etifd);
 }
 
 int eti_analyse(eti_analyse_config_t& config)
@@ -206,10 +207,34 @@ int eti_analyse(eti_analyse_config_t& config)
     unsigned short int sad[64],stl[64];
     char sdesc[256];
 
-    while (1) {
+    bool running = true;
 
-        int ret = read(config.etifd, p, ETINIPACKETSIZE);
-        if (ret != ETINIPACKETSIZE) {
+    int stream_type = ETI_STREAM_TYPE_NONE;
+    if (identify_eti_format(config.etifd, &stream_type) == -1) {
+        printf("Could not identify stream type\n");
+
+        running = false;
+    }
+    else {
+        printf("Identified ETI type ");
+        if (stream_type == ETI_STREAM_TYPE_RAW)
+            printf("RAW\n");
+        else if (stream_type == ETI_STREAM_TYPE_STREAMED)
+            printf("STREAMED\n");
+        else if (stream_type == ETI_STREAM_TYPE_FRAMED)
+            printf("FRAMED\n");
+        else
+            printf("?\n");
+    }
+
+    while (running) {
+
+        int ret = get_eti_frame(config.etifd, stream_type, p);
+        if (ret == -1) {
+            fprintf(stderr, "ETI file read error\n");
+            break;
+        }
+        else if (ret == 0) {
             fprintf(stderr, "End of ETI\n");
             break;
         }
@@ -226,6 +251,7 @@ int eti_analyse(eti_analyse_config_t& config)
             desc = "Error";
             printbuf("ERR", 1, p, 1, desc);
             if (!config.ignore_error) {
+                printf("Aborting because of SYNC error\n");
                 break;
             }
         }
