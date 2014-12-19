@@ -42,13 +42,61 @@
 #include "dabplussnoop.h"
 #include "etiinput.h"
 
-struct FIG {
-    unsigned short int type;
-    unsigned short int ext;
+struct FIG
+{
+    int fib;
+    int type;
+    int ext;
+};
+
+class FIGalyser
+{
+    public:
+        void set_fib(int fib)
+        {
+            m_fib = fib;
+        }
+
+        void push_back(int type, int ext)
+        {
+            struct FIG fig = {
+                .fib = m_fib,
+                .type = type,
+                .ext  = ext };
+
+            m_figs.push_back(fig);
+        }
+
+        void analyse()
+        {
+            int lastfib = -1;
+
+            printf("FIC ");
+
+            for (size_t i = 0; i < m_figs.size(); i++) {
+                FIG &f = m_figs[i];
+                if (lastfib != f.fib) {
+                    printf("  FIB%d ", f.fib);
+                    lastfib = f.fib;
+                }
+                printf("%01d/%02d ", f.type, f.ext);
+            }
+            printf("\n");
+        }
+
+        void clear()
+        {
+            m_figs.clear();
+        }
+
+    private:
+        int m_fib;
+        std::vector<FIG> m_figs;
 };
 
 
-struct FIG0_13_shortAppInfo {
+struct FIG0_13_shortAppInfo
+{
     uint16_t SId;
     uint8_t No:4;
     uint8_t SCIdS:4;
@@ -80,13 +128,11 @@ void printbuf(string header,
         size_t size,
         string desc="");
 
-void decodeFIG(std::vector<FIG> &figs,
+void decodeFIG(FIGalyser &figs,
                unsigned char* figdata,
                unsigned char figlen,
                unsigned short int figtype,
                unsigned short int indent);
-
-void analyse_fic(std::vector<FIG> &figs);
 
 int eti_analyse(eti_analyse_config_t& config);
 
@@ -457,7 +503,7 @@ int eti_analyse(eti_analyse_config_t& config)
             unsigned char *fib, *fig;
             unsigned short int figcrc;
 
-            std::vector<FIG> figs;
+            FIGalyser figs;
 
             unsigned char ficdata[32*4];
             memcpy(ficdata, p + 12 + 4*nst, ficl*4);
@@ -467,6 +513,7 @@ int eti_analyse(eti_analyse_config_t& config)
             fib = p + 12 + 4*nst;
             for(int i = 0; i < ficl*4/32; i++) {
                 fig=fib;
+                figs.set_fib(i);
                 endmarker=0;
                 figcount=0;
                 while (!endmarker) {
@@ -502,7 +549,7 @@ int eti_analyse(eti_analyse_config_t& config)
             }
 
             if (config.analyse_fic_carousel) {
-                analyse_fic(figs);
+                figs.analyse();
             }
             figs.clear();
         }
@@ -573,15 +620,12 @@ int eti_analyse(eti_analyse_config_t& config)
     return 0;
 }
 
-void decodeFIG(std::vector<struct FIG> &figs,
+void decodeFIG(FIGalyser &figs,
                unsigned char* f,
                unsigned char figlen,
                unsigned short int figtype,
                unsigned short int indent)
 {
-    struct FIG fig;
-    fig.type = figtype;
-
     char desc[256];
 
     switch (figtype) {
@@ -597,8 +641,7 @@ void decodeFIG(std::vector<struct FIG> &figs,
                         figtype, ext, cn, oe, pd);
                 printbuf(desc, indent, f+1, figlen-1);
 
-                fig.ext = ext;
-                figs.push_back(fig);
+                figs.push_back(figtype, ext);
 
                 switch (ext) {
 
@@ -868,8 +911,7 @@ void decodeFIG(std::vector<struct FIG> &figs,
                 flag = f[figlen-2] * 256 + \
                        f[figlen-1];
 
-                fig.ext = ext;
-                figs.push_back(fig);
+                figs.push_back(figtype, ext);
 
                 switch (ext) {
                     case 0:
@@ -983,8 +1025,7 @@ void decodeFIG(std::vector<struct FIG> &figs,
 
                 printbuf(desc, indent, f+1, figlen-1);
 
-                fig.ext = ext;
-                figs.push_back(fig);
+                figs.push_back(figtype, ext);
             }
             break;
         case 5:
@@ -1001,8 +1042,7 @@ void decodeFIG(std::vector<struct FIG> &figs,
 
                 printbuf(desc, indent, f+1, figlen-1);
 
-                fig.ext = ext;
-                figs.push_back(fig);
+                figs.push_back(figtype, ext);
             }
             break;
         case 6:
@@ -1013,15 +1053,6 @@ void decodeFIG(std::vector<struct FIG> &figs,
     }
 }
 
-void analyse_fic(std::vector<FIG> &figs)
-{
-    printf("FIG");
-    for (size_t i = 0; i < figs.size(); i++) {
-        FIG &f = figs[i];
-        printf(" %01d/%02d", f.type, f.ext);
-    }
-    printf("\n");
-}
 
 void printinfo(string header,
         int indent_level,
