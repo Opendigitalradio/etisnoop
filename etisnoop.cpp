@@ -44,54 +44,88 @@
 
 struct FIG
 {
-    int fib;
     int type;
     int ext;
+    int len;
 };
 
 class FIGalyser
 {
     public:
+        FIGalyser()
+        {
+            clear();
+        }
+
         void set_fib(int fib)
         {
             m_fib = fib;
         }
 
-        void push_back(int type, int ext)
+        void push_back(int type, int ext, int len)
         {
             struct FIG fig = {
-                .fib = m_fib,
                 .type = type,
-                .ext  = ext };
+                .ext  = ext,
+                .len  = len };
 
-            m_figs.push_back(fig);
+            m_figs[m_fib].push_back(fig);
         }
 
         void analyse()
         {
-            int lastfib = -1;
-
             printf("FIC ");
 
-            for (size_t i = 0; i < m_figs.size(); i++) {
-                FIG &f = m_figs[i];
-                if (lastfib != f.fib) {
-                    printf("  FIB%d ", f.fib);
-                    lastfib = f.fib;
+            for (size_t fib = 0; fib < m_figs.size(); fib++) {
+                int consumed = 7;
+                int fic_size = 0;
+                printf(" [ FIB%1d ", fib);
+
+                for (size_t i = 0; i < m_figs[fib].size(); i++) {
+                    FIG &f = m_figs[fib][i];
+                    printf("%01d/%02d (%2d) ", f.type, f.ext, f.len);
+
+                    consumed += 10;
+
+                    fic_size += f.len;
                 }
-                printf("%01d/%02d ", f.type, f.ext);
+
+                printf(" ");
+
+                int align = 30 - consumed;
+                if (align > 0) {
+                    while (align--) {
+                        printf(" ");
+                    }
+                }
+
+                printf("|");
+
+                for (int i = 0; i < 15; i++) {
+                    if (2*i < fic_size) {
+                        printf("#");
+                    }
+                    else {
+                        printf("-");
+                    }
+                }
+
+                printf("| ]   ");
+
             }
+
             printf("\n");
         }
 
         void clear()
         {
             m_figs.clear();
+            m_figs.resize(3);
         }
 
     private:
         int m_fib;
-        std::vector<FIG> m_figs;
+        std::vector<std::vector<FIG> > m_figs;
 };
 
 
@@ -551,7 +585,6 @@ int eti_analyse(eti_analyse_config_t& config)
             if (config.analyse_fic_carousel) {
                 figs.analyse();
             }
-            figs.clear();
         }
 
         int offset = 0;
@@ -641,7 +674,7 @@ void decodeFIG(FIGalyser &figs,
                         figtype, ext, cn, oe, pd);
                 printbuf(desc, indent, f+1, figlen-1);
 
-                figs.push_back(figtype, ext);
+                figs.push_back(figtype, ext, figlen);
 
                 switch (ext) {
 
@@ -911,7 +944,7 @@ void decodeFIG(FIGalyser &figs,
                 flag = f[figlen-2] * 256 + \
                        f[figlen-1];
 
-                figs.push_back(figtype, ext);
+                figs.push_back(figtype, ext, figlen);
 
                 switch (ext) {
                     case 0:
@@ -1025,7 +1058,7 @@ void decodeFIG(FIGalyser &figs,
 
                 printbuf(desc, indent, f+1, figlen-1);
 
-                figs.push_back(figtype, ext);
+                figs.push_back(figtype, ext, figlen);
             }
             break;
         case 5:
@@ -1042,7 +1075,7 @@ void decodeFIG(FIGalyser &figs,
 
                 printbuf(desc, indent, f+1, figlen-1);
 
-                figs.push_back(figtype, ext);
+                figs.push_back(figtype, ext, figlen);
             }
             break;
         case 6:
