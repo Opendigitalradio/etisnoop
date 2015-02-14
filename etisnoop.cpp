@@ -79,7 +79,7 @@ class FIGalyser
             for (size_t fib = 0; fib < m_figs.size(); fib++) {
                 int consumed = 7;
                 int fic_size = 0;
-                printf(" [ FIB%1d ", fib);
+                printf("[%1d ", fib);
 
                 for (size_t i = 0; i < m_figs[fib].size(); i++) {
                     FIG &f = m_figs[fib][i];
@@ -92,7 +92,7 @@ class FIGalyser
 
                 printf(" ");
 
-                int align = 30 - consumed;
+                int align = 60 - consumed;
                 if (align > 0) {
                     while (align--) {
                         printf(" ");
