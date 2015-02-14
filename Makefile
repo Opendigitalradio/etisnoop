@@ -15,6 +15,10 @@ etisnoop-static: libfaad $(SOURCES) $(HEADERS)
 libfaad:
 	make -C ./faad2-2.7
 
+.PHONY: tags
+tags:
+	ctags -R .
+
 
 clean:
 	rm -f etisnoop *.o
