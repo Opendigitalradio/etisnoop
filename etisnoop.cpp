@@ -456,7 +456,7 @@ int eti_analyse(eti_analyse_config_t& config)
             if ((tpl & 0x20) >> 5 == 1) {
                 unsigned char opt, plevel;
                 string plevelstr;
-                opt = (tpl & 0x16) >> 2;
+                opt = (tpl & 0x1c) >> 2;
                 plevel = (tpl & 0x03);
                 if (opt == 0x00) {
                     if (plevel == 0)
@@ -713,14 +713,14 @@ void decodeFIG(FIGalyser &figs,
                             while (i < figlen-3) {
                                 // iterate over subchannels
                                 int subch_id = f[i] >> 2;
-                                int start_addr = (f[i] << 6) |
+                                int start_addr = ((f[i] & 0x03) << 8) |
                                                  (f[i+1]);
                                 int long_flag  = (f[i+2] >> 7);
 
                                 if (long_flag) {
                                     int option = (f[i+2] >> 4) & 0x07;
                                     int protection_level = (f[i+2] >> 2) & 0x03;
-                                    int subchannel_size  = ((f[i+2] & 0x03) << 6 ) |
+                                    int subchannel_size  = ((f[i+2] & 0x03) << 8 ) |
                                                            f[i+3];
 
                                     i += 4;
@@ -763,6 +763,7 @@ void decodeFIG(FIGalyser &figs,
                             }
 
                         }
+                        break;
                     case 2: // FIG 0/2
                         {
                             unsigned short int sref, sid;
