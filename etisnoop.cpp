@@ -49,6 +49,68 @@ struct FIG
     int len;
 };
 
+class WatermarkDecoder
+{
+    public:
+        void push_confind_bit(bool confind)
+        {
+            // The ConfInd of FIG 0/10 contains the CRC-DABMUX and ODR-DabMux watermark
+            m_confind_bits.push_back(confind);
+        }
+
+        std::string calculate_watermark()
+        {
+            // First try to find the 0x55 0x55 sync in the waternark data
+            size_t bit_ix;
+            int alternance_count = 0;
+            bool last_bit = 1;
+            for (bit_ix = 0; bit_ix < m_confind_bits.size(); bit_ix++) {
+                if (alternance_count == 16) {
+                    break;
+                }
+                else {
+                    if (last_bit != m_confind_bits[bit_ix]) {
+                        last_bit = m_confind_bits[bit_ix];
+                        alternance_count++;
+                    }
+                    else {
+                        alternance_count = 0;
+                        last_bit = 1;
+                    }
+                }
+
+            }
+
+            printf("Found SYNC at offset %zu out of %zu\n", bit_ix - alternance_count, m_confind_bits.size());
+
+            std::stringstream watermark_ss;
+
+            uint8_t b = 0;
+            size_t i = 0;
+            while (bit_ix < m_confind_bits.size()) {
+
+                b |= m_confind_bits[bit_ix] << (7 - i);
+
+                if (i == 7) {
+                    watermark_ss << (char)b;
+
+                    b = 0;
+                    i = 0;
+                }
+                else {
+                    i++;
+                }
+
+                bit_ix += 2;
+            }
+
+            return watermark_ss.str();
+        }
+
+    private:
+        std::vector<bool> m_confind_bits;
+};
+
 class FIGalyser
 {
     public:
@@ -146,6 +208,7 @@ struct eti_analyse_config_t {
     bool ignore_error;
     std::map<int, DabPlusSnoop> streams_to_decode;
     bool analyse_fic_carousel;
+    bool decode_watermark;
 };
 
 // Globals
@@ -163,6 +226,7 @@ void printbuf(string header,
         string desc="");
 
 void decodeFIG(FIGalyser &figs,
+               WatermarkDecoder &wm_decoder,
                unsigned char* figdata,
                unsigned char figlen,
                unsigned short int figtype,
@@ -208,7 +272,8 @@ void usage(void)
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
             "   -d N    decode subchannel N into .dabp, .aac and .wav files\n"
-            "   -f      analyse FIC carousel\n");
+            "   -f      analyse FIC carousel\n"
+            "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n");
 }
 
 int main(int argc, char *argv[])
@@ -221,9 +286,10 @@ int main(int argc, char *argv[])
     verbosity = 0;
     bool ignore_error = false;
     bool analyse_fic_carousel = false;
+    bool decode_watermark = false;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efhvi:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efhvwi:", longopts, &index);
         switch (ch) {
             case 'd':
                 {
@@ -243,6 +309,9 @@ int main(int argc, char *argv[])
                 break;
             case 'v':
                 verbosity++;
+                break;
+            case 'w':
+                decode_watermark = true;
                 break;
             case 'h':
                 usage();
@@ -269,7 +338,8 @@ int main(int argc, char *argv[])
         .etifd = etifd,
         .ignore_error = ignore_error,
         .streams_to_decode = streams_to_decode,
-        .analyse_fic_carousel = analyse_fic_carousel
+        .analyse_fic_carousel = analyse_fic_carousel,
+        .decode_watermark = decode_watermark
     };
     eti_analyse(config);
     fclose(etifd);
@@ -306,6 +376,8 @@ int eti_analyse(eti_analyse_config_t& config)
         else
             printf("?\n");
     }
+
+    WatermarkDecoder wm_decoder;
 
     while (running) {
 
@@ -557,7 +629,7 @@ int eti_analyse(eti_analyse_config_t& config)
                         figlen = fig[0] & 0x1F;
                         sprintf(sdesc, "FIG %d [%d bytes]", figtype, figlen);
                         printbuf(sdesc, 3, fig+1, figlen);
-                        decodeFIG(figs, fig+1, figlen, figtype, 4);
+                        decodeFIG(figs, wm_decoder, fig+1, figlen, figtype, 4);
                         fig += figlen + 1;
                         figcount += figlen + 1;
                         if (figcount >= 29)
@@ -650,10 +722,16 @@ int eti_analyse(eti_analyse_config_t& config)
         it->second.close();
     }
 
+    if (config.decode_watermark) {
+        std::string watermark(wm_decoder.calculate_watermark());
+        printf("Watermark:\n  %s\n", watermark.c_str());
+    }
+
     return 0;
 }
 
 void decodeFIG(FIGalyser &figs,
+               WatermarkDecoder &wm_decoder,
                unsigned char* f,
                unsigned char figlen,
                unsigned short int figtype,
@@ -871,6 +949,41 @@ void decodeFIG(FIGalyser &figs,
                                     }
                                     k += 2;
                                 }
+                            }
+                        }
+                        break;
+                    case 10: // FIG 0/10
+                        {
+                            /* TODO verify and convert from MJD representation
+                            uint32_t MJD = ((f[1] & 0x7) << 10)    |
+                                           ((uint32_t)(f[2]) << 2) |
+                                           (f[3] >> 6);
+                                          */
+
+                            //bool RFU = f[1] >> 7;
+
+                            bool LSI = f[3] & 0x20;
+                            bool ConfInd = f[3] & 0x10;
+                            wm_decoder.push_confind_bit(ConfInd);
+                            bool UTC = f[3] & 0x8;
+
+                            uint8_t hours = ((f[3] & 0x7) << 2) |
+                                            ( f[4] >> 6);
+
+                            uint8_t minutes = f[4] & 0x3f;
+
+                            if (UTC) {
+                                uint8_t seconds = f[5] >> 2;
+                                uint16_t milliseconds = ((uint16_t)(f[5] & 0x2) << 8) | f[6];
+
+                                sprintf(desc, "FIG %d/%d(long): LSI %u, ConfInd %u, UTC Time: %02d:%02d:%02d.%d",
+                                        figtype, ext, LSI, ConfInd, hours, minutes, seconds, milliseconds);
+                                printbuf(desc, indent+1, NULL, 0);
+                            }
+                            else {
+                                sprintf(desc, "FIG %d/%d(short): LSI %u, ConfInd %u, UTC Time: %02d:%02d",
+                                        figtype, ext, LSI, ConfInd, hours, minutes);
+                                printbuf(desc, indent+1, NULL, 0);
                             }
                         }
                         break;
