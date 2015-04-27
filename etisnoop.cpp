@@ -211,6 +211,9 @@ struct eti_analyse_config_t {
     bool decode_watermark;
 };
 
+// map between fig 0/6 database key and LA to detect activation and deactivation of links
+std::map<unsigned short, bool> fig06_key_la;
+
 // Globals
 static int verbosity;
 
@@ -948,6 +951,131 @@ void decodeFIG(FIGalyser &figs,
                                         printbuf(desc, indent+3, NULL, 0);
                                     }
                                     k += 2;
+                                }
+                            }
+                        }
+                        break;
+                    case 6: // FIG 0/6
+                        {
+                            unsigned int j;
+                            unsigned short LSN, key;
+                            unsigned char i = 1, Number_of_Ids, IdLQ;
+                            char signal_link[256];
+                            bool Id_list_flag, LA, SH, ILS, Shd;
+
+                            while (i < (figlen - 1)) {
+                                // iterate over service linking
+                                Id_list_flag  =  (f[i] >> 7) & 0x01;
+                                LA  = (f[i] >> 6) & 0x01;
+                                SH  = (f[i] >> 5) & 0x01;
+                                ILS = (f[i] >> 4) & 0x01;
+                                LSN = ((f[i] & 0x0F) << 8) | f[i+1];
+                                key = (oe << 15) | (pd << 14) | (SH << 13) | (ILS << 12) | LSN;
+                                strcpy(signal_link, "");
+                                // check activation / deactivation
+                                if ((fig06_key_la.count(key) > 0) && (fig06_key_la[key] != LA)) {
+                                    if (LA == 0) {
+                                        strcat(signal_link, " deactivated");
+                                    }
+                                    else {
+                                        strcat(signal_link, " activated");
+                                    }
+                                }
+                                fig06_key_la[key] = LA;
+                                i += 2;
+                                if (Id_list_flag == 0) {
+                                    if (cn == 0) {  // Id_list_flag=0 && cn=0: CEI Change Event Indication
+                                        strcat(signal_link, " CEI");
+                                    }
+                                    sprintf(desc, "Id list flag=%d LA=%d S/H=%d ILS=%d LSN=%d database key=0x%04x%s",
+                                            Id_list_flag, LA, SH, ILS, LSN, key, signal_link);
+                                    printbuf(desc, indent+1, NULL, 0);
+                                }
+                                else {  // Id_list_flag == 1
+                                    if (i < figlen) {
+                                        Number_of_Ids = (f[i] & 0x0F);
+                                        if (pd == 0) {
+                                            IdLQ = (f[i] >> 5) & 0x03;
+                                            Shd   = (f[i] >> 4) & 0x01;
+                                            sprintf(desc, "Id list flag=%d LA=%d S/H=%d ILS=%d LSN=%d database key=0x%04x IdLQ=%d Shd=%d Number of Ids=%d%s",
+                                                    Id_list_flag, LA, SH, ILS, LSN, key, IdLQ, Shd, Number_of_Ids, signal_link);
+                                            printbuf(desc, indent+1, NULL, 0);
+                                            if (ILS == 0) {
+                                                // read Id list
+                                                for(j = 0; ((j < Number_of_Ids) && ((i+2+(j*2)) < figlen)); j++) {
+                                                    // ETSI EN 300 401 8.1.15:
+                                                    // The IdLQ shall not apply to the first entry in the Id list when OE = "0" and 
+                                                    // when the version number of the type 0 field is set to "0" (using the C/N flag, see clause 5.2.2.1)
+                                                    // ... , the first entry in the Id list of each Service linking field shall be 
+                                                    // the SId that applies to the service in the ensemble.
+                                                    if (((j == 0) && (oe == 0) && (cn == 0)) ||
+                                                        (IdLQ == 0)) {
+                                                        sprintf(desc, "DAB SId       0x%04x", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                                    }
+                                                    else if (IdLQ == 1) {
+                                                        sprintf(desc, "RDS PI        0x%04x", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                                    }
+                                                    else if (IdLQ == 2) {
+                                                        sprintf(desc, "AM-FM service 0x%04x", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                                    }
+                                                    else {  // IdLQ == 3
+                                                        sprintf(desc, "invalid ILS IdLQ configuration");
+                                                    }
+                                                    printbuf(desc, indent+2, NULL, 0);
+                                                }
+                                                // check deadlink
+                                                if ((Number_of_Ids == 0) && (IdLQ == 1)) {
+                                                    sprintf(desc, "deadlink");
+                                                    printbuf(desc, indent+2, NULL, 0);
+                                                }
+                                                i += (Number_of_Ids * 2) + 1;
+                                            }
+                                            else {  // pd == 0 && ILS == 1
+                                                // read Id list
+                                                for(j = 0; ((j < Number_of_Ids) && ((i+3+(j*3)) < figlen)); j++) {
+                                                    // ETSI EN 300 401 8.1.15:
+                                                    // The IdLQ shall not apply to the first entry in the Id list when OE = "0" and 
+                                                    // when the version number of the type 0 field is set to "0" (using the C/N flag, see clause 5.2.2.1)
+                                                    // ... , the first entry in the Id list of each Service linking field shall be 
+                                                    // the SId that applies to the service in the ensemble.
+                                                    if (((j == 0) && (oe == 0) && (cn == 0)) ||
+                                                        (IdLQ == 0)) {
+                                                        sprintf(desc, "DAB SId          ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                    }
+                                                    else if (IdLQ == 1) {
+                                                        sprintf(desc, "RDS PI           ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                    }
+                                                    else if (IdLQ == 2) {
+                                                        sprintf(desc, "AM-FM service    ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                    }
+                                                    else {  // IdLQ == 3
+                                                        sprintf(desc, "DRM/AMSS service ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                    }
+                                                    printbuf(desc, indent+2, NULL, 0);
+                                                }
+                                                // check deadlink
+                                                if ((Number_of_Ids == 0) && (IdLQ == 1)) {
+                                                    sprintf(desc, "deadlink");
+                                                    printbuf(desc, indent+2, NULL, 0);
+                                                }
+                                                i += (Number_of_Ids * 3) + 1;
+                                            }
+                                        }
+                                        else {  // pd == 1
+                                            sprintf(desc, "Id list flag=%d LA=%d S/H=%d ILS=%d LSN=%d database key=0x%04x Number of Ids=%d%s",
+                                                    Id_list_flag, LA, SH, ILS, LSN, key, Number_of_Ids, signal_link);
+                                            printbuf(desc, indent+1, NULL, 0);
+                                            if (Number_of_Ids > 0) {
+                                                // read Id list
+                                                for(j = 0; ((j < Number_of_Ids) && ((i+4+(j*4)) < figlen)); j++) {
+                                                    sprintf(desc, "SId 0x%08x", 
+                                                            ((f[i+1+(j*4)] << 24) | (f[i+2+(j*4)] << 16) | (f[i+3+(j*4)] << 8) | f[i+4+(j*4)]));
+                                                    printbuf(desc, indent+2, NULL, 0);
+                                                }
+                                            }
+                                            i += (Number_of_Ids * 4) + 1;
+                                        }
+                                    }
                                 }
                             }
                         }
