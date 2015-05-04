@@ -141,7 +141,7 @@ class FIGalyser
             for (size_t fib = 0; fib < m_figs.size(); fib++) {
                 int consumed = 7;
                 int fic_size = 0;
-                printf("[%1d ", fib);
+                printf("[%1zu ", fib);
 
                 for (size_t i = 0; i < m_figs[fib].size(); i++) {
                     FIG &f = m_figs[fib][i];
