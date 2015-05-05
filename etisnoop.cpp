@@ -730,6 +730,9 @@ int eti_analyse(eti_analyse_config_t& config)
         printf("Watermark:\n  %s\n", watermark.c_str());
     }
 
+    // remove elements from fig06_key_la map container
+    fig06_key_la.clear();
+
     return 0;
 }
 
@@ -1160,6 +1163,272 @@ void decodeFIG(FIGalyser &figs,
                                         get_fig_0_13_userapp(user_app_type).c_str(),
                                         user_app_len);
                                 printbuf(desc, indent+2, NULL, 0);
+                            }
+                        }
+                        break;
+                    case 21: // FIG 0/21
+                        {
+                            float freq;
+                            unsigned int ifreq;
+                            unsigned long long key;
+                            unsigned short RegionId, Id_field;
+                            unsigned char i = 1, j, k, Length_FI_list, RandM, Length_Freq_list, Control_field;
+                            unsigned char Control_field_trans_mode, Id_field2;
+                            char tmpbuf[256];
+                            bool Continuity_flag;
+
+                            while (i < (figlen - 1)) {
+                                // iterate over frequency information
+                                // decode RegionId, Length of FI list
+                                RegionId  =  (f[i] << 3) | (f[i+1] >> 5);
+                                Length_FI_list  = (f[i+1] & 0x1F);
+                                sprintf(desc, "RegionId=0x%03x", RegionId);
+                                printbuf(desc, indent+1, NULL, 0);
+                                i += 2;
+                                if ((i + Length_FI_list) <= figlen) {
+                                    j = i;
+                                    while ((j + 2) < (i + Length_FI_list)) {
+                                        // iterate over FI list x
+                                        // decode Id field, R&M, Continuity flag, Length of Freq list
+                                        Id_field = (f[j] << 8) | f[j+1];
+                                        RandM = f[j+2] >> 4;
+                                        Continuity_flag = (f[j+2] >> 3) & 0x01;
+                                        Length_Freq_list = f[j+2] & 0x07;
+                                        sprintf(desc, "Id_field=");
+                                        switch (RandM) {
+                                            case 0x0:
+                                            case 0x1:
+                                                strcat(desc, "EId");
+                                                break;
+                                            case 0x6:
+                                                strcat(desc, "DRM Service Id");
+                                                break;
+                                            case 0x8:
+                                                strcat(desc, "RDS PI");
+                                                break;
+                                            case 0x9:
+                                            case 0xa:
+                                            case 0xc:
+                                                strcat(desc, "Dummy");
+                                                break;
+                                            case 0xe:
+                                                strcat(desc, "AMSS Service Id");
+                                                break;
+                                            default:
+                                                strcat(desc, "invalid");
+                                                break;
+                                        }
+                                        sprintf(tmpbuf, "=0x%04x, R&M=0x%1x", Id_field, RandM);
+                                        strcat(desc, tmpbuf);
+                                        switch (RandM) {
+                                            case 0x0:
+                                                strcat(desc, "=DAB ensemble, no local windows");
+                                                break;
+                                            case 0x6:
+                                                strcat(desc, "=DRM");
+                                                break;
+                                            case 0x8:
+                                                strcat(desc, "=FM with RDS");
+                                                break;
+                                            case 0x9:
+                                                strcat(desc, "=FM without RDS");
+                                                break;
+                                            case 0xa:
+                                                strcat(desc, "=AM (MW in 9 kHz steps & LW)");
+                                                break;
+                                            case 0xc:
+                                                strcat(desc, "=AM (MW in 5 kHz steps & SW)");
+                                                break;
+                                            case 0xe:
+                                                strcat(desc, "=AMSS");
+                                                break;
+                                            default:
+                                                strcat(desc, "=Rfu");
+                                                break;
+                                        }
+                                        sprintf(tmpbuf, ", Continuity flag=%d", Continuity_flag);
+                                        strcat(desc, tmpbuf);
+                                        if ((oe == 0) || ((oe == 1) && (RandM != 0x6) && \
+                                            ((RandM < 0x8) || (RandM > 0xa)) && (RandM != 0xc) && (RandM != 0xe))) {
+                                            if (Continuity_flag == 0) {
+                                                switch (RandM) {
+                                                    case 0x0:
+                                                    case 0x1:
+                                                        strcat(desc, "=continuous output not expected");
+                                                        break;
+                                                    case 0x6:
+                                                        strcat(desc, "=no compensating time delay on DRM audio signal");
+                                                        break;
+                                                    case 0x8:
+                                                    case 0x9:
+                                                        strcat(desc, "=no compensating time delay on FM audio signal");
+                                                        break;
+                                                    case 0xa:
+                                                    case 0xc:
+                                                    case 0xe:
+                                                        strcat(desc, "=no compensating time delay on AM audio signal");
+                                                        break;
+                                                    default:
+                                                        strcat(desc, "=Rfu");
+                                                        break;
+                                                }
+                                            }
+                                            else {  // Continuity_flag == 1
+                                                switch (RandM) {
+                                                    case 0x0:
+                                                    case 0x1:
+                                                        strcat(desc, "=continuous output possible");
+                                                        break;
+                                                    case 0x6:
+                                                        strcat(desc, "=compensating time delay on DRM audio signal");
+                                                        break;
+                                                    case 0x8:
+                                                    case 0x9:
+                                                        strcat(desc, "=compensating time delay on FM audio signal");
+                                                        break;
+                                                    case 0xa:
+                                                    case 0xc:
+                                                    case 0xe:
+                                                        strcat(desc, "=compensating time delay on AM audio signal");
+                                                        break;
+                                                    default:
+                                                        strcat(desc, "=Rfu");
+                                                        break;
+                                                }
+                                            }
+                                        }
+                                        else {  // oe == 1
+                                            strcat(desc, "=reserved for future addition");
+                                        }
+                                        key = ((unsigned long long)oe << 32) | ((unsigned long long)pd << 31) | \
+                                                ((unsigned long long)RegionId << 20) | ((unsigned long long)Id_field << 4) | \
+                                                (unsigned long long)RandM;
+                                        sprintf(tmpbuf, ", database key=0x%09llx", key);
+                                        // CEI Change Event Indication
+                                        if (Length_Freq_list == 0) {
+                                            strcat(tmpbuf, ", CEI");
+                                        }
+                                        strcat(desc, tmpbuf);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                        j += 3; // add header
+
+                                        k = j;
+                                        switch (RandM) {
+                                            case 0x0:
+                                            case 0x1:
+                                                while((k + 2) < (j + Length_Freq_list)) {
+                                                    // iteration over Freq list
+                                                    ifreq = (((unsigned int)(f[k] & 0x07) << 16) | ((unsigned int)f[k+1] << 8) | (unsigned int)f[k+2]) * 16;
+                                                    if (ifreq != 0) {
+                                                        Control_field = (f[k] >> 3);
+                                                        Control_field_trans_mode = (Control_field >> 1) & 0x07;
+                                                        if ((Control_field & 0x10) == 0) {
+                                                            sprintf(desc, "%d KHz, ", ifreq);
+                                                            if ((Control_field & 0x01) == 0) {
+                                                                strcat(desc, "geographically adjacent area, ");
+                                                            }
+                                                            else {  // (Control_field & 0x01) == 1
+                                                                strcat(desc, "no geographically adjacent area, ");
+                                                            }
+                                                            if (Control_field_trans_mode == 0) {
+                                                                strcat(desc, "no transmission mode signalled");
+                                                            }
+                                                            else if (Control_field_trans_mode <= 4) {
+                                                                sprintf(tmpbuf, "transmission mode %d", Control_field_trans_mode);
+                                                                strcat(desc, tmpbuf);
+                                                            }
+                                                            else {  // Control_field_trans_mode > 4
+                                                                sprintf(tmpbuf, "invalid transmission mode 0x%x", Control_field_trans_mode);
+                                                                strcat(desc, tmpbuf);
+                                                            }
+                                                        }
+                                                        else {  // (Control_field & 0x10) == 0x10
+                                                            sprintf(desc, "%d KHz, invalid Control field b23 0x%x", ifreq, Control_field);
+                                                        }
+                                                    }
+                                                    else {
+                                                        sprintf(desc, "Frequency not to be used (0)");
+                                                    }
+                                                    printbuf(desc, indent+3, NULL, 0);
+                                                    k += 3;
+                                                }
+                                                break;
+                                            case 0x8:
+                                            case 0x9:
+                                            case 0xa:
+                                                while(k < (j + Length_Freq_list)) {
+                                                    // iteration over Freq list
+                                                    if (f[k] != 0) {    // freq != 0
+                                                        if (RandM == 0xa) {
+                                                            if (f[k] < 16) {
+                                                                ifreq = (144 + ((unsigned int)f[k] * 9));
+                                                            }
+                                                            else {  // f[k] >= 16
+                                                                ifreq = (387 + ((unsigned int)f[k] * 9));
+                                                            }
+                                                            sprintf(desc, "%d KHz", ifreq);
+                                                        }
+                                                        else {  // RandM == 8 or 9
+                                                            freq = (87.5 + ((float)f[k] * 0.1));
+                                                            sprintf(desc, "%.1f MHz", freq);
+                                                        }
+                                                    }
+                                                    else {
+                                                        sprintf(desc, "Frequency not to be used (0)");
+                                                    }
+                                                    printbuf(desc, indent+3, NULL, 0);
+                                                    k++;
+                                                }
+                                                break;
+                                            case 0xc:
+                                                while((k + 1) < (j + Length_Freq_list)) {
+                                                    // iteration over Freq list
+                                                    ifreq = (((unsigned int)f[k] << 8) | (unsigned int)f[k+1]) * 5;
+                                                    if (ifreq != 0) {
+                                                        sprintf(desc, "%d KHz", ifreq);
+                                                    }
+                                                    else {
+                                                        sprintf(desc, "Frequency not to be used (0)");
+                                                    }
+                                                    printbuf(desc, indent+3, NULL, 0);
+                                                    k += 2;
+                                                }
+                                                break;
+                                            case 0x6:
+                                            case 0xe:
+                                                while((k + 2) < (j + Length_Freq_list)) {
+                                                    // iteration over Freq list
+                                                    Id_field2 = f[k];
+                                                    ifreq = ((((unsigned int)f[k+1] & 0x7f) << 8) | (unsigned int)f[k+2]);
+                                                    if (ifreq != 0) {
+                                                        sprintf(desc, "%d KHz", ifreq);
+                                                    }
+                                                    else {
+                                                        sprintf(desc, "Frequency not to be used (0)");
+                                                    }
+                                                    if (RandM == 0x6) {
+                                                        sprintf(tmpbuf, ", DRM Service Id 0x%02x", Id_field2);
+                                                        strcat(desc, tmpbuf);
+                                                    }
+                                                    else if (RandM == 0xe) {
+                                                        sprintf(tmpbuf, ", AMSS Service Id 0x%02x", Id_field2);
+                                                        strcat(desc, tmpbuf);
+                                                    }
+                                                    if ((f[k+1] & 0x80) == 0x80) {
+                                                        sprintf(tmpbuf, ", invalid Rfu b15 set to 1 instead of 0");
+                                                        strcat(desc, tmpbuf);
+                                                    }
+                                                    printbuf(desc, indent+3, NULL, 0);
+                                                    k += 3;
+                                                }
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                        j += Length_Freq_list;
+                                    }
+                                    i += Length_FI_list;
+                                }
                             }
                         }
                         break;
