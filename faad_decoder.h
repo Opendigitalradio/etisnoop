@@ -102,7 +102,6 @@ class FaadDecoder
 
         std::string m_filename;
         FILE* m_fd;
-        FILE* m_aac;
 
         /* Data needed for FAAD */
         bool m_ps_flag;

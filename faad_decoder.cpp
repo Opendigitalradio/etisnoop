@@ -38,7 +38,6 @@ using namespace std;
 FaadDecoder::FaadDecoder() :
     m_data_len(0),
     m_fd(NULL),
-    m_aac(NULL),
     m_initialised(false)
 {
 }
@@ -52,11 +51,6 @@ void FaadDecoder::open(string filename, bool ps_flag, bool aac_channel_mode,
     m_dac_rate             = dac_rate;
     m_sbr_flag             = sbr_flag;
     m_mpeg_surround_config = mpeg_surround_config;
-
-    stringstream ss;
-    ss << filename << ".aac";
-
-    m_aac = fopen(ss.str().c_str(), "w");
 }
 
 bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
@@ -139,8 +133,6 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
         memcpy(helpBuffer, d_header, 7 * sizeof(uint8_t));
         memcpy(&helpBuffer[7],
                 &au[0], au.size() * sizeof (uint8_t));
-
-        fwrite(helpBuffer, 1, vh.aac_frame_length, m_aac);
 
         NeAACDecFrameInfo hInfo;
         int16_t* outBuffer;
