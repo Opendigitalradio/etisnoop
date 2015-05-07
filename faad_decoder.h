@@ -33,27 +33,6 @@
 #ifndef __FAAD_DECODER_H_
 #define __FAAD_DECODER_H_
 
-struct adts_fixed_header {
-    unsigned int syncword           :12;
-    unsigned int id                 :1;
-    unsigned int layer              :2;
-    unsigned int protection_absent  :1;
-    unsigned int profile_objecttype :2;
-    unsigned int sampling_freq_idx  :4;
-    unsigned int private_bit        :1;
-    unsigned int channel_conf       :3;
-    unsigned int original_copy      :1;
-    unsigned int home               :1;
-};
-
-struct adts_variable_header {
-    unsigned int copyright_id_bit       :1;
-    unsigned int copyright_id_start     :1;
-    unsigned int aac_frame_length       :13;
-    unsigned int adts_buffer_fullness   :11;
-    unsigned int no_raw_data_blocks     :2;
-};
-
 class FaadHandle
 {
     public:
@@ -97,7 +76,7 @@ class FaadDecoder
         bool is_initialised(void) { return m_initialised; }
 
     private:
-        void update_header(void);
+        int get_aac_channel_configuration();
         size_t m_data_len;
 
         std::string m_filename;

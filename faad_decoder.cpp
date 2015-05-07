@@ -23,7 +23,6 @@
 
 #include "faad_decoder.h"
 #include "wavfile.h"
-#include "utils.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -55,116 +54,55 @@ void FaadDecoder::open(string filename, bool ps_flag, bool aac_channel_mode,
 
 bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
 {
-    /* ADTS header creation taken from SDR-J */
-    adts_fixed_header fh;
-    adts_variable_header vh;
-
-    fh.syncword             = 0xfff;
-    fh.id                   = 0;
-    fh.layer                = 0;
-    fh.protection_absent    = 1;
-    fh.profile_objecttype   = 0;    // aac main - 1
-    fh.private_bit          = 0;    // ignored when decoding
-    fh.original_copy        = 0;
-    fh.home                 = 0;
-    vh.copyright_id_bit     = 0;
-    vh.copyright_id_start   = 0;
-    vh.adts_buffer_fullness = 1999; // ? according to OpenDab
-    vh.no_raw_data_blocks   = 0;
-
-    uint8_t d_header[10];
-    d_header[0]     = fh.syncword >> 4;
-    d_header[1]     = (fh.syncword & 0xf) << 4;
-    d_header[1]    |= fh.id << 3;
-    d_header[1]    |= fh.layer << 1;
-    d_header[1]    |= fh.protection_absent;
-    d_header[2]     = fh.profile_objecttype << 6;
-    //  sampling frequency index filled in dynamically
-    d_header[2]    |= fh.private_bit << 1;
-    //  channel configuration filled in dynamically
-    d_header[3]     = fh.original_copy << 5;
-    d_header[3]    |= fh.home << 4;
-    d_header[3]    |= vh.copyright_id_bit << 3;
-    d_header[3]    |= vh.copyright_id_start << 2;
-    //  framelength filled in dynamically
-    d_header[4]     = 0;
-    d_header[5]     = vh.adts_buffer_fullness >> 6;
-    d_header[6]     = (vh.adts_buffer_fullness & 0x3f) << 2;
-    d_header[6]    |= vh.no_raw_data_blocks;
-
-    if (!m_dac_rate && m_sbr_flag) fh.sampling_freq_idx = 8;
-    // AAC core sampling rate 16 kHz
-    else if (m_dac_rate && m_sbr_flag) fh.sampling_freq_idx = 6;
-    //  AAC core sampling rate 24 kHz
-    else if (!m_dac_rate && !m_sbr_flag) fh.sampling_freq_idx = 5;
-    // AAC core sampling rate 32 kHz
-    else if (m_dac_rate && !m_sbr_flag) fh.sampling_freq_idx = 3;
-    // AAC core sampling rate 48 kHz
-
-    setBits (&d_header[2], fh.sampling_freq_idx, 2, 4);
-
-    if (m_mpeg_surround_config == 0) {
-        if (m_sbr_flag && !m_aac_channel_mode && m_ps_flag)
-            fh.channel_conf   = 2;
-        else
-            fh.channel_conf   = 1 << (m_aac_channel_mode ? 1 : 0);
-    }
-    else if (m_mpeg_surround_config == 1) {
-            fh.channel_conf       = 6;
-    }
-    else {
-        printf("Unrecognized mpeg surround config (ignored)\n");
-        return false;
-    }
-
-    setBits (&d_header[2], fh.channel_conf, 7, 3);
-
     for (size_t au_ix = 0; au_ix < aus.size(); au_ix++) {
 
         vector<uint8_t>& au = aus[au_ix];
-
-        uint8_t helpBuffer[960];
-        memset(helpBuffer, 0, sizeof(helpBuffer));
-
-        // Set length in header (header + au)
-        vh.aac_frame_length = 7 + au.size();
-        setBits(&d_header[3], vh.aac_frame_length, 6, 13);
-
-        memcpy(helpBuffer, d_header, 7 * sizeof(uint8_t));
-        memcpy(&helpBuffer[7],
-                &au[0], au.size() * sizeof (uint8_t));
 
         NeAACDecFrameInfo hInfo;
         int16_t* outBuffer;
 
         if (!m_initialised) {
+            /* AudioSpecificConfig structure (the only way to select 960 transform here!)
+             *
+             *  00010 = AudioObjectType 2 (AAC LC)
+             *  xxxx  = (core) sample rate index
+             *  xxxx  = (core) channel config
+             *  100   = GASpecificConfig with 960 transform
+             *
+             * SBR: implicit signaling sufficient - libfaad2 automatically assumes SBR on sample rates <= 24 kHz
+             * => explicit signaling works, too, but is not necessary here
+             *
+             * PS:  implicit signaling sufficient - libfaad2 therefore always uses stereo output (if PS support was enabled)
+             * => explicit signaling not possible, as libfaad2 does not support AudioObjectType 29 (PS)
+             */
+
+            int core_sr_index = m_dac_rate ? (m_sbr_flag ? 6 : 3) : (m_sbr_flag ? 8 : 5);   // 24/48/16/32 kHz
+            int core_ch_config = get_aac_channel_configuration();
+            if(core_ch_config == -1) {
+                printf("Unrecognized mpeg surround config (ignored): %d\n", m_mpeg_surround_config);
+                return false;
+            }
+
+            uint8_t asc[2];
+            asc[0] = 0b00010 << 3 | core_sr_index >> 1;
+            asc[1] = (core_sr_index & 0x01) << 7 | core_ch_config << 3 | 0b100;
+
+
             long unsigned samplerate;
             unsigned char channels;
 
-            int len;
-
-            if ((len = NeAACDecInit(m_faad_handle.decoder, helpBuffer,
-                            vh.aac_frame_length, &samplerate, &channels)) < 0)
-            {
+            long int init_result = NeAACDecInit2(m_faad_handle.decoder, asc, sizeof(asc), &samplerate, &channels);
+            if(init_result != 0) {
                 /* If some error initializing occured, skip the file */
-                printf("Error initializing decoder library (%d).\n",
-                        len);
+                printf("Error initializing decoder library: %s\n", NeAACDecGetErrorMessage(-init_result));
                 NeAACDecClose(m_faad_handle.decoder);
                 return false;
             }
 
             m_initialised = true;
-
-            outBuffer = (int16_t *)NeAACDecDecode(
-                    m_faad_handle.decoder, &hInfo,
-                    helpBuffer + len, vh.aac_frame_length - len );
-        }
-        else {
-            outBuffer = (int16_t *)NeAACDecDecode(
-                    m_faad_handle.decoder, &hInfo,
-                    helpBuffer, vh.aac_frame_length );
         }
 
+        outBuffer = (int16_t *)NeAACDecDecode(m_faad_handle.decoder, &hInfo, &au[0], au.size());
         assert(outBuffer != NULL);
 
         m_sample_rate = hInfo.samplerate;
@@ -217,6 +155,20 @@ void FaadDecoder::close()
 {
     if (m_initialised) {
         wavfile_close(m_fd);
+    }
+}
+
+int FaadDecoder::get_aac_channel_configuration()
+{
+    switch(m_mpeg_surround_config) {
+    case 0:     // no surround
+        return m_aac_channel_mode ? 2 : 1;
+    case 1:     // 5.1
+        return 6;
+    case 2:     // 7.1
+        return 7;
+    default:
+        return -1;
     }
 }
 
