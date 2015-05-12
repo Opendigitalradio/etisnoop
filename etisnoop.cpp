@@ -1432,6 +1432,59 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 24: // FIG 0/24
+                        {
+                            unsigned long long key;
+                            unsigned int SId;
+                            unsigned short EId;
+                            unsigned char i = 1, j, Number_of_EIds, CAId;
+                            char tmpbuf[256];
+                            bool Rfa;
+
+                            while (i < (figlen - (((unsigned char)pd + 1) * 2))) {
+                                // iterate over other ensembles services
+                                if (pd == 0) {
+                                    SId = ((unsigned int)f[i] << 8) | (unsigned int)f[i+1];
+                                    i += 2;
+                                }
+                                else {  // pd == 1
+                                    SId = ((unsigned int)f[i] << 24) | ((unsigned int)f[i+1] << 16) |
+                                            ((unsigned int)f[i+2] << 8) | (unsigned int)f[i+3];
+                                    i += 4;
+                                }
+                                Rfa  =  (f[i] >> 7);
+                                CAId  = (f[i] >> 4);
+                                Number_of_EIds  = (f[i] & 0x0f);
+                                key = ((unsigned long long)oe << 33) | ((unsigned long long)pd << 32) | \
+                                        (unsigned long long)SId;
+                                if (pd == 0) {
+                                    sprintf(desc, "SId=0x%04x, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
+                                }
+                                else {  // pd == 1
+                                    sprintf(desc, "SId=0x%08x, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
+                                }
+                                if (Rfa != 0) {
+                                    sprintf(tmpbuf, ", invalid Rfa b7 0x%02x", f[i]);
+                                    strcat(desc, tmpbuf);
+                                }
+                                // CEI Change Event Indication
+                                if (Number_of_EIds == 0) {
+                                    sprintf(tmpbuf, ", CEI");
+                                    strcat(desc, tmpbuf);
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                                i++;
+
+                                for(j = i; ((j < (i + (Number_of_EIds * 2))) && (j < figlen)); j += 2) {
+                                    // iterate over EIds
+                                    EId = ((unsigned short)f[j] <<8) | (unsigned short)f[j+1];
+                                    sprintf(desc, "EId 0x%04x", EId);
+                                    printbuf(desc, indent+2, NULL, 0);
+                                }
+                                i += (Number_of_EIds * 2);
+                            }
+                        }
+                        break;
                 }
             }
             break;
