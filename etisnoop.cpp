@@ -359,6 +359,7 @@ int eti_analyse(eti_analyse_config_t& config)
     unsigned char scid,tpl,l1;
     unsigned short int sad[64],stl[64];
     char sdesc[256];
+    unsigned int frame_nb = 0, frame_sec = 0, frame_ms = 0, frame_h, frame_m, frame_s;
 
     bool running = true;
 
@@ -393,6 +394,19 @@ int eti_analyse(eti_analyse_config_t& config)
             fprintf(stderr, "End of ETI\n");
             break;
         }
+
+        // Timestamp and Frame Number
+        frame_h = (frame_sec / 3600);
+        frame_m = (frame_sec - (frame_h * 3600)) / 60;
+        frame_s = (frame_sec - (frame_h * 3600) - (frame_m * 60));
+        sprintf(sdesc, "%02d:%02d:%02d.%03d frame %d", frame_h, frame_m, frame_s, frame_ms, frame_nb);
+        printbuf(sdesc, 0, NULL, 0);
+        frame_ms += 24; // + 24 ms
+        if (frame_ms >= 1000) {
+            frame_ms -= 1000;
+            frame_sec++;
+        }
+        frame_nb++;
 
         // SYNC
         printbuf("SYNC", 0, p, 4);
