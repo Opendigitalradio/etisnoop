@@ -214,6 +214,26 @@ struct eti_analyse_config_t {
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
 std::map<unsigned short, bool> fig06_key_la;
 
+// fig 0/18 0/19 announcement types (ETSI TS 101 756 table 14 & 15)
+const char *announcement_types_str[16] = {
+    "Alarm",
+    "Road Traffic flash",
+    "Transport flash",
+    "Warning/Service",
+    "News flash",
+    "Area weather flash",
+    "Event announcement",
+    "Special event",
+    "Programme Information",
+    "Sport report",
+    "Financial report",
+    "Reserved for future definition",
+    "Reserved for future definition",
+    "Reserved for future definition",
+    "Reserved for future definition",
+    "Reserved for future definition"
+};
+
 // Globals
 static int verbosity;
 
@@ -1004,8 +1024,8 @@ void decodeFIG(FIGalyser &figs,
                                     if (cn == 0) {  // Id_list_flag=0 && cn=0: CEI Change Event Indication
                                         strcat(signal_link, " CEI");
                                     }
-                                    sprintf(desc, "Id list flag=%d LA=%d S/H=%d ILS=%d LSN=%d database key=0x%04x%s",
-                                            Id_list_flag, LA, SH, ILS, LSN, key, signal_link);
+                                    sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, database key=0x%04x%s",
+                                            Id_list_flag, LA, (LA)?"active":"inactive", SH, (SH)?"Hard":"Soft", ILS, (ILS)?"international":"national", LSN, key, signal_link);
                                     printbuf(desc, indent+1, NULL, 0);
                                 }
                                 else {  // Id_list_flag == 1
@@ -1014,8 +1034,8 @@ void decodeFIG(FIGalyser &figs,
                                         if (pd == 0) {
                                             IdLQ = (f[i] >> 5) & 0x03;
                                             Shd   = (f[i] >> 4) & 0x01;
-                                            sprintf(desc, "Id list flag=%d LA=%d S/H=%d ILS=%d LSN=%d database key=0x%04x IdLQ=%d Shd=%d Number of Ids=%d%s",
-                                                    Id_list_flag, LA, SH, ILS, LSN, key, IdLQ, Shd, Number_of_Ids, signal_link);
+                                            sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, database key=0x%04x, IdLQ=%d, Shd=%d %s, Number of Ids=%d%s",
+                                                    Id_list_flag, LA, (LA)?"active":"inactive", SH, (SH)?"Hard":"Soft", ILS, (ILS)?"international":"national", LSN, key, IdLQ, Shd, (Shd)?"b11-8 in 4-F are different services":"single service", Number_of_Ids, signal_link);
                                             printbuf(desc, indent+1, NULL, 0);
                                             if (ILS == 0) {
                                                 // read Id list
@@ -1079,8 +1099,8 @@ void decodeFIG(FIGalyser &figs,
                                             }
                                         }
                                         else {  // pd == 1
-                                            sprintf(desc, "Id list flag=%d LA=%d S/H=%d ILS=%d LSN=%d database key=0x%04x Number of Ids=%d%s",
-                                                    Id_list_flag, LA, SH, ILS, LSN, key, Number_of_Ids, signal_link);
+                                            sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, database key=0x%04x, Number of Ids=%d%s",
+                                                    Id_list_flag, LA, (LA)?"active":"inactive", SH, (SH)?"Hard":"Soft", ILS, (ILS)?"international":"national", LSN, key, Number_of_Ids, signal_link);
                                             printbuf(desc, indent+1, NULL, 0);
                                             if (Number_of_Ids > 0) {
                                                 // read Id list
@@ -1177,6 +1197,96 @@ void decodeFIG(FIGalyser &figs,
                                         get_fig_0_13_userapp(user_app_type).c_str(),
                                         user_app_len);
                                 printbuf(desc, indent+2, NULL, 0);
+                            }
+                        }
+                        break;
+                    case 18: // FIG 0/18
+                        {
+                            unsigned int key;
+                            unsigned short SId, Asu_flags;
+                            unsigned char i = 1, j, Rfa, Number_clusters;
+                            char tmpbuf[256];
+
+                            while (i < (figlen - 4)) {
+                                // iterate over announcement support
+                                // SId, Asu flags, Rfa, Number of clusters
+                                SId = (f[i] << 8) | f[i+1];
+                                Asu_flags = (f[i+2] << 8) | f[i+3];
+                                Rfa = (f[i+4] >> 5);
+                                Number_clusters = (f[i+4] & 0x1F);
+                                sprintf(desc, "SId=0x%04x, Asu flags=0x%04x, Rfa=%d", SId, Asu_flags, Rfa);
+                                if (Rfa != 0) {
+                                    strcat(desc, " invalid value");
+                                }
+                                sprintf(tmpbuf, ", Number of clusters=%d", Number_clusters);
+                                strcat(desc, tmpbuf);
+                                key = ((unsigned int)oe << 17) | ((unsigned int)pd << 16) | (unsigned int)SId;
+                                sprintf(tmpbuf, ", database key=0x%05x", key);
+                                strcat(desc, tmpbuf);
+                                // CEI Change Event Indication
+                                if ((Number_clusters == 0) && (Asu_flags == 0)) {
+                                    sprintf(tmpbuf, ", CEI");
+                                    strcat(desc, tmpbuf);
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                                i += 5;
+                                j = i;
+                                while (j < (i + Number_clusters)) {
+                                    // iterate over Cluster Id
+                                    sprintf(desc, "Cluster Id=0x%02x", f[j]);
+                                    printbuf(desc, indent+2, NULL, 0);
+                                    j++;
+                                }
+                                // decode announcement support types
+                                for(j = 0; j < 16; j++) {
+                                    if (Asu_flags & (1 << j)) {
+                                        sprintf(desc, "Announcement support=%s", announcement_types_str[j]);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
+                                i += Number_clusters;
+                            }
+                        }
+                        break;
+                    case 19: // FIG 0/19
+                        {
+                            unsigned short Asw_flags;
+                            unsigned char i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
+                            char tmpbuf[256];
+                            bool New_flag, Region_flag;
+
+                            while (i < (figlen - 3)) {
+                                // iterate over announcement switching
+                                // Cluster Id, Asw flags, New flag, Region flag,
+                                // SubChId, Rfa, Region Id Lower Part
+                                Cluster_Id = f[i];
+                                Asw_flags = (f[i+1] << 8) | f[i+2];
+                                New_flag = (f[i+3] >> 7);
+                                Region_flag = (f[i+3] >> 6) & 0x1;
+                                SubChId = (f[i+3] & 0x3F);
+                                sprintf(desc, "Cluster Id=0x%02x, Asw flags=0x%04x, New flag=%d %s, Region flag=%d last byte %s, SubChId=%d",
+                                        Cluster_Id, Asw_flags, New_flag, (New_flag)?"new":"repeat", Region_flag, (Region_flag)?"present":"absent", SubChId);
+                                if ((Region_flag) && (i < (figlen - 4))) {
+                                    // read region lower part
+                                    Rfa = (f[i+4] >> 6);
+                                    RegionId_LP = (f[i+4] & 0x3F);
+                                    sprintf(tmpbuf, ", Rfa=%d", Rfa);
+                                    strcat(desc, tmpbuf);
+                                    if (Rfa != 0) {
+                                        strcat(desc, " invalid value");
+                                    }
+                                    sprintf(tmpbuf, ", Region Lower Part=0x%02x", RegionId_LP);
+                                    strcat(desc, tmpbuf);
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                                // decode announcement switching types
+                                for(j = 0; j < 16; j++) {
+                                    if (Asw_flags & (1 << j)) {
+                                        sprintf(desc, "Announcement switching=%s", announcement_types_str[j]);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
+                                i += (4 + Region_flag);
                             }
                         }
                         break;
