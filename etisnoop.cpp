@@ -796,7 +796,7 @@ void decodeFIG(FIGalyser &figs,
 
                 switch (ext) {
 
-                    case 0: // FIG 0/0
+                    case 0: // FIG 0/0 Ensemble information
                         {
                             unsigned char cid, al, ch, hic, lowc, occ;
                             unsigned short int eid, eref;
@@ -824,7 +824,7 @@ void decodeFIG(FIGalyser &figs,
 
                         }
                         break;
-                    case 1: // FIG 0/1 basic subchannel organisation
+                    case 1: // FIG 0/1 Basic sub-channel organization
                         {
                             int i = 1;
 
@@ -882,7 +882,7 @@ void decodeFIG(FIGalyser &figs,
 
                         }
                         break;
-                    case 2: // FIG 0/2
+                    case 2: // FIG 0/2 Basic service and service component definition
                         {
                             unsigned short int sref, sid;
                             unsigned char cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
@@ -918,11 +918,11 @@ void decodeFIG(FIGalyser &figs,
 
                                 if (pd == 0)
                                     sprintf(desc,
-                                            "Service ID=0x%02X (Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
+                                            "Service ID=0x%X (Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
                                             sid, cid, sref, ncomp, local, caid);
                                 else
                                     sprintf(desc,
-                                            "Service ID=0x%02X (ECC=%d, Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
+                                            "Service ID=0x%X (ECC=%d, Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
                                             sid, ecc, cid, sref, ncomp, local, caid);
                                 printbuf(desc, indent+1, NULL, 0);
 
@@ -992,7 +992,7 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 6: // FIG 0/6
+                    case 6: // FIG 0/6 Service linking information
                         {
                             unsigned int j;
                             unsigned short LSN, key;
@@ -1047,13 +1047,13 @@ void decodeFIG(FIGalyser &figs,
                                                     // the SId that applies to the service in the ensemble.
                                                     if (((j == 0) && (oe == 0) && (cn == 0)) ||
                                                         (IdLQ == 0)) {
-                                                        sprintf(desc, "DAB SId       0x%04x", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                                        sprintf(desc, "DAB SId       0x%X", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                                                     }
                                                     else if (IdLQ == 1) {
-                                                        sprintf(desc, "RDS PI        0x%04x", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                                        sprintf(desc, "RDS PI        0x%X", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                                                     }
                                                     else if (IdLQ == 2) {
-                                                        sprintf(desc, "AM-FM service 0x%04x", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                                        sprintf(desc, "AM-FM service 0x%X", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                                                     }
                                                     else {  // IdLQ == 3
                                                         sprintf(desc, "invalid ILS IdLQ configuration");
@@ -1077,16 +1077,16 @@ void decodeFIG(FIGalyser &figs,
                                                     // the SId that applies to the service in the ensemble.
                                                     if (((j == 0) && (oe == 0) && (cn == 0)) ||
                                                         (IdLQ == 0)) {
-                                                        sprintf(desc, "DAB SId          ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                        sprintf(desc, "DAB SId          ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                                                     }
                                                     else if (IdLQ == 1) {
-                                                        sprintf(desc, "RDS PI           ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                        sprintf(desc, "RDS PI           ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                                                     }
                                                     else if (IdLQ == 2) {
-                                                        sprintf(desc, "AM-FM service    ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                        sprintf(desc, "AM-FM service    ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                                                     }
                                                     else {  // IdLQ == 3
-                                                        sprintf(desc, "DRM/AMSS service ecc 0x%02x Id 0x%04x", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                                        sprintf(desc, "DRM/AMSS service ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                                                     }
                                                     printbuf(desc, indent+2, NULL, 0);
                                                 }
@@ -1105,7 +1105,7 @@ void decodeFIG(FIGalyser &figs,
                                             if (Number_of_Ids > 0) {
                                                 // read Id list
                                                 for(j = 0; ((j < Number_of_Ids) && ((i+4+(j*4)) < figlen)); j++) {
-                                                    sprintf(desc, "SId 0x%08x", 
+                                                    sprintf(desc, "SId 0x%X",
                                                             ((f[i+1+(j*4)] << 24) | (f[i+2+(j*4)] << 16) | (f[i+3+(j*4)] << 8) | f[i+4+(j*4)]));
                                                     printbuf(desc, indent+2, NULL, 0);
                                                 }
@@ -1117,7 +1117,92 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 10: // FIG 0/10
+                    case 8: // FIG 0/8 Service component global definition
+                        {
+                            unsigned int SId;
+                            unsigned short SCId;
+                            unsigned char i = 1, Rfa, SCIdS, SubChId, FIDCId;
+                            char tmpbuf[256];
+                            bool Ext_flag, LS_flag, MSC_FIC_flag;
+
+                            while (i < (figlen - (2 + (2 * pd)))) {
+                                // iterate over service component global definition
+                                if (pd == 0) {
+                                    // Programme services, 16 bit SId
+                                    SId = (f[i] << 8) | f[i+1];
+                                    i += 2;
+                                }
+                                else {
+                                    // Data services, 32 bit SId
+                                    SId = (f[i] << 24) | (f[i+1] << 16) | (f[i+2] << 8) | f[i+3];
+                                    i += 4;
+                                }
+                                Ext_flag = f[i] >> 7;
+                                Rfa = (f[i] >> 4) & 0x7;
+                                SCIdS = f[i] & 0x0F;
+                                sprintf(desc, "SId=0x%X, Ext flag=%d 8-bit Rfa %s, Rfa=%d", SId, Ext_flag, (Ext_flag)?"present":"absent", Rfa);
+                                if (Rfa != 0) {
+                                    sprintf(tmpbuf, " invalid value");
+                                    strcat(desc, tmpbuf);
+                                }
+                                sprintf(tmpbuf, ", SCIdS=0x%X", SCIdS);
+                                strcat(desc, tmpbuf);
+                                i++;
+                                if (i < figlen) {
+                                    LS_flag = f[i] >> 7;
+                                    sprintf(tmpbuf, ", L/S flag=%d %s", LS_flag, (LS_flag)?"Long form":"Short form");
+                                    strcat(desc, tmpbuf);
+                                    if (LS_flag == 0) {
+                                        // Short form
+                                        if (i < (figlen - Ext_flag)) {
+                                            MSC_FIC_flag = (f[i] >> 6) & 0x01;
+                                            if (MSC_FIC_flag == 0) {
+                                                // MSC in stream mode and SubChId identifies the sub-channel
+                                                SubChId = f[i] & 0x3F;
+                                                sprintf(tmpbuf, ", MSC/FIC flag=%d MSC, SubChId=0x%X", MSC_FIC_flag, SubChId);
+                                                strcat(desc, tmpbuf);
+                                            }
+                                            else {
+                                                // FIC and FIDCId identifies the component
+                                                FIDCId = f[i] & 0x3F;
+                                                sprintf(tmpbuf, ", MSC/FIC flag=%d FIC, FIDCId=0x%X", MSC_FIC_flag, FIDCId);
+                                                strcat(desc, tmpbuf);
+                                            }
+                                            if (Ext_flag == 1) {
+                                                // Rfa field present
+                                                Rfa = f[i+1];
+                                                sprintf(tmpbuf, ", Rfa=0x%X", Rfa);
+                                                strcat(desc, tmpbuf);
+                                                if (Rfa != 0) {
+                                                    sprintf(tmpbuf, " invalid value");
+                                                    strcat(desc, tmpbuf);
+                                                }
+                                            }
+                                        }
+                                        i += (1 + Ext_flag);
+                                    }
+                                    else {
+                                        // Long form
+                                        if (i < (figlen - 1)) {
+                                            Rfa = (f[i] >> 4) & 0x07;
+                                            SCId = ((f[i] & 0x0F) << 8) | f[i+1];
+                                            sprintf(tmpbuf, ", Rfa=%d", Rfa);
+                                            strcat(desc, tmpbuf);
+                                            if (Rfa != 0) {
+                                                sprintf(tmpbuf, " invalid value");
+                                                strcat(desc, tmpbuf);
+                                            }
+                                            sprintf(tmpbuf, ", SCId=0x%X", SCId);
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        i += 2;
+                                    }
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                            }
+                        }
+                        break;
+                    case 10: // FIG 0/10 Date and time
                         {
                             /* TODO verify and convert from MJD representation
                             uint32_t MJD = ((f[1] & 0x7) << 10)    |
@@ -1152,7 +1237,7 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 13: // FIG 0/13
+                    case 13: // FIG 0/13 User application information
                         {
                             uint32_t SId;
                             uint8_t  SCIdS;
@@ -1182,7 +1267,7 @@ void decodeFIG(FIGalyser &figs,
 
                             }
 
-                            sprintf(desc, "FIG %d/%d: SId=%u SCIdS=%u No=%u",
+                            sprintf(desc, "FIG %d/%d: SId=0x%X SCIdS=%u No=%u",
                                     figtype, ext, SId, SCIdS, No);
                             printbuf(desc, indent+1, NULL, 0);
 
@@ -1200,7 +1285,7 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 18: // FIG 0/18
+                    case 18: // FIG 0/18 Announcement support
                         {
                             unsigned int key;
                             unsigned short SId, Asu_flags;
@@ -1214,7 +1299,7 @@ void decodeFIG(FIGalyser &figs,
                                 Asu_flags = (f[i+2] << 8) | f[i+3];
                                 Rfa = (f[i+4] >> 5);
                                 Number_clusters = (f[i+4] & 0x1F);
-                                sprintf(desc, "SId=0x%04x, Asu flags=0x%04x, Rfa=%d", SId, Asu_flags, Rfa);
+                                sprintf(desc, "SId=0x%X, Asu flags=0x%04x, Rfa=%d", SId, Asu_flags, Rfa);
                                 if (Rfa != 0) {
                                     strcat(desc, " invalid value");
                                 }
@@ -1248,7 +1333,7 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 19: // FIG 0/19
+                    case 19: // FIG 0/19 Announcement switching
                         {
                             unsigned short Asw_flags;
                             unsigned char i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
@@ -1290,7 +1375,7 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 21: // FIG 0/21
+                    case 21: // FIG 0/21 Other ensembles frequencies
                         {
                             float freq;
                             unsigned int ifreq;
@@ -1342,7 +1427,7 @@ void decodeFIG(FIGalyser &figs,
                                                 strcat(desc, "invalid");
                                                 break;
                                         }
-                                        sprintf(tmpbuf, "=0x%04x, R&M=0x%1x", Id_field, RandM);
+                                        sprintf(tmpbuf, "=0x%X, R&M=0x%1x", Id_field, RandM);
                                         strcat(desc, tmpbuf);
                                         switch (RandM) {
                                             case 0x0:
@@ -1531,11 +1616,11 @@ void decodeFIG(FIGalyser &figs,
                                                         sprintf(desc, "Frequency not to be used (0)");
                                                     }
                                                     if (RandM == 0x6) {
-                                                        sprintf(tmpbuf, ", DRM Service Id 0x%02x", Id_field2);
+                                                        sprintf(tmpbuf, ", DRM Service Id 0x%X", Id_field2);
                                                         strcat(desc, tmpbuf);
                                                     }
                                                     else if (RandM == 0xe) {
-                                                        sprintf(tmpbuf, ", AMSS Service Id 0x%02x", Id_field2);
+                                                        sprintf(tmpbuf, ", AMSS Service Id 0x%X", Id_field2);
                                                         strcat(desc, tmpbuf);
                                                     }
                                                     if ((f[k+1] & 0x80) == 0x80) {
@@ -1556,7 +1641,7 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 24: // FIG 0/24
+                    case 24: // FIG 0/24 Other ensembles services
                         {
                             unsigned long long key;
                             unsigned int SId;
@@ -1582,10 +1667,10 @@ void decodeFIG(FIGalyser &figs,
                                 key = ((unsigned long long)oe << 33) | ((unsigned long long)pd << 32) | \
                                         (unsigned long long)SId;
                                 if (pd == 0) {
-                                    sprintf(desc, "SId=0x%04x, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
+                                    sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
                                 }
                                 else {  // pd == 1
-                                    sprintf(desc, "SId=0x%08x, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
+                                    sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
                                 }
                                 if (Rfa != 0) {
                                     sprintf(tmpbuf, ", invalid Rfa b7 0x%02x", f[i]);
@@ -1648,7 +1733,7 @@ void decodeFIG(FIGalyser &figs,
                         { // Programme LABEL
                             unsigned short int sid;
                             sid = f[1] * 256 + f[2];
-                            sprintf(desc, "Service ID 0x%04X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
+                            sprintf(desc, "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
                             printinfo(desc, indent+1);
                         }
                         break;
@@ -1670,7 +1755,7 @@ void decodeFIG(FIGalyser &figs,
                                       f[5];
                             }
                             sprintf(desc,
-                                    "Service ID  0x%08X , Service Component ID 0x%04X Short, label: \"%s\", label mask: 0x%04X",
+                                    "Service ID  0x%X , Service Component ID 0x%04X Short, label: \"%s\", label mask: 0x%04X",
                                     sid, SCIdS, label, flag);
                             printinfo(desc, indent+1);
                         }
@@ -1685,7 +1770,7 @@ void decodeFIG(FIGalyser &figs,
                                   f[4];
 
                             sprintf(desc,
-                                    "Service ID 0x%08X label: \"%s\", Short label mask: 0x%04X",
+                                    "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X",
                                     sid, label, flag);
                             printinfo(desc, indent+1);
                         }
@@ -1724,7 +1809,7 @@ void decodeFIG(FIGalyser &figs,
                             }
 
 
-                            sprintf(desc,"Service ID  0x%08X , Service Component ID 0x%04X Short, X-PAD App %02X (%s), label: \"%s\", label mask: 0x%04X",
+                            sprintf(desc,"Service ID  0x%X , Service Component ID 0x%04X Short, X-PAD App %02X (%s), label: \"%s\", label mask: 0x%04X",
                                     sid, SCIdS, xpadapp, xpadappdesc.c_str(), label, flag);
                             printbuf(desc,indent+1,NULL,0,"");
                         }
