@@ -211,9 +211,15 @@ struct eti_analyse_config_t {
     bool decode_watermark;
 };
 
+
+// Globals
+static int verbosity;
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
 std::map<unsigned short, bool> fig06_key_la;
-
+// fig 0/9 global variables
+unsigned char Ensemble_ECC=0, International_Table_Id=0;
+signed char Ensemble_LTO=0;
+bool LTO_uniq;
 // fig 0/18 0/19 announcement types (ETSI TS 101 756 table 14 & 15)
 const char *announcement_types_str[16] = {
     "Alarm",
@@ -234,8 +240,6 @@ const char *announcement_types_str[16] = {
     "Reserved for future definition"
 };
 
-// Globals
-static int verbosity;
 
 // Function prototypes
 void printinfo(string header,
@@ -777,7 +781,7 @@ void decodeFIG(FIGalyser &figs,
                unsigned short int figtype,
                unsigned short int indent)
 {
-    char desc[256];
+    char desc[512];
 
     switch (figtype) {
         case 0:
@@ -797,7 +801,7 @@ void decodeFIG(FIGalyser &figs,
                 switch (ext) {
 
                     case 0: // FIG 0/0 Ensemble information
-                        {
+                        {   // ETSI EN 300 401 6.4
                             unsigned char cid, al, ch, hic, lowc, occ;
                             unsigned short int eid, eref;
 
@@ -825,7 +829,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 1: // FIG 0/1 Basic sub-channel organization
-                        {
+                        {   // ETSI EN 300 401 6.2.1
                             int i = 1;
 
                             while (i < figlen-3) {
@@ -883,7 +887,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 2: // FIG 0/2 Basic service and service component definition
-                        {
+                        {   // ETSI EN 300 401 6.3.1
                             unsigned short int sref, sid;
                             unsigned char cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
                             int k=1;
@@ -993,7 +997,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 6: // FIG 0/6 Service linking information
-                        {
+                        {   // ETSI EN 300 401 8.1.15
                             unsigned int j;
                             unsigned short LSN, key;
                             unsigned char i = 1, Number_of_Ids, IdLQ;
@@ -1118,7 +1122,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 8: // FIG 0/8 Service component global definition
-                        {
+                        {   // ETSI EN 300 401 6.3.5
                             unsigned int SId;
                             unsigned short SCId;
                             unsigned char i = 1, Rfa, SCIdS, SubChId, FIDCId;
@@ -1134,7 +1138,8 @@ void decodeFIG(FIGalyser &figs,
                                 }
                                 else {
                                     // Data services, 32 bit SId
-                                    SId = (f[i] << 24) | (f[i+1] << 16) | (f[i+2] << 8) | f[i+3];
+                                    SId = ((unsigned int)f[i] << 24) | ((unsigned int)f[i+1] << 16) |
+                                            ((unsigned int)f[i+2] << 8) | (unsigned int)f[i+3];
                                     i += 4;
                                 }
                                 Ext_flag = f[i] >> 7;
@@ -1185,7 +1190,7 @@ void decodeFIG(FIGalyser &figs,
                                         // Long form
                                         if (i < (figlen - 1)) {
                                             Rfa = (f[i] >> 4) & 0x07;
-                                            SCId = ((f[i] & 0x0F) << 8) | f[i+1];
+                                            SCId = (((unsigned short)f[i] & 0x0F) << 8) | (unsigned short)f[i+1];
                                             sprintf(tmpbuf, ", Rfa=%d", Rfa);
                                             strcat(desc, tmpbuf);
                                             if (Rfa != 0) {
@@ -1202,8 +1207,97 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 9: // FIG 0/9 Country, LTO and International table
+                        {   // ETSI EN 300 401 8.1.3.2
+                            unsigned int SId;
+                            unsigned char i = 1, j, key, Number_of_services, ECC;
+                            signed char LTO;
+                            char tmpbuf[256];
+                            bool Ext_flag;
+
+                            if (i < (figlen - 2)) {
+                                // get Ensemble LTO, ECC and International Table Id
+                                key = ((unsigned char)oe << 1) | (unsigned char)pd;
+                                Ext_flag = f[i] >> 7;
+                                LTO_uniq = (f[i]>> 6) & 0x01;
+                                Ensemble_LTO = f[i] & 0x3F;
+                                if (Ensemble_LTO & 0x20) {
+                                    // negative Ensemble LTO
+                                    Ensemble_LTO |= 0xC0;
+                                }
+                                sprintf(desc, "Ext fag=%d extended field %s, LTO uniq=%d %s, Ensemble LTO=0x%X %s%d:%02d",
+                                        Ext_flag, Ext_flag?"present":"absent", LTO_uniq,
+                                        LTO_uniq?"several time zones":"one time zone (time specified by Ensemble LTO)",
+                                        Ensemble_LTO, (Ensemble_LTO >= 0)?"":"-" , abs(Ensemble_LTO) >> 1, (Ensemble_LTO & 0x01) * 30);
+                                if (abs(Ensemble_LTO) > 24) {
+                                    sprintf(tmpbuf, " out of range -12 hours to +12 hours");
+                                    strcat(desc, tmpbuf);
+                                }
+                                Ensemble_ECC = f[i+1];
+                                International_Table_Id = f[i+2];
+                                sprintf(tmpbuf, ", Ensemble ECC=0x%X, International Table Id=0x%X, database key=0x%x",
+                                        Ensemble_ECC, International_Table_Id, key);
+                                strcat(desc, tmpbuf);
+                                printbuf(desc, indent+1, NULL, 0);
+                                i += 3;
+                                if (Ext_flag == 1) {
+                                    // extended field present
+                                    while (i < figlen) {
+                                        // iterate over extended sub-field
+                                        Number_of_services = f[i] >> 6;
+                                        LTO = f[i] & 0x3F;
+                                        if (LTO & 0x20) {
+                                            // negative LTO
+                                            LTO |= 0xC0;
+                                        }
+                                        sprintf(desc, "Number of services=%d, LTO=0x%X %s%d:%02d",
+                                                Number_of_services, LTO, (LTO >= 0)?"":"-" , abs(LTO) >> 1,  (LTO & 0x01) * 30);
+                                        if (abs(LTO) > 24) {
+                                            sprintf(tmpbuf, " out of range -12 hours to +12 hours");
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        // CEI Change Event Indication
+                                        if ((Number_of_services == 0) && (LTO == 0) /* && (Ext_flag == 1) */) {
+                                            sprintf(tmpbuf, ", CEI");
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        i++;
+                                        if (pd == 0) {
+                                            // Programme services, 16 bit SId
+                                            if (i < figlen) {
+                                                ECC = f[i];
+                                                sprintf(tmpbuf, ", ECC=0x%X", ECC);
+                                                strcat(desc, tmpbuf);
+                                                printbuf(desc, indent+2, NULL, 0);
+                                                i++;
+                                                for(j = i; ((j < (i + (Number_of_services * 2))) && (j < figlen)); j += 2) {
+                                                    // iterate over SId
+                                                    SId = ((unsigned int)f[j] << 8) | (unsigned int)f[j+1];
+                                                    sprintf(desc, "SId 0x%X", SId);
+                                                    printbuf(desc, indent+3, NULL, 0);
+                                                }
+                                                i += (Number_of_services * 2);
+                                            }
+                                        }
+                                        else {
+                                            // Data services, 32 bit SId
+                                            printbuf(desc, indent+2, NULL, 0);
+                                            for(j = i; ((j < (i + (Number_of_services * 4))) && (j < figlen)); j += 4) {
+                                                // iterate over SId
+                                                SId = ((unsigned int)f[j] << 24) | ((unsigned int)f[j+1] << 16) |
+                                                        ((unsigned int)f[j+2] << 8) | (unsigned int)f[j+3];
+                                                sprintf(desc, "SId 0x%X", SId);
+                                                printbuf(desc, indent+3, NULL, 0);
+                                            }
+                                            i += (Number_of_services * 4);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        break;
                     case 10: // FIG 0/10 Date and time
-                        {
+                        {    // ETSI EN 300 401 8.1.3.1
                             /* TODO verify and convert from MJD representation
                             uint32_t MJD = ((f[1] & 0x7) << 10)    |
                                            ((uint32_t)(f[2]) << 2) |
@@ -1238,7 +1332,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 13: // FIG 0/13 User application information
-                        {
+                        {    // ETSI EN 300 401 8.1.20
                             uint32_t SId;
                             uint8_t  SCIdS;
                             uint8_t  No;
@@ -1286,7 +1380,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 18: // FIG 0/18 Announcement support
-                        {
+                        {    // ETSI EN 300 401 8.1.6.1
                             unsigned int key;
                             unsigned short SId, Asu_flags;
                             unsigned char i = 1, j, Rfa, Number_clusters;
@@ -1334,7 +1428,7 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
                     case 19: // FIG 0/19 Announcement switching
-                        {
+                        {    // ETSI EN 300 401 8.1.6.2
                             unsigned short Asw_flags;
                             unsigned char i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
                             char tmpbuf[256];
@@ -1375,8 +1469,8 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 21: // FIG 0/21 Other ensembles frequencies
-                        {
+                    case 21: // FIG 0/21 Frequency Information
+                        {    // ETSI EN 300 401 8.1.8
                             float freq;
                             unsigned int ifreq;
                             unsigned long long key;
@@ -1641,8 +1735,8 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
-                    case 24: // FIG 0/24 Other ensembles services
-                        {
+                    case 24: // FIG 0/24 OE Services
+                        {    // ETSI EN 300 401 8.1.10.2
                             unsigned long long key;
                             unsigned int SId;
                             unsigned short EId;
@@ -1720,8 +1814,8 @@ void decodeFIG(FIGalyser &figs,
                 figs.push_back(figtype, ext, figlen);
 
                 switch (ext) {
-                    case 0:
-                        { // ENSEMBLE LABEL
+                    case 0: // FIG 1/0 Ensemble label
+                        {   // ETSI EN 300 401 8.1.13
                             unsigned short int eid;
                             eid = f[1] * 256 + f[2];
                             sprintf(desc, "Ensemble ID 0x%04X label: \"%s\", Short label mask: 0x%04X", eid, label, flag);
@@ -1729,8 +1823,8 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
 
-                    case 1:
-                        { // Programme LABEL
+                    case 1: // FIG 1/1 Programme service label
+                        {   // ETSI EN 300 401 8.1.14.1
                             unsigned short int sid;
                             sid = f[1] * 256 + f[2];
                             sprintf(desc, "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
@@ -1738,8 +1832,8 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
 
-                    case 4:
-                        { // Service Component LABEL
+                    case 4: // FIG 1/4 Service component label
+                        {   // ETSI EN 300 401 8.1.14.3
                             unsigned int sid;
                             unsigned char pd, SCIdS;
                             pd    = (f[1] & 0x80) >> 7;
@@ -1761,8 +1855,8 @@ void decodeFIG(FIGalyser &figs,
                         }
                         break;
 
-                    case 5:
-                        { // Data Service LABEL
+                    case 5: // FIG 1/5 Data service label
+                        {   // ETSI EN 300 401 8.1.14.2
                             unsigned int sid;
                             sid = f[1] * 256 * 256 * 256 + \
                                   f[2] * 256 * 256 + \
@@ -1777,8 +1871,8 @@ void decodeFIG(FIGalyser &figs,
                         break;
 
 
-                    case 6:
-                        { // X-PAD User Application label
+                    case 6: // FIG 1/6 X-PAD user application label
+                        {   // ETSI EN 300 401 8.1.14.4
                             unsigned int sid;
                             unsigned char pd, SCIdS, xpadapp;
                             string xpadappdesc;
