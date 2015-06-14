@@ -295,10 +295,10 @@ void usage(void)
             "ETISnoop analyser\n\n"
             "The ETSnoop analyser decodes and prints out a RAW ETI file in a\n"
             "form that makes analysis easier.\n"
-            "Usage: etisnoop [-v] [-f] [-i filename] [-d stream_index]\n"
+            "Usage: etisnoop [-v] [-f] [-w] [-i filename] [-d stream_index]\n"
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
-            "   -d N    decode subchannel N into .dabp, .aac and .wav files\n"
+            "   -d N    decode subchannel N into .dabp and .wav files\n"
             "   -f      analyse FIC carousel\n"
             "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n");
 }
