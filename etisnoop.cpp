@@ -198,6 +198,167 @@ struct FIG0_13_shortAppInfo
     uint8_t SCIdS:4;
 } PACKED;
 
+class FIG0_5 {
+    public:
+    // Constructor
+    FIG0_5() {
+        // Initialization of Language_code_to_char_map:
+        // ETSI TS 101 756 V1.6.1 Table 9: European languages
+        Language_code_to_char_map[0x00] = "Unknown/not applicable";
+        Language_code_to_char_map[0x01] = "Albanian";
+        Language_code_to_char_map[0x02] = "Breton";
+        Language_code_to_char_map[0x03] = "Catalan";
+        Language_code_to_char_map[0x04] = "Croatian";
+        Language_code_to_char_map[0x05] = "Welsh";
+        Language_code_to_char_map[0x06] = "Czech";
+        Language_code_to_char_map[0x07] = "Danish";
+        Language_code_to_char_map[0x08] = "German";
+        Language_code_to_char_map[0x09] = "English";
+        Language_code_to_char_map[0x0A] = "Spanish";
+        Language_code_to_char_map[0x0B] = "Esperanto";
+        Language_code_to_char_map[0x0C] = "Estonian";
+        Language_code_to_char_map[0x0D] = "Basque";
+        Language_code_to_char_map[0x0E] = "Faroese";
+        Language_code_to_char_map[0x0F] = "French";
+        Language_code_to_char_map[0x10] = "Frisian";
+        Language_code_to_char_map[0x11] = "Irish";
+        Language_code_to_char_map[0x12] = "Gaelic";
+        Language_code_to_char_map[0x13] = "Galician";
+        Language_code_to_char_map[0x14] = "Icelandic";
+        Language_code_to_char_map[0x15] = "Italian";
+        Language_code_to_char_map[0x16] = "Lappish";
+        Language_code_to_char_map[0x17] = "Latin";
+        Language_code_to_char_map[0x18] = "Latvian";
+        Language_code_to_char_map[0x19] = "Luxembourgian";
+        Language_code_to_char_map[0x1A] = "Lithuanian";
+        Language_code_to_char_map[0x1B] = "Hungarian";
+        Language_code_to_char_map[0x1C] = "Maltese";
+        Language_code_to_char_map[0x1D] = "Dutch";
+        Language_code_to_char_map[0x1E] = "Norwegian";
+        Language_code_to_char_map[0x1F] = "Occitan";
+        Language_code_to_char_map[0x20] = "Polish";
+        Language_code_to_char_map[0x21] = "Portuguese";
+        Language_code_to_char_map[0x22] = "Romanian";
+        Language_code_to_char_map[0x23] = "Romansh";
+        Language_code_to_char_map[0x24] = "Serbian";
+        Language_code_to_char_map[0x25] = "Slovak";
+        Language_code_to_char_map[0x26] = "Slovene";
+        Language_code_to_char_map[0x27] = "Finnish";
+        Language_code_to_char_map[0x28] = "Swedish";
+        Language_code_to_char_map[0x29] = "Turkish";
+        Language_code_to_char_map[0x2A] = "Flemish";
+        Language_code_to_char_map[0x2B] = "Walloon";
+        Language_code_to_char_map[0x2C] = "rfu";
+        Language_code_to_char_map[0x2D] = "rfu";
+        Language_code_to_char_map[0x2E] = "rfu";
+        Language_code_to_char_map[0x2F] = "rfu";
+        Language_code_to_char_map[0x30] = "Reserved for national assignment";
+        Language_code_to_char_map[0x31] = "Reserved for national assignment";
+        Language_code_to_char_map[0x32] = "Reserved for national assignment";
+        Language_code_to_char_map[0x33] = "Reserved for national assignment";
+        Language_code_to_char_map[0x34] = "Reserved for national assignment";
+        Language_code_to_char_map[0x35] = "Reserved for national assignment";
+        Language_code_to_char_map[0x36] = "Reserved for national assignment";
+        Language_code_to_char_map[0x37] = "Reserved for national assignment";
+        Language_code_to_char_map[0x38] = "Reserved for national assignment";
+        Language_code_to_char_map[0x39] = "Reserved for national assignment";
+        Language_code_to_char_map[0x3A] = "Reserved for national assignment";
+        Language_code_to_char_map[0x3B] = "Reserved for national assignment";
+        Language_code_to_char_map[0x3C] = "Reserved for national assignment";
+        Language_code_to_char_map[0x3D] = "Reserved for national assignment";
+        Language_code_to_char_map[0x3E] = "Reserved for national assignment";
+        Language_code_to_char_map[0x3F] = "Reserved for national assignment";
+
+        // ETSI TS 101 756 V1.6.1 Table 10: Other languages
+        Language_code_to_char_map[0x40] = "Background sound/clean feed";
+        Language_code_to_char_map[0x41] = "rfu";
+        Language_code_to_char_map[0x42] = "rfu";
+        Language_code_to_char_map[0x43] = "rfu";
+        Language_code_to_char_map[0x44] = "rfu";
+        Language_code_to_char_map[0x45] = "Zulu";
+        Language_code_to_char_map[0x46] = "Vietnamese";
+        Language_code_to_char_map[0x47] = "Uzbek";
+        Language_code_to_char_map[0x48] = "Urdu";
+        Language_code_to_char_map[0x49] = "Ukranian";
+        Language_code_to_char_map[0x4A] = "Thai";
+        Language_code_to_char_map[0x4B] = "Telugu";
+        Language_code_to_char_map[0x4C] = "Tatar";
+        Language_code_to_char_map[0x4D] = "Tamil";
+        Language_code_to_char_map[0x4E] = "Tadzhik";
+        Language_code_to_char_map[0x4F] = "Swahili";
+        Language_code_to_char_map[0x50] = "Sranan Tongo";
+        Language_code_to_char_map[0x51] = "Somali";
+        Language_code_to_char_map[0x52] = "Sinhalese";
+        Language_code_to_char_map[0x53] = "Shona";
+        Language_code_to_char_map[0x54] = "Serbo-Croat";
+        Language_code_to_char_map[0x55] = "Rusyn";
+        Language_code_to_char_map[0x56] = "Russian";
+        Language_code_to_char_map[0x57] = "Quechua";
+        Language_code_to_char_map[0x58] = "Pushtu";
+        Language_code_to_char_map[0x59] = "Punjabi";
+        Language_code_to_char_map[0x5A] = "Persian";
+        Language_code_to_char_map[0x5B] = "Papiamento";
+        Language_code_to_char_map[0x5C] = "Oriya";
+        Language_code_to_char_map[0x5D] = "Nepali";
+        Language_code_to_char_map[0x5E] = "Ndebele";
+        Language_code_to_char_map[0x5F] = "Marathi";
+        Language_code_to_char_map[0x60] = "Moldavian";
+        Language_code_to_char_map[0x61] = "Malaysian";
+        Language_code_to_char_map[0x62] = "Malagasay";
+        Language_code_to_char_map[0x63] = "Macedonian";
+        Language_code_to_char_map[0x64] = "Laotian";
+        Language_code_to_char_map[0x65] = "Korean";
+        Language_code_to_char_map[0x66] = "Khmer";
+        Language_code_to_char_map[0x67] = "Kazakh";
+        Language_code_to_char_map[0x68] = "Kannada";
+        Language_code_to_char_map[0x69] = "Japanese";
+        Language_code_to_char_map[0x6A] = "Indonesian";
+        Language_code_to_char_map[0x6B] = "Hindi";
+        Language_code_to_char_map[0x6C] = "Hebrew";
+        Language_code_to_char_map[0x6D] = "Hausa";
+        Language_code_to_char_map[0x6E] = "Gurani";
+        Language_code_to_char_map[0x6F] = "Gujurati";
+        Language_code_to_char_map[0x70] = "Greek";
+        Language_code_to_char_map[0x71] = "Georgian";
+        Language_code_to_char_map[0x72] = "Fulani";
+        Language_code_to_char_map[0x73] = "Dari";
+        Language_code_to_char_map[0x74] = "Chuvash";
+        Language_code_to_char_map[0x75] = "Chinese";
+        Language_code_to_char_map[0x76] = "Burmese";
+        Language_code_to_char_map[0x77] = "Bulgarian";
+        Language_code_to_char_map[0x78] = "Bengali";
+        Language_code_to_char_map[0x79] = "Belorussian";
+        Language_code_to_char_map[0x7A] = "Bambora";
+        Language_code_to_char_map[0x7B] = "Azerbaijani";
+        Language_code_to_char_map[0x7C] = "Assamese";
+        Language_code_to_char_map[0x7D] = "Armenian";
+        Language_code_to_char_map[0x7E] = "Arabic";
+        Language_code_to_char_map[0x7F] = "Amharic";
+    }
+
+    // Destructor
+    ~FIG0_5() {
+        // Remove elements from Language_code_to_char_map map container
+        Language_code_to_char_map.clear();
+    }
+
+    // Language_to_char decode fig 0/5 language code in string
+    // Input : Language code number
+    // Return: Language char *
+    const char * Language_to_char(unsigned char language) {
+        if (Language_code_to_char_map.count(language) > 0) {
+            return Language_code_to_char_map[language];
+        }
+        else {
+            return "";
+        }
+    }
+
+    private:
+        // Map between fig 0/5 Language code and Language char
+        std::map<unsigned char, const char *> Language_code_to_char_map;
+};
+
 
 #define ETINIPACKETSIZE 6144
 
@@ -214,13 +375,16 @@ struct eti_analyse_config_t {
 
 // Globals
 static int verbosity;
+
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
 std::map<unsigned short, bool> fig06_key_la;
+
 // fig 0/9 global variables
 unsigned char Ensemble_ECC=0, International_Table_Id=0;
 signed char Ensemble_LTO=0;
 bool LTO_uniq;
-// fig 0/18 0/19 announcement types (ETSI TS 101 756 table 14 & 15)
+
+// fig 0/18 0/19 announcement types (ETSI TS 101 756 V1.6.1 (2014-05) table 14 & 15)
 const char *announcement_types_str[16] = {
     "Alarm",
     "Road Traffic flash",
@@ -782,6 +946,7 @@ void decodeFIG(FIGalyser &figs,
                unsigned short int indent)
 {
     char desc[512];
+    static FIG0_5 fig0_5;
 
     switch (figtype) {
         case 0:
@@ -993,6 +1158,55 @@ void decodeFIG(FIGalyser &figs,
                                     }
                                     k += 2;
                                 }
+                            }
+                        }
+                        break;
+                    case 5: // FIG 0/5 Service component language
+                        {   // ETSI EN 300 401 8.1.2
+                            unsigned short SCId;
+                            unsigned char i = 1, SubChId, FIDCId, Language, Rfa;
+                            char tmpbuf[256];
+                            bool LS_flag, MSC_FIC_flag;
+                            while (i < (figlen - 1)) {
+                                // iterate over service component language
+                                LS_flag = f[i] >> 7;
+                                if (LS_flag == 0) {
+                                    // Short form (L/S = 0)
+                                    MSC_FIC_flag = (f[i] >> 6) & 0x01;
+                                    Language = f[i+1];
+                                    if (MSC_FIC_flag == 0) {
+                                        // 0: MSC in Stream mode and SubChId identifies the sub-channel
+                                        SubChId = f[i] & 0x3F;
+                                        sprintf(desc, "L/S flag=%d short form, MSC/FIC flag=%d MSC, SubChId=0x%X, Language=0x%X %s",
+                                                LS_flag, MSC_FIC_flag, SubChId, Language, fig0_5.Language_to_char(Language));
+                                    }
+                                    else {
+                                        // 1: FIC and FIDCId identifies the component
+                                        FIDCId = f[i] & 0x3F;
+                                        sprintf(desc, "L/S flag=%d short form, MSC/FIC flag=%d FIC, FIDCId=0x%X, Language=0x%X %s",
+                                                LS_flag, MSC_FIC_flag, FIDCId, Language, fig0_5.Language_to_char(Language));
+                                    }
+                                    printbuf(desc, indent+1, NULL, 0);
+                                    i += 2;
+                                }
+                                else {
+                                    // Long form (L/S = 1)
+                                    if (i < (figlen - 2)) {
+                                        Rfa = (f[i] >> 4) & 0x07;
+                                        SCId = (((unsigned short)f[i] & 0x0F) << 8) | (unsigned short)f[i+1];
+                                        Language = f[i+2];
+                                        sprintf(desc, "L/S flag=%d long form, Rfa=%d", LS_flag, Rfa);
+                                        if (Rfa != 0) {
+                                            sprintf(tmpbuf, " invalid value");
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        sprintf(tmpbuf, ", SCId=0x%X, Language=0x%X %s",
+                                                SCId, Language, fig0_5.Language_to_char(Language));
+                                        strcat(desc, tmpbuf);
+                                        printbuf(desc, indent+1, NULL, 0);
+                                    }
+                                    i += 3;
+                                    }
                             }
                         }
                         break;
@@ -1225,10 +1439,10 @@ void decodeFIG(FIGalyser &figs,
                                     // negative Ensemble LTO
                                     Ensemble_LTO |= 0xC0;
                                 }
-                                sprintf(desc, "Ext fag=%d extended field %s, LTO uniq=%d %s, Ensemble LTO=0x%X %s%d:%02d",
+                                sprintf(desc, "Ext flag=%d extended field %s, LTO uniq=%d %s, Ensemble LTO=0x%X %s%d:%02d",
                                         Ext_flag, Ext_flag?"present":"absent", LTO_uniq,
                                         LTO_uniq?"several time zones":"one time zone (time specified by Ensemble LTO)",
-                                        Ensemble_LTO, (Ensemble_LTO >= 0)?"":"-" , abs(Ensemble_LTO) >> 1, (Ensemble_LTO & 0x01) * 30);
+                                        (Ensemble_LTO & 0x3F), (Ensemble_LTO >= 0)?"":"-" , abs(Ensemble_LTO) >> 1, (Ensemble_LTO & 0x01) * 30);
                                 if (abs(Ensemble_LTO) > 24) {
                                     sprintf(tmpbuf, " out of range -12 hours to +12 hours");
                                     strcat(desc, tmpbuf);
@@ -1251,7 +1465,7 @@ void decodeFIG(FIGalyser &figs,
                                             LTO |= 0xC0;
                                         }
                                         sprintf(desc, "Number of services=%d, LTO=0x%X %s%d:%02d",
-                                                Number_of_services, LTO, (LTO >= 0)?"":"-" , abs(LTO) >> 1,  (LTO & 0x01) * 30);
+                                                Number_of_services, (LTO & 0x3F), (LTO >= 0)?"":"-" , abs(LTO) >> 1,  (LTO & 0x01) * 30);
                                         if (abs(LTO) > 24) {
                                             sprintf(tmpbuf, " out of range -12 hours to +12 hours");
                                             strcat(desc, tmpbuf);
