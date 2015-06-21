@@ -384,6 +384,14 @@ unsigned char Ensemble_ECC=0, International_Table_Id=0;
 signed char Ensemble_LTO=0;
 bool LTO_uniq;
 
+// fig 0/14 FEC Scheme: this 2-bit field shall indicate the Forward Error Correction scheme in use, as follows:
+const char *FEC_schemes_str[4] =  {
+    "no FEC scheme applied",
+    "FEC scheme applied according to ETSI EN 300 401 clause 5.3.5",
+    "reserved for future definition",
+    "reserved for future definition"
+};
+
 // fig 0/18 0/19 announcement types (ETSI TS 101 756 V1.6.1 (2014-05) table 14 & 15)
 const char *announcement_types_str[16] = {
     "Alarm",
@@ -1590,6 +1598,21 @@ void decodeFIG(FIGalyser &figs,
                                         get_fig_0_13_userapp(user_app_type).c_str(),
                                         user_app_len);
                                 printbuf(desc, indent+2, NULL, 0);
+                            }
+                        }
+                        break;
+                    case 14: // FIG 0/14 FEC sub-channel organization
+                        {    // ETSI EN 300 401 6.2.2
+                            unsigned char i = 1, SubChId, FEC_scheme;
+
+                            while (i < figlen) {
+                                // iterate over Sub-channel
+                                SubChId = f[i] >> 2;
+                                FEC_scheme = f[i] & 0x3;
+                                sprintf(desc, "SubChId=0x%X, FEC scheme=%d %s",
+                                        SubChId, FEC_scheme, FEC_schemes_str[FEC_scheme]);
+                                printbuf(desc, indent+1, NULL, 0);
+                                i++;
                             }
                         }
                         break;
