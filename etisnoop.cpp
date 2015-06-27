@@ -433,6 +433,8 @@ void decodeFIG(FIGalyser &figs,
 
 int eti_analyse(eti_analyse_config_t& config);
 
+void strcatPNum(char *dest_str, unsigned short Programme_Number);
+
 std::string get_fig_0_13_userapp(int user_app_type)
 {
     switch (user_app_type) {
@@ -1616,6 +1618,75 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 16: // FIG 0/16 Programme Number & OE Programme Number
+                        {    // ETSI EN 300 401 8.1.4 & 8.1.10.3
+                            unsigned short SId, PNum, New_SId, New_PNum;
+                            unsigned char i = 1, Rfa, Rfu;
+                            char tmpbuf[256];
+                            bool Continuation_flag, Update_flag;
+
+                            while (i < (figlen - 4)) {
+                                // iterate over Programme Number
+                                SId = ((unsigned short)f[i] << 8) | ((unsigned short)f[i+1]);
+                                PNum = ((unsigned short)f[i+2] << 8) | ((unsigned short)f[i+3]);
+                                Rfa = f[i+4] >> 6;
+                                Rfu = (f[i+4] >> 2) & 0x0F;
+                                Continuation_flag = (f[i+4] >> 1) & 0x01;
+                                Update_flag = f[i+4] & 0x01;
+
+                                sprintf(desc, "SId=0x%X, PNum=0x%X ", SId, PNum);
+                                // Append PNum decoded string
+                                strcatPNum(desc, PNum);
+
+                                sprintf(tmpbuf, ", Rfa=%d", Rfa);
+                                strcat(desc, tmpbuf);
+                                if (Rfa != 0) {
+                                    sprintf(tmpbuf, " invalid value");
+                                    strcat(desc, tmpbuf);
+                                }
+
+                                sprintf(tmpbuf, ", Rfu=0x%X", Rfu);
+                                strcat(desc, tmpbuf);
+                                if (Rfu != 0) {
+                                    sprintf(tmpbuf, " invalid value");
+                                    strcat(desc, tmpbuf);
+                                }
+
+                                sprintf(tmpbuf, ", Continuation flag=%d the programme will %s, Update flag=%d %sre-direction",
+                                        Continuation_flag, Continuation_flag?"be interrupted but continued later":"not be subject to a planned interruption",
+                                        Update_flag, Update_flag?"":"no ");
+                                strcat(desc, tmpbuf);
+                                i += 5;
+
+                                if (Update_flag != 0) {
+                                    // In the case of a re-direction, the New SId and New PNum shall be appended
+                                    if (i < (figlen - 1)) {
+                                        New_SId = ((unsigned short)f[i] << 8) | ((unsigned short)f[i+1]);
+                                        sprintf(tmpbuf, ", New SId=0x%X", New_SId);
+                                        strcat(desc, tmpbuf);
+                                        if (i < (figlen - 3)) {
+                                            New_PNum = ((unsigned short)f[i+2] << 8) | ((unsigned short)f[i+3]);
+                                            sprintf(tmpbuf, ", New PNum=0x%X ", New_PNum);
+                                            strcat(desc, tmpbuf);
+                                            // Append New_PNum decoded string
+                                            strcatPNum(desc, New_PNum);
+                                        }
+                                        else {
+                                            sprintf(tmpbuf, ", missing New PNum !");
+                                            strcat(desc, tmpbuf);
+                                        }
+                                    }
+                                    else {
+                                        sprintf(tmpbuf, ", missing New SId and New PNum !");
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    i += 4;
+                                }
+
+                                printbuf(desc, indent+1, NULL, 0);
+                            }
+                        }
+                        break;
                     case 18: // FIG 0/18 Announcement support
                         {    // ETSI EN 300 401 8.1.6.1
                             unsigned int key;
@@ -2190,6 +2261,39 @@ void decodeFIG(FIGalyser &figs,
     }
 }
 
+// strcatPNum decode Programme_Number into string and append it to dest_str
+// Programme_Number: this 16-bit field shall define the date and time at which
+// a programme begins or will be continued. This field is coded in the same way
+// as the RDS "Programme Item Number (PIN)" feature (EN 62106).
+void strcatPNum(char *dest_str, unsigned short Programme_Number) {
+    unsigned char day, hour, minute;
+    char tempbuf[256];
+
+    minute = (unsigned char)(Programme_Number & 0x003F);
+    hour = (unsigned char)((Programme_Number >> 6) & 0x001F);
+    day = (unsigned char)((Programme_Number >> 11) & 0x001F);
+    if (day != 0) {
+        sprintf(tempbuf, "day of month=%d time=%02d:%02d", day, hour, minute);
+    }
+    else {  // day == 0
+        // Special codes are allowed when the date part of the PNum field
+        // signals date = "0". In this case, the hours and minutes part of
+        // the field shall contain a special code, as follows
+        if ((hour == 0) && (minute == 0)) {
+            sprintf(tempbuf, "Status code: no meaningful PNum is currently provided");
+        }
+        else if ((hour == 0) && (minute == 1)) {
+            sprintf(tempbuf, "Blank code: the current programme is not worth recording");
+        }
+        else if ((hour == 0) && (minute == 2)) {
+            sprintf(tempbuf, "Interrupt code: the interrupt is unplanned (for example a traffic announcement)");
+        }
+        else {
+            sprintf(tempbuf, "invalid value");
+        }
+    }
+    strcat(dest_str, tempbuf);
+}
 
 void printinfo(string header,
         int indent_level,
