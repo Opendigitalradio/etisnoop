@@ -37,6 +37,7 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <time.h>
 #include "lib_crc.h"
 
 #include "dabplussnoop.h"
@@ -200,159 +201,159 @@ struct FIG0_13_shortAppInfo
 
 class FIG0_5 {
     public:
-    // Constructor
-    FIG0_5() {
-        // Initialization of Language_code_to_char_map:
-        // ETSI TS 101 756 V1.6.1 Table 9: European languages
-        Language_code_to_char_map[0x00] = "Unknown/not applicable";
-        Language_code_to_char_map[0x01] = "Albanian";
-        Language_code_to_char_map[0x02] = "Breton";
-        Language_code_to_char_map[0x03] = "Catalan";
-        Language_code_to_char_map[0x04] = "Croatian";
-        Language_code_to_char_map[0x05] = "Welsh";
-        Language_code_to_char_map[0x06] = "Czech";
-        Language_code_to_char_map[0x07] = "Danish";
-        Language_code_to_char_map[0x08] = "German";
-        Language_code_to_char_map[0x09] = "English";
-        Language_code_to_char_map[0x0A] = "Spanish";
-        Language_code_to_char_map[0x0B] = "Esperanto";
-        Language_code_to_char_map[0x0C] = "Estonian";
-        Language_code_to_char_map[0x0D] = "Basque";
-        Language_code_to_char_map[0x0E] = "Faroese";
-        Language_code_to_char_map[0x0F] = "French";
-        Language_code_to_char_map[0x10] = "Frisian";
-        Language_code_to_char_map[0x11] = "Irish";
-        Language_code_to_char_map[0x12] = "Gaelic";
-        Language_code_to_char_map[0x13] = "Galician";
-        Language_code_to_char_map[0x14] = "Icelandic";
-        Language_code_to_char_map[0x15] = "Italian";
-        Language_code_to_char_map[0x16] = "Lappish";
-        Language_code_to_char_map[0x17] = "Latin";
-        Language_code_to_char_map[0x18] = "Latvian";
-        Language_code_to_char_map[0x19] = "Luxembourgian";
-        Language_code_to_char_map[0x1A] = "Lithuanian";
-        Language_code_to_char_map[0x1B] = "Hungarian";
-        Language_code_to_char_map[0x1C] = "Maltese";
-        Language_code_to_char_map[0x1D] = "Dutch";
-        Language_code_to_char_map[0x1E] = "Norwegian";
-        Language_code_to_char_map[0x1F] = "Occitan";
-        Language_code_to_char_map[0x20] = "Polish";
-        Language_code_to_char_map[0x21] = "Portuguese";
-        Language_code_to_char_map[0x22] = "Romanian";
-        Language_code_to_char_map[0x23] = "Romansh";
-        Language_code_to_char_map[0x24] = "Serbian";
-        Language_code_to_char_map[0x25] = "Slovak";
-        Language_code_to_char_map[0x26] = "Slovene";
-        Language_code_to_char_map[0x27] = "Finnish";
-        Language_code_to_char_map[0x28] = "Swedish";
-        Language_code_to_char_map[0x29] = "Turkish";
-        Language_code_to_char_map[0x2A] = "Flemish";
-        Language_code_to_char_map[0x2B] = "Walloon";
-        Language_code_to_char_map[0x2C] = "rfu";
-        Language_code_to_char_map[0x2D] = "rfu";
-        Language_code_to_char_map[0x2E] = "rfu";
-        Language_code_to_char_map[0x2F] = "rfu";
-        Language_code_to_char_map[0x30] = "Reserved for national assignment";
-        Language_code_to_char_map[0x31] = "Reserved for national assignment";
-        Language_code_to_char_map[0x32] = "Reserved for national assignment";
-        Language_code_to_char_map[0x33] = "Reserved for national assignment";
-        Language_code_to_char_map[0x34] = "Reserved for national assignment";
-        Language_code_to_char_map[0x35] = "Reserved for national assignment";
-        Language_code_to_char_map[0x36] = "Reserved for national assignment";
-        Language_code_to_char_map[0x37] = "Reserved for national assignment";
-        Language_code_to_char_map[0x38] = "Reserved for national assignment";
-        Language_code_to_char_map[0x39] = "Reserved for national assignment";
-        Language_code_to_char_map[0x3A] = "Reserved for national assignment";
-        Language_code_to_char_map[0x3B] = "Reserved for national assignment";
-        Language_code_to_char_map[0x3C] = "Reserved for national assignment";
-        Language_code_to_char_map[0x3D] = "Reserved for national assignment";
-        Language_code_to_char_map[0x3E] = "Reserved for national assignment";
-        Language_code_to_char_map[0x3F] = "Reserved for national assignment";
+        // Constructor
+        FIG0_5() {
+            // Initialization of Language_code_to_char_map:
+            // ETSI TS 101 756 V1.6.1 Table 9: European languages
+            Language_code_to_char_map[0x00] = "Unknown/not applicable";
+            Language_code_to_char_map[0x01] = "Albanian";
+            Language_code_to_char_map[0x02] = "Breton";
+            Language_code_to_char_map[0x03] = "Catalan";
+            Language_code_to_char_map[0x04] = "Croatian";
+            Language_code_to_char_map[0x05] = "Welsh";
+            Language_code_to_char_map[0x06] = "Czech";
+            Language_code_to_char_map[0x07] = "Danish";
+            Language_code_to_char_map[0x08] = "German";
+            Language_code_to_char_map[0x09] = "English";
+            Language_code_to_char_map[0x0A] = "Spanish";
+            Language_code_to_char_map[0x0B] = "Esperanto";
+            Language_code_to_char_map[0x0C] = "Estonian";
+            Language_code_to_char_map[0x0D] = "Basque";
+            Language_code_to_char_map[0x0E] = "Faroese";
+            Language_code_to_char_map[0x0F] = "French";
+            Language_code_to_char_map[0x10] = "Frisian";
+            Language_code_to_char_map[0x11] = "Irish";
+            Language_code_to_char_map[0x12] = "Gaelic";
+            Language_code_to_char_map[0x13] = "Galician";
+            Language_code_to_char_map[0x14] = "Icelandic";
+            Language_code_to_char_map[0x15] = "Italian";
+            Language_code_to_char_map[0x16] = "Lappish";
+            Language_code_to_char_map[0x17] = "Latin";
+            Language_code_to_char_map[0x18] = "Latvian";
+            Language_code_to_char_map[0x19] = "Luxembourgian";
+            Language_code_to_char_map[0x1A] = "Lithuanian";
+            Language_code_to_char_map[0x1B] = "Hungarian";
+            Language_code_to_char_map[0x1C] = "Maltese";
+            Language_code_to_char_map[0x1D] = "Dutch";
+            Language_code_to_char_map[0x1E] = "Norwegian";
+            Language_code_to_char_map[0x1F] = "Occitan";
+            Language_code_to_char_map[0x20] = "Polish";
+            Language_code_to_char_map[0x21] = "Portuguese";
+            Language_code_to_char_map[0x22] = "Romanian";
+            Language_code_to_char_map[0x23] = "Romansh";
+            Language_code_to_char_map[0x24] = "Serbian";
+            Language_code_to_char_map[0x25] = "Slovak";
+            Language_code_to_char_map[0x26] = "Slovene";
+            Language_code_to_char_map[0x27] = "Finnish";
+            Language_code_to_char_map[0x28] = "Swedish";
+            Language_code_to_char_map[0x29] = "Turkish";
+            Language_code_to_char_map[0x2A] = "Flemish";
+            Language_code_to_char_map[0x2B] = "Walloon";
+            Language_code_to_char_map[0x2C] = "rfu";
+            Language_code_to_char_map[0x2D] = "rfu";
+            Language_code_to_char_map[0x2E] = "rfu";
+            Language_code_to_char_map[0x2F] = "rfu";
+            Language_code_to_char_map[0x30] = "Reserved for national assignment";
+            Language_code_to_char_map[0x31] = "Reserved for national assignment";
+            Language_code_to_char_map[0x32] = "Reserved for national assignment";
+            Language_code_to_char_map[0x33] = "Reserved for national assignment";
+            Language_code_to_char_map[0x34] = "Reserved for national assignment";
+            Language_code_to_char_map[0x35] = "Reserved for national assignment";
+            Language_code_to_char_map[0x36] = "Reserved for national assignment";
+            Language_code_to_char_map[0x37] = "Reserved for national assignment";
+            Language_code_to_char_map[0x38] = "Reserved for national assignment";
+            Language_code_to_char_map[0x39] = "Reserved for national assignment";
+            Language_code_to_char_map[0x3A] = "Reserved for national assignment";
+            Language_code_to_char_map[0x3B] = "Reserved for national assignment";
+            Language_code_to_char_map[0x3C] = "Reserved for national assignment";
+            Language_code_to_char_map[0x3D] = "Reserved for national assignment";
+            Language_code_to_char_map[0x3E] = "Reserved for national assignment";
+            Language_code_to_char_map[0x3F] = "Reserved for national assignment";
 
-        // ETSI TS 101 756 V1.6.1 Table 10: Other languages
-        Language_code_to_char_map[0x40] = "Background sound/clean feed";
-        Language_code_to_char_map[0x41] = "rfu";
-        Language_code_to_char_map[0x42] = "rfu";
-        Language_code_to_char_map[0x43] = "rfu";
-        Language_code_to_char_map[0x44] = "rfu";
-        Language_code_to_char_map[0x45] = "Zulu";
-        Language_code_to_char_map[0x46] = "Vietnamese";
-        Language_code_to_char_map[0x47] = "Uzbek";
-        Language_code_to_char_map[0x48] = "Urdu";
-        Language_code_to_char_map[0x49] = "Ukranian";
-        Language_code_to_char_map[0x4A] = "Thai";
-        Language_code_to_char_map[0x4B] = "Telugu";
-        Language_code_to_char_map[0x4C] = "Tatar";
-        Language_code_to_char_map[0x4D] = "Tamil";
-        Language_code_to_char_map[0x4E] = "Tadzhik";
-        Language_code_to_char_map[0x4F] = "Swahili";
-        Language_code_to_char_map[0x50] = "Sranan Tongo";
-        Language_code_to_char_map[0x51] = "Somali";
-        Language_code_to_char_map[0x52] = "Sinhalese";
-        Language_code_to_char_map[0x53] = "Shona";
-        Language_code_to_char_map[0x54] = "Serbo-Croat";
-        Language_code_to_char_map[0x55] = "Rusyn";
-        Language_code_to_char_map[0x56] = "Russian";
-        Language_code_to_char_map[0x57] = "Quechua";
-        Language_code_to_char_map[0x58] = "Pushtu";
-        Language_code_to_char_map[0x59] = "Punjabi";
-        Language_code_to_char_map[0x5A] = "Persian";
-        Language_code_to_char_map[0x5B] = "Papiamento";
-        Language_code_to_char_map[0x5C] = "Oriya";
-        Language_code_to_char_map[0x5D] = "Nepali";
-        Language_code_to_char_map[0x5E] = "Ndebele";
-        Language_code_to_char_map[0x5F] = "Marathi";
-        Language_code_to_char_map[0x60] = "Moldavian";
-        Language_code_to_char_map[0x61] = "Malaysian";
-        Language_code_to_char_map[0x62] = "Malagasay";
-        Language_code_to_char_map[0x63] = "Macedonian";
-        Language_code_to_char_map[0x64] = "Laotian";
-        Language_code_to_char_map[0x65] = "Korean";
-        Language_code_to_char_map[0x66] = "Khmer";
-        Language_code_to_char_map[0x67] = "Kazakh";
-        Language_code_to_char_map[0x68] = "Kannada";
-        Language_code_to_char_map[0x69] = "Japanese";
-        Language_code_to_char_map[0x6A] = "Indonesian";
-        Language_code_to_char_map[0x6B] = "Hindi";
-        Language_code_to_char_map[0x6C] = "Hebrew";
-        Language_code_to_char_map[0x6D] = "Hausa";
-        Language_code_to_char_map[0x6E] = "Gurani";
-        Language_code_to_char_map[0x6F] = "Gujurati";
-        Language_code_to_char_map[0x70] = "Greek";
-        Language_code_to_char_map[0x71] = "Georgian";
-        Language_code_to_char_map[0x72] = "Fulani";
-        Language_code_to_char_map[0x73] = "Dari";
-        Language_code_to_char_map[0x74] = "Chuvash";
-        Language_code_to_char_map[0x75] = "Chinese";
-        Language_code_to_char_map[0x76] = "Burmese";
-        Language_code_to_char_map[0x77] = "Bulgarian";
-        Language_code_to_char_map[0x78] = "Bengali";
-        Language_code_to_char_map[0x79] = "Belorussian";
-        Language_code_to_char_map[0x7A] = "Bambora";
-        Language_code_to_char_map[0x7B] = "Azerbaijani";
-        Language_code_to_char_map[0x7C] = "Assamese";
-        Language_code_to_char_map[0x7D] = "Armenian";
-        Language_code_to_char_map[0x7E] = "Arabic";
-        Language_code_to_char_map[0x7F] = "Amharic";
-    }
-
-    // Destructor
-    ~FIG0_5() {
-        // Remove elements from Language_code_to_char_map map container
-        Language_code_to_char_map.clear();
-    }
-
-    // Language_to_char decode fig 0/5 language code in string
-    // Input : Language code number
-    // Return: Language char *
-    const char * Language_to_char(unsigned char language) {
-        if (Language_code_to_char_map.count(language) > 0) {
-            return Language_code_to_char_map[language];
+            // ETSI TS 101 756 V1.6.1 Table 10: Other languages
+            Language_code_to_char_map[0x40] = "Background sound/clean feed";
+            Language_code_to_char_map[0x41] = "rfu";
+            Language_code_to_char_map[0x42] = "rfu";
+            Language_code_to_char_map[0x43] = "rfu";
+            Language_code_to_char_map[0x44] = "rfu";
+            Language_code_to_char_map[0x45] = "Zulu";
+            Language_code_to_char_map[0x46] = "Vietnamese";
+            Language_code_to_char_map[0x47] = "Uzbek";
+            Language_code_to_char_map[0x48] = "Urdu";
+            Language_code_to_char_map[0x49] = "Ukranian";
+            Language_code_to_char_map[0x4A] = "Thai";
+            Language_code_to_char_map[0x4B] = "Telugu";
+            Language_code_to_char_map[0x4C] = "Tatar";
+            Language_code_to_char_map[0x4D] = "Tamil";
+            Language_code_to_char_map[0x4E] = "Tadzhik";
+            Language_code_to_char_map[0x4F] = "Swahili";
+            Language_code_to_char_map[0x50] = "Sranan Tongo";
+            Language_code_to_char_map[0x51] = "Somali";
+            Language_code_to_char_map[0x52] = "Sinhalese";
+            Language_code_to_char_map[0x53] = "Shona";
+            Language_code_to_char_map[0x54] = "Serbo-Croat";
+            Language_code_to_char_map[0x55] = "Rusyn";
+            Language_code_to_char_map[0x56] = "Russian";
+            Language_code_to_char_map[0x57] = "Quechua";
+            Language_code_to_char_map[0x58] = "Pushtu";
+            Language_code_to_char_map[0x59] = "Punjabi";
+            Language_code_to_char_map[0x5A] = "Persian";
+            Language_code_to_char_map[0x5B] = "Papiamento";
+            Language_code_to_char_map[0x5C] = "Oriya";
+            Language_code_to_char_map[0x5D] = "Nepali";
+            Language_code_to_char_map[0x5E] = "Ndebele";
+            Language_code_to_char_map[0x5F] = "Marathi";
+            Language_code_to_char_map[0x60] = "Moldavian";
+            Language_code_to_char_map[0x61] = "Malaysian";
+            Language_code_to_char_map[0x62] = "Malagasay";
+            Language_code_to_char_map[0x63] = "Macedonian";
+            Language_code_to_char_map[0x64] = "Laotian";
+            Language_code_to_char_map[0x65] = "Korean";
+            Language_code_to_char_map[0x66] = "Khmer";
+            Language_code_to_char_map[0x67] = "Kazakh";
+            Language_code_to_char_map[0x68] = "Kannada";
+            Language_code_to_char_map[0x69] = "Japanese";
+            Language_code_to_char_map[0x6A] = "Indonesian";
+            Language_code_to_char_map[0x6B] = "Hindi";
+            Language_code_to_char_map[0x6C] = "Hebrew";
+            Language_code_to_char_map[0x6D] = "Hausa";
+            Language_code_to_char_map[0x6E] = "Gurani";
+            Language_code_to_char_map[0x6F] = "Gujurati";
+            Language_code_to_char_map[0x70] = "Greek";
+            Language_code_to_char_map[0x71] = "Georgian";
+            Language_code_to_char_map[0x72] = "Fulani";
+            Language_code_to_char_map[0x73] = "Dari";
+            Language_code_to_char_map[0x74] = "Chuvash";
+            Language_code_to_char_map[0x75] = "Chinese";
+            Language_code_to_char_map[0x76] = "Burmese";
+            Language_code_to_char_map[0x77] = "Bulgarian";
+            Language_code_to_char_map[0x78] = "Bengali";
+            Language_code_to_char_map[0x79] = "Belorussian";
+            Language_code_to_char_map[0x7A] = "Bambora";
+            Language_code_to_char_map[0x7B] = "Azerbaijani";
+            Language_code_to_char_map[0x7C] = "Assamese";
+            Language_code_to_char_map[0x7D] = "Armenian";
+            Language_code_to_char_map[0x7E] = "Arabic";
+            Language_code_to_char_map[0x7F] = "Amharic";
         }
-        else {
-            return "";
+
+        // Destructor
+        ~FIG0_5() {
+            // Remove elements from Language_code_to_char_map map container
+            Language_code_to_char_map.clear();
         }
-    }
+
+        // Language_to_char decode fig 0/5 language code in string
+        // Input : Language code number
+        // Return: Language char *
+        const char * Language_to_char(unsigned char language) {
+            if (Language_code_to_char_map.count(language) > 0) {
+                return Language_code_to_char_map[language];
+            }
+            else {
+                return "";
+            }
+        }
 
     private:
         // Map between fig 0/5 Language code and Language char
@@ -433,7 +434,8 @@ void decodeFIG(FIGalyser &figs,
 
 int eti_analyse(eti_analyse_config_t& config);
 
-void strcatPNum(char *dest_str, unsigned short Programme_Number);
+char *strcatPNum(char *dest_str, unsigned short Programme_Number);
+int sprintfMJD(char *dst, int mjd);
 
 std::string get_fig_0_13_userapp(int user_app_type)
 {
@@ -1522,13 +1524,15 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 10: // FIG 0/10 Date and time
                         {    // ETSI EN 300 401 8.1.3.1
-                            /* TODO verify and convert from MJD representation
-                            uint32_t MJD = ((f[1] & 0x7) << 10)    |
-                                           ((uint32_t)(f[2]) << 2) |
-                                           (f[3] >> 6);
-                                          */
+                            char dateStr[256];
+                            dateStr[0] = 0;
 
                             //bool RFU = f[1] >> 7;
+
+                            uint32_t MJD = (((uint32_t)f[1] & 0x7F) << 10)    |
+                                           ((uint32_t)(f[2]) << 2) |
+                                           (f[3] >> 6);
+                            sprintfMJD(dateStr, MJD);
 
                             bool LSI = f[3] & 0x20;
                             bool ConfInd = f[3] & 0x10;
@@ -1544,13 +1548,13 @@ void decodeFIG(FIGalyser &figs,
                                 uint8_t seconds = f[5] >> 2;
                                 uint16_t milliseconds = ((uint16_t)(f[5] & 0x2) << 8) | f[6];
 
-                                sprintf(desc, "FIG %d/%d(long): LSI %u, ConfInd %u, UTC Time: %02d:%02d:%02d.%d",
-                                        figtype, ext, LSI, ConfInd, hours, minutes, seconds, milliseconds);
+                                sprintf(desc, "FIG %d/%d(long): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d:%02d.%d",
+                                        figtype, ext, MJD, dateStr, LSI, ConfInd, hours, minutes, seconds, milliseconds);
                                 printbuf(desc, indent+1, NULL, 0);
                             }
                             else {
-                                sprintf(desc, "FIG %d/%d(short): LSI %u, ConfInd %u, UTC Time: %02d:%02d",
-                                        figtype, ext, LSI, ConfInd, hours, minutes);
+                                sprintf(desc, "FIG %d/%d(short): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d",
+                                        figtype, ext, MJD, dateStr, LSI, ConfInd, hours, minutes);
                                 printbuf(desc, indent+1, NULL, 0);
                             }
                         }
@@ -2265,7 +2269,7 @@ void decodeFIG(FIGalyser &figs,
 // Programme_Number: this 16-bit field shall define the date and time at which
 // a programme begins or will be continued. This field is coded in the same way
 // as the RDS "Programme Item Number (PIN)" feature (EN 62106).
-void strcatPNum(char *dest_str, unsigned short Programme_Number) {
+char *strcatPNum(char *dest_str, unsigned short Programme_Number) {
     unsigned char day, hour, minute;
     char tempbuf[256];
 
@@ -2292,7 +2296,42 @@ void strcatPNum(char *dest_str, unsigned short Programme_Number) {
             sprintf(tempbuf, "invalid value");
         }
     }
-    strcat(dest_str, tempbuf);
+    return strcat(dest_str, tempbuf);
+}
+
+// sprintfMJD: convert MJD (Modified Julian Date) into date string
+int sprintfMJD(char *dst, int mjd) {
+    // EN 62106 Annex G
+    // These formulas are applicable between the inclusive dates: 1st March 1900 to 28th February 2100
+    int y, m, k;
+    struct tm timeDate;
+
+    memset(&timeDate, 0, sizeof(struct tm));
+
+    // find Y, M, D from MJD
+    y = (int)(((double)mjd - 15078.2) / 365.25);
+    m = (int)(((double)mjd - 14956.1 - (int)((double)y * 365.25)) / 30.6001);
+    timeDate.tm_mday = mjd - 14956 - (int)((double)y * 365.25) - (int)((double)m * 30.6001);
+    if ((m == 14) || (m == 15)) {
+        k = 1;
+    }
+    else {
+        k = 0;
+    }
+    timeDate.tm_year = y + k;
+    timeDate.tm_mon = (m - 1 - (k * 12)) - 1;
+
+    // find WD from MJD
+    timeDate.tm_wday = (((mjd + 2) % 7) + 1) % 7;
+
+    //timeDate.tm_yday = 0; // Number of days since the first day of January not calculated
+    timeDate.tm_isdst = -1; // No time print then information not available
+
+    // print date string
+    if ((timeDate.tm_mday < 0) || (timeDate.tm_mon < 0) || (timeDate.tm_year < 0)) {
+        return sprintf(dst, "invalid MJD mday=%d mon=%d year=%d", timeDate.tm_mday, timeDate.tm_mon, timeDate.tm_year);
+    }
+    return strftime(dst, 256, "%a %b %d %Y", &timeDate);
 }
 
 void printinfo(string header,
