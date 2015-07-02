@@ -393,6 +393,48 @@ const char *FEC_schemes_str[4] =  {
     "reserved for future definition"
 };
 
+// fig 0/17 Programme type codes
+#define INTERNATIONAL_TABLE_SIZE     2
+#define PROGRAMME_TYPE_CODES_SIZE  32
+const char *Programme_type_codes_str[INTERNATIONAL_TABLE_SIZE][PROGRAMME_TYPE_CODES_SIZE] = {
+    {   // ETSI TS 101 756 V1.6.1 (2014-05) table 12
+        "No programme type",        "News",
+        "Current Affairs",          "Information",
+        "Sport",                    "Education",
+        "Drama",                    "Culture",
+        "Science",                  "Varied",
+        "Pop Music",                "Rock Music",
+        "Easy Listening Music",     "Light Classical",
+        "Serious Classical",        "Other Music",
+        "Weather/meteorology",      "Finance/Business",
+        "Children's programmes",    "Social Affairs",
+        "Religion",                 "Phone In",
+        "Travel",                   "Leisure",
+        "Jazz Music",               "Country Music",
+        "National Music",           "Oldies Music",
+        "Folk Music",               "Documentary",
+        "Not used",                 "Not used"
+    },
+    {   // ETSI TS 101 756 V1.6.1 (2014-05) table 13
+        "No program type",  "News",
+        "Information",      "Sports",
+        "Talk",             "Rock",
+        "Classic Rock",     "Adult Hits",
+        "Soft Rock",        "Top 40",
+        "Country",          "Oldies",
+        "Soft",             "Nostalgia",
+        "Jazz",             "Classical",
+        "Rhythm and Blues", "Soft Rhythm and Blues",
+        "Foreign Language", "Religious Music",
+        "Religious Talk",   "Personality",
+        "Public",           "College",
+        "rfu",              "rfu",
+        "rfu",              "rfu",
+        "rfu",              "Weather",
+        "Not used",         "Not used"
+    }
+};
+
 // fig 0/18 0/19 announcement types (ETSI TS 101 756 V1.6.1 (2014-05) table 14 & 15)
 const char *announcement_types_str[16] = {
     "Alarm",
@@ -434,6 +476,7 @@ void decodeFIG(FIGalyser &figs,
 
 int eti_analyse(eti_analyse_config_t& config);
 
+const char *get_programme_type_str(unsigned int int_table_Id, unsigned int pty);
 char *strcatPNum(char *dest_str, unsigned short Programme_Number);
 int sprintfMJD(char *dst, int mjd);
 
@@ -1207,9 +1250,9 @@ void decodeFIG(FIGalyser &figs,
                                         Rfa = (f[i] >> 4) & 0x07;
                                         SCId = (((unsigned short)f[i] & 0x0F) << 8) | (unsigned short)f[i+1];
                                         Language = f[i+2];
-                                        sprintf(desc, "L/S flag=%d long form, Rfa=%d", LS_flag, Rfa);
+                                        sprintf(desc, "L/S flag=%d long form", LS_flag);
                                         if (Rfa != 0) {
-                                            sprintf(tmpbuf, " invalid value");
+                                            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
                                             strcat(desc, tmpbuf);
                                         }
                                         sprintf(tmpbuf, ", SCId=0x%X, Language=0x%X %s",
@@ -1371,9 +1414,9 @@ void decodeFIG(FIGalyser &figs,
                                 Ext_flag = f[i] >> 7;
                                 Rfa = (f[i] >> 4) & 0x7;
                                 SCIdS = f[i] & 0x0F;
-                                sprintf(desc, "SId=0x%X, Ext flag=%d 8-bit Rfa %s, Rfa=%d", SId, Ext_flag, (Ext_flag)?"present":"absent", Rfa);
+                                sprintf(desc, "SId=0x%X, Ext flag=%d 8-bit Rfa %s", SId, Ext_flag, (Ext_flag)?"present":"absent");
                                 if (Rfa != 0) {
-                                    sprintf(tmpbuf, " invalid value");
+                                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
                                     strcat(desc, tmpbuf);
                                 }
                                 sprintf(tmpbuf, ", SCIdS=0x%X", SCIdS);
@@ -1402,10 +1445,8 @@ void decodeFIG(FIGalyser &figs,
                                             if (Ext_flag == 1) {
                                                 // Rfa field present
                                                 Rfa = f[i+1];
-                                                sprintf(tmpbuf, ", Rfa=0x%X", Rfa);
-                                                strcat(desc, tmpbuf);
                                                 if (Rfa != 0) {
-                                                    sprintf(tmpbuf, " invalid value");
+                                                    sprintf(tmpbuf, ", Rfa=0x%X invalid value", Rfa);
                                                     strcat(desc, tmpbuf);
                                                 }
                                             }
@@ -1417,10 +1458,8 @@ void decodeFIG(FIGalyser &figs,
                                         if (i < (figlen - 1)) {
                                             Rfa = (f[i] >> 4) & 0x07;
                                             SCId = (((unsigned short)f[i] & 0x0F) << 8) | (unsigned short)f[i+1];
-                                            sprintf(tmpbuf, ", Rfa=%d", Rfa);
-                                            strcat(desc, tmpbuf);
                                             if (Rfa != 0) {
-                                                sprintf(tmpbuf, " invalid value");
+                                                sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
                                                 strcat(desc, tmpbuf);
                                             }
                                             sprintf(tmpbuf, ", SCId=0x%X", SCId);
@@ -1642,17 +1681,13 @@ void decodeFIG(FIGalyser &figs,
                                 // Append PNum decoded string
                                 strcatPNum(desc, PNum);
 
-                                sprintf(tmpbuf, ", Rfa=%d", Rfa);
-                                strcat(desc, tmpbuf);
                                 if (Rfa != 0) {
-                                    sprintf(tmpbuf, " invalid value");
+                                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
                                     strcat(desc, tmpbuf);
                                 }
 
-                                sprintf(tmpbuf, ", Rfu=0x%X", Rfu);
-                                strcat(desc, tmpbuf);
                                 if (Rfu != 0) {
-                                    sprintf(tmpbuf, " invalid value");
+                                    sprintf(tmpbuf, ", Rfu=0x%X invalid value", Rfu);
                                     strcat(desc, tmpbuf);
                                 }
 
@@ -1691,6 +1726,87 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 17: // FIG 0/17 Programme Type
+                        {    // ETSI EN 300 401 8.1.5
+                            unsigned short SId;
+                            unsigned char i = 1, Rfa, Language, Int_code, Comp_code;
+                            char tmpbuf[256];
+                            bool SD_flag, PS_flag, L_flag, CC_flag, Rfu;
+                            while (i < (figlen - 3)) {
+                                // iterate over announcement support
+                                SId = (f[i] << 8) | f[i+1];
+                                SD_flag = (f[i+2] >> 7);
+                                PS_flag = ((f[i+2] >> 6) & 0x01);
+                                L_flag = ((f[i+2] >> 5) & 0x01);
+                                CC_flag = ((f[i+2] >> 4) & 0x01);
+                                Rfa = (f[i+2] & 0x0F);
+                                sprintf(desc, "SId=0x%X, S/D=%d Programme Type codes and language (when present), %srepresent the current programme contents, P/S=%d %s service component, L flag=%d language field %s, CC flag=%d complementary code and preceding Rfa and Rfu fields %s",
+                                        SId, SD_flag, SD_flag?"":"may not ", PS_flag, PS_flag?"secondary":"primary",
+                                        L_flag, L_flag?"present":"absent", CC_flag, CC_flag?"present":"absent");
+                                if (Rfa != 0) {
+                                    sprintf(tmpbuf, ", Rfa=0x%X invalid value", Rfa);
+                                    strcat(desc, tmpbuf);
+                                }
+                                i += 3;
+                                if (L_flag != 0) {
+                                    if (i < figlen) {
+                                        Language = f[i];
+                                        sprintf(tmpbuf, ", Language=0x%X %s", Language,
+                                                fig0_5.Language_to_char(Language));
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    else {
+                                        sprintf(tmpbuf, ", Language= invalid FIG length");
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    i++;
+                                }
+                                if (i < figlen) {
+                                    Rfa = f[i] >> 6;
+                                    Rfu = (f[i] >> 5) & 0x01;
+                                    if (Rfa != 0) {
+                                        sprintf(tmpbuf, ", Rfa=0x%X invalid value", Rfa);
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    if (Rfu != 0) {
+                                        sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    Int_code = f[i] & 0x1F;
+                                    sprintf(tmpbuf, ", Int code=0x%X %s", Int_code, get_programme_type_str(International_Table_Id , Int_code));
+                                    strcat(desc, tmpbuf);
+                                    i++;
+                                }
+                                else {
+                                    sprintf(tmpbuf, ", Int code= invalid FIG length");
+                                    strcat(desc, tmpbuf);
+                                }
+                                if (CC_flag != 0) {
+                                    if (i < figlen) {
+                                        Rfa = f[i] >> 6;
+                                        Rfu = (f[i] >> 5) & 0x01;
+                                        if (Rfa != 0) {
+                                            sprintf(tmpbuf, ", Rfa=0x%X invalid value", Rfa);
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        if (Rfu != 0) {
+                                            sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        Comp_code = f[i] & 0x1F;
+                                        sprintf(tmpbuf, ", Comp code=0x%X %s", Comp_code, get_programme_type_str(International_Table_Id , Comp_code));
+                                        strcat(desc, tmpbuf);
+                                        i++;
+                                    }
+                                    else {
+                                        sprintf(tmpbuf, ", Comp code= invalid FIG length");
+                                        strcat(desc, tmpbuf);
+                                    }
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                            }
+                        }
+                        break;
                     case 18: // FIG 0/18 Announcement support
                         {    // ETSI EN 300 401 8.1.6.1
                             unsigned int key;
@@ -1705,9 +1821,10 @@ void decodeFIG(FIGalyser &figs,
                                 Asu_flags = (f[i+2] << 8) | f[i+3];
                                 Rfa = (f[i+4] >> 5);
                                 Number_clusters = (f[i+4] & 0x1F);
-                                sprintf(desc, "SId=0x%X, Asu flags=0x%04x, Rfa=%d", SId, Asu_flags, Rfa);
+                                sprintf(desc, "SId=0x%X, Asu flags=0x%04x", SId, Asu_flags);
                                 if (Rfa != 0) {
-                                    strcat(desc, " invalid value");
+                                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
+                                    strcat(desc, tmpbuf);
                                 }
                                 sprintf(tmpbuf, ", Number of clusters=%d", Number_clusters);
                                 strcat(desc, tmpbuf);
@@ -1761,10 +1878,9 @@ void decodeFIG(FIGalyser &figs,
                                     // read region lower part
                                     Rfa = (f[i+4] >> 6);
                                     RegionId_LP = (f[i+4] & 0x3F);
-                                    sprintf(tmpbuf, ", Rfa=%d", Rfa);
-                                    strcat(desc, tmpbuf);
                                     if (Rfa != 0) {
-                                        strcat(desc, " invalid value");
+                                        sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
+                                        strcat(desc, tmpbuf);
                                     }
                                     sprintf(tmpbuf, ", Region Lower Part=0x%02x", RegionId_LP);
                                     strcat(desc, tmpbuf);
@@ -2079,7 +2195,7 @@ void decodeFIG(FIGalyser &figs,
                                     sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
                                 }
                                 if (Rfa != 0) {
-                                    sprintf(tmpbuf, ", invalid Rfa b7 0x%02x", f[i]);
+                                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
                                     strcat(desc, tmpbuf);
                                 }
                                 // CEI Change Event Indication
@@ -2262,6 +2378,21 @@ void decodeFIG(FIGalyser &figs,
                 fprintf(stderr, "ERROR: ETI contains unsupported FIG 6");
             }
             break;
+    }
+}
+
+// get_programme_type_str return the programme type string from international table Id and programme type
+const char *get_programme_type_str(unsigned int int_table_Id, unsigned int pty) {
+    if ((int_table_Id - 1) < INTERNATIONAL_TABLE_SIZE) {
+       if (pty < PROGRAMME_TYPE_CODES_SIZE) {
+           return Programme_type_codes_str[int_table_Id - 1][pty];
+       }
+       else {
+           return "invalid programme type";
+       }
+    }
+    else {
+        return "unknown international table Id";
     }
 }
 
