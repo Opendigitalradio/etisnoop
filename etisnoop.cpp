@@ -376,9 +376,10 @@ struct eti_analyse_config_t {
 
 // Globals
 static int verbosity;
+static unsigned char Mode_Identity = 0;
 
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
-std::map<unsigned short, bool> fig06_key_la;
+std::map<unsigned short, bool> fig0_6_key_la;
 
 // fig 0/9 global variables
 unsigned char Ensemble_ECC=0, International_Table_Id=0;
@@ -454,6 +455,13 @@ const char *announcement_types_str[16] = {
     "Reserved for future definition",
     "Reserved for future definition"
 };
+
+// fig 0/22 struct
+typedef struct lat_lng {
+    double latitude, longitude;
+}Lat_Lng;
+// map for fig 0/22 database
+std::map<unsigned short, Lat_Lng> fig0_22_key_Lat_Lng;
 
 
 // Function prototypes
@@ -751,6 +759,7 @@ int eti_analyse(eti_analyse_config_t& config)
                 ss << "4";
             }
             printbuf("MID  - Mode Identity", 2, &mid, 1, ss.str());
+            Mode_Identity = mid;
         }
 
         // LIDATA - FC - FL
@@ -987,8 +996,9 @@ int eti_analyse(eti_analyse_config_t& config)
         printf("Watermark:\n  %s\n", watermark.c_str());
     }
 
-    // remove elements from fig06_key_la map container
-    fig06_key_la.clear();
+    // remove elements from fig0_6_key_la and fig0_22_key_Lat_Lng map containers
+    fig0_6_key_la.clear();
+    fig0_22_key_Lat_Lng.clear();
 
     return 0;
 }
@@ -1283,7 +1293,7 @@ void decodeFIG(FIGalyser &figs,
                                 key = (oe << 15) | (pd << 14) | (SH << 13) | (ILS << 12) | LSN;
                                 strcpy(signal_link, "");
                                 // check activation / deactivation
-                                if ((fig06_key_la.count(key) > 0) && (fig06_key_la[key] != LA)) {
+                                if ((fig0_6_key_la.count(key) > 0) && (fig0_6_key_la[key] != LA)) {
                                     if (LA == 0) {
                                         strcat(signal_link, " deactivated");
                                     }
@@ -1291,7 +1301,7 @@ void decodeFIG(FIGalyser &figs,
                                         strcat(signal_link, " activated");
                                     }
                                 }
-                                fig06_key_la[key] = LA;
+                                fig0_6_key_la[key] = LA;
                                 i += 2;
                                 if (Id_list_flag == 0) {
                                     if (cn == 0) {  // Id_list_flag=0 && cn=0: CEI Change Event Indication
@@ -2163,6 +2173,124 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 22: // FIG 0/22 Transmitter Identification Information (TII) database
+                        {    // ETSI EN 300 401 8.1.9
+                            Lat_Lng gps_pos = {0, 0};
+                            double latitude_sub, longitude_sub;
+                            signed short Latitude_coarse, Longitude_coarse;
+                            unsigned short key, TD;
+                            signed short Latitude_offset, Longitude_offset;
+                            unsigned char i = 1, j, MainId = 0, Rfu, Nb_SubId_fields, SubId;
+                            unsigned char Latitude_fine, Longitude_fine;
+                            char tmpbuf[256];
+                            bool MS;
+
+                            while (i < figlen) {
+                                // iterate over Transmitter Identification Information (TII) fields
+                                MS = f[i] >> 7;
+                                MainId = f[i] & 0x7F;
+                                key = (oe << 8) | (pd << 7) | MainId;
+                                sprintf(desc, "M/S=%d %sidentifier, MainId=0x%X",
+                                        MS, MS?"Sub-":"Main ", MainId);
+                                // check MainId value
+                                if ((Mode_Identity == 1) || (Mode_Identity == 2) || (MainId == 4)) {
+                                    if (MainId > 69) {
+                                        // The coding range shall be 0 to 69 for transmission modes I, II and IV
+                                        sprintf(tmpbuf, " invalid value for transmission mode %d", Mode_Identity);
+                                        strcat(desc, tmpbuf);
+                                    }
+                                }
+                                else if (Mode_Identity == 3) {
+                                    if (MainId > 5) {
+                                        // The coding range shall be 0 to 5 for transmission modes I, II and IV
+                                        sprintf(tmpbuf, " invalid value for transmission mode %d", Mode_Identity);
+                                        strcat(desc, tmpbuf);
+                                    }
+                                }
+                                // print database key
+                                sprintf(tmpbuf, ", database key=0x%X", key);
+                                strcat(desc, tmpbuf);
+                                i++;
+                                if (MS == 0) {
+                                    // Main identifier
+
+                                    if (i < (figlen - 4)) {
+                                        Latitude_coarse = (f[i] << 8) | f[i+1];
+                                        Longitude_coarse = (f[i+2] << 8) | f[i+3];
+                                        Latitude_fine = f[i+4] >> 4;
+                                        Longitude_fine = f[i+4] & 0x0F;
+                                        gps_pos.latitude = (double)((signed int)((((signed int)Latitude_coarse) << 4) | (unsigned int)Latitude_fine)) * 90 / 524288;
+                                        gps_pos.longitude = (double)((signed int)((((signed int)Longitude_coarse) << 4) | (unsigned int)Longitude_fine)) * 180 / 524288;
+                                        fig0_22_key_Lat_Lng[key] = gps_pos;
+                                        sprintf(tmpbuf, ", Lat Lng coarse=0x%X 0x%X, Lat Lng fine=0x%X 0x%X => Lat Lng=%f, %f",
+                                                Latitude_coarse, Longitude_coarse, Latitude_fine, Longitude_fine,
+                                                gps_pos.latitude, gps_pos.longitude);
+                                        strcat(desc, tmpbuf);
+                                        i += 5;
+                                    }
+                                    else {
+                                        strcat(desc, ", invalid length of Latitude Longitude coarse fine");
+                                    }
+                                    printbuf(desc, indent+1, NULL, 0);
+                                }
+                                else {  // MS == 1
+                                    // Sub-identifier
+
+                                    if (i < figlen) {
+                                        Rfu = f[i] >> 3;
+                                        Nb_SubId_fields = f[i] & 0x07;
+                                        if (Rfu != 0) {
+                                            sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        sprintf(tmpbuf, ", Number of SubId fields=%d%s",
+                                                Nb_SubId_fields, (Nb_SubId_fields == 0)?", CEI":"");
+                                        strcat(desc, tmpbuf);
+                                        printbuf(desc, indent+1, NULL, 0);
+                                        i++;
+
+                                        for(j = i; ((j < (i + (Nb_SubId_fields * 6))) && (j < (figlen - 5))); j += 6) {
+                                            // iterate over SubId fields
+                                            SubId = f[j] >> 3;
+                                            sprintf(desc, "SubId=0x%X", SubId);
+                                            // check SubId value
+                                            if ((SubId == 0) || (SubId > 23)) {
+                                                strcat(desc, " invalid value");
+                                            }
+
+                                            TD = ((f[j] & 0x03) << 8) | f[j+1];
+                                            Latitude_offset = (f[j+2] << 8) | f[j+3];
+                                            Longitude_offset = (f[j+4] << 8) | f[j+5];
+                                            sprintf(tmpbuf, ", TD=%d us, Lat Lng offset=0x%X 0x%X",
+                                                    TD, Latitude_offset, Longitude_offset);
+                                            strcat(desc, tmpbuf);
+
+                                            if (fig0_22_key_Lat_Lng.count(key) > 0) {
+                                                // latitude longitude available in database for Main Identifier
+                                                latitude_sub = (90 * (double)Latitude_offset / 524288) + fig0_22_key_Lat_Lng[key].latitude;
+                                                longitude_sub = (180 * (double)Longitude_offset / 524288) + fig0_22_key_Lat_Lng[key].longitude;
+                                                sprintf(tmpbuf, " => Lat Lng=%f, %f", latitude_sub, longitude_sub);
+                                                strcat(desc, tmpbuf);
+                                            }
+                                            else {
+                                                // latitude longitude not available in database for Main Identifier
+                                                latitude_sub = 90 * (double)Latitude_offset / 524288;
+                                                longitude_sub = 180 * (double)Longitude_offset / 524288;
+                                                sprintf(tmpbuf, " => Lat Lng=%f, %f wrong value because Main identifier latitude/longitude not available in database", latitude_sub, longitude_sub);
+                                                strcat(desc, tmpbuf);
+                                            }
+                                            printbuf(desc, indent+2, NULL, 0);
+                                        }
+                                        i += (Nb_SubId_fields * 6);
+                                    }
+                                    else {
+                                        strcat(desc, ", invalid fig length or Number of SubId fields length");
+                                        printbuf(desc, indent+1, NULL, 0);
+                                    }
+                                }
+                            }
+                        }
+                        break;
                     case 24: // FIG 0/24 OE Services
                         {    // ETSI EN 300 401 8.1.10.2
                             unsigned long long key;
@@ -2348,8 +2476,8 @@ void decodeFIG(FIGalyser &figs,
                 oe = (f[0] & 0x08) >> 3;
                 ext = f[0] & 0x07;
                 sprintf(desc,
-                        "FIG %d/%d: OE=%d, Segment_index=%d",
-                        figtype, ext, oe, segment_index);
+                        "FIG %d/%d: Toggle flag=%d, Segment_index=%d, OE=%d",
+                        figtype, ext, toggle_flag, segment_index, oe);
 
                 printbuf(desc, indent, f+1, figlen-1);
 
