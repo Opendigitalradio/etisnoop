@@ -378,6 +378,43 @@ struct eti_analyse_config_t {
 static int verbosity;
 static unsigned char Mode_Identity = 0;
 
+// fig 0/2 fig 0/3 DSCTy types string:
+const char *DSCTy_types_str[64] =  {
+    // ETSI TS 101 756 V1.6.1 (2014-05) table 2
+    "Unspecified data",                             "Traffic Message Channel (TMC)",
+    "Emergency Warning System (EWS)",               "Interactive Text Transmission System (ITTS)",
+    "Paging",                                       "Transparent Data Channel (TDC)",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "MPEG-2 Transport Stream, see ETSI TS 102 427", "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Rfu",
+    "Rfu",                                          "Embedded IP packets",
+    "Multimedia Object Transfer (MOT)",             "Proprietary service: no DSCTy signalled",
+    "Not used",                                     "Not used"
+};
+
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
 std::map<unsigned short, bool> fig0_6_key_la;
 
@@ -462,6 +499,14 @@ typedef struct lat_lng {
 }Lat_Lng;
 // map for fig 0/22 database
 std::map<unsigned short, Lat_Lng> fig0_22_key_Lat_Lng;
+
+// ETSI TS 102 367 V1.2.1 (2006-01) 5.4.1 Conditional Access Mode (CAMode)
+const char *CAMode_str[8] = {
+    "Sub-channel CA",   "Data Group CA",
+    "MOT CA",           "proprietary CA",
+    "reserved",         "reserved",
+    "reserved",         "reserved"
+};
 
 
 // Function prototypes
@@ -1206,13 +1251,13 @@ void decodeFIG(FIGalyser &figs,
                                     }
                                     else if (timd == 1) {
                                         // MSC stream data
-                                        sprintf(sctydesc, "DSCTy=%d", scty);
+                                        sprintf(sctydesc, "DSCTy=%d %s", scty, DSCTy_types_str[scty]);
                                         sprintf(desc, "Stream data mode, %s, %s, SubChannel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
                                         printbuf(desc, indent+3, NULL, 0);
                                     }
                                     else if (timd == 2) {
                                         // FIDC
-                                        sprintf(sctydesc, "DSCTy=%d", scty);
+                                        sprintf(sctydesc, "DSCTy=%d %s", scty, DSCTy_types_str[scty]);
                                         sprintf(desc, "FIDC mode, %s, %s, Fast Information Data Channel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
                                         printbuf(desc, indent+3, NULL, 0);
                                     }
@@ -1226,12 +1271,60 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 3: // FIG 0/3 Service component in packet mode with or without Conditional Access
+                        {   // ETSI EN 300 401 6.3.2
+                            unsigned short SCId, Packet_address, CAOrg;
+                            unsigned char i = 1, Rfa, DSCTy, SubChId, CAMode, SharedFlag;
+                            char tmpbuf[256];
+                            bool CAOrg_flag, DG_flag, Rfu;
+
+                            while (i < (figlen - 4)) {
+                                // iterate over service component in packet mode
+                                SCId = ((unsigned short)f[i] << 4) | ((unsigned short)(f[i+1] >> 4) & 0x0F);
+                                Rfa = (f[i+1] >> 1) & 0x07;
+                                CAOrg_flag = f[i+1] & 0x01;
+                                DG_flag = (f[i+2] >> 7) & 0x01;
+                                Rfu = (f[i+2] >> 6) & 0x01;
+                                DSCTy = f[i+2] & 0x3F;
+                                SubChId = (f[i+3] >> 2);
+                                Packet_address = ((unsigned short)(f[i+3] & 0x03) << 8) | ((unsigned short)f[i+4]);
+                                sprintf(desc, "SCId=0x%X, CAOrg flag=%d CAOrg field %s, DG flag=%d data groups are %sused to transport the service component, DSCTy=%d %s, SubChId=0x%X, Packet address=0x%X",
+                                        SCId, CAOrg_flag, CAOrg_flag?"present":"absent", DG_flag, DG_flag?"not ":"", DSCTy, DSCTy_types_str[DSCTy], SubChId, Packet_address);
+                                if (Rfa != 0) {
+                                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
+                                    strcat(desc, tmpbuf);
+                                }
+                                if (Rfu != 0) {
+                                    sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
+                                    strcat(desc, tmpbuf);
+                                }
+                                i += 5;
+                                if (CAOrg_flag) {
+                                    if (i < (figlen - 1)) {
+                                        CAOrg = ((unsigned short)f[i] << 8) | ((unsigned short)f[i+1]);
+                                        CAMode = (f[i] >> 5);
+                                        SharedFlag = f[i+1];
+                                        sprintf(tmpbuf, ", CAOrg=0x%X CAMode=%d \"%s\" SharedFlag=0x%X%s",
+                                                CAOrg, CAMode, CAMode_str[CAMode], SharedFlag, (SharedFlag == 0)?" invalid":"");
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    else {
+                                        sprintf(tmpbuf, ", invalid figlen");
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    i += 2;
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                            }
+                        }
+                        break;
                     case 5: // FIG 0/5 Service component language
                         {   // ETSI EN 300 401 8.1.2
                             unsigned short SCId;
                             unsigned char i = 1, SubChId, FIDCId, Language, Rfa;
                             char tmpbuf[256];
                             bool LS_flag, MSC_FIC_flag;
+
                             while (i < (figlen - 1)) {
                                 // iterate over service component language
                                 LS_flag = f[i] >> 7;
