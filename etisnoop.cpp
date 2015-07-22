@@ -1782,7 +1782,6 @@ void decodeFIG(FIGalyser &figs,
                                             SubId = 0;
                                             for(k = 0;(i < figlen) && (k < Length_SubId_list); k++) {
                                                 // iterate SubId
-                                                // b7-3, b2-0 b7-6, b5-1, b0 b7-4, b3-0 b7, b6-2, b1-0 b7-5, b4-0, b7-3
                                                 if (bit_pos >= 0) {
                                                     SubId |= (f[i] >> bit_pos) & 0x1F;
                                                     sprintf(desc, "SubId=0x%X", SubId);
@@ -2072,8 +2071,8 @@ void decodeFIG(FIGalyser &figs,
                             while (i < (figlen - 4)) {
                                 // iterate over announcement support
                                 // SId, Asu flags, Rfa, Number of clusters
-                                SId = (f[i] << 8) | f[i+1];
-                                Asu_flags = (f[i+2] << 8) | f[i+3];
+                                SId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                Asu_flags = ((unsigned short)f[i+2] << 8) | (unsigned short)f[i+3];
                                 Rfa = (f[i+4] >> 5);
                                 Number_clusters = (f[i+4] & 0x1F);
                                 sprintf(desc, "SId=0x%X, Asu flags=0x%04x", SId, Asu_flags);
@@ -2093,13 +2092,18 @@ void decodeFIG(FIGalyser &figs,
                                 }
                                 printbuf(desc, indent+1, NULL, 0);
                                 i += 5;
-                                j = i;
-                                while (j < (i + Number_clusters)) {
+
+                                for(j = 0; (j < Number_clusters) && (i < figlen); j++) {
                                     // iterate over Cluster Id
-                                    sprintf(desc, "Cluster Id=0x%02x", f[j]);
+                                    sprintf(desc, "Cluster Id=0x%X", f[j]);
                                     printbuf(desc, indent+2, NULL, 0);
-                                    j++;
+                                    i++;
                                 }
+                                if (j < Number_clusters) {
+                                    sprintf(desc, "missing Cluster Id, fig length too short !");
+                                    printbuf(desc, indent+1, NULL, 0);
+                                }
+
                                 // decode announcement support types
                                 for(j = 0; j < 16; j++) {
                                     if (Asu_flags & (1 << j)) {
@@ -2107,7 +2111,6 @@ void decodeFIG(FIGalyser &figs,
                                         printbuf(desc, indent+2, NULL, 0);
                                     }
                                 }
-                                i += Number_clusters;
                             }
                         }
                         break;
@@ -2123,7 +2126,7 @@ void decodeFIG(FIGalyser &figs,
                                 // Cluster Id, Asw flags, New flag, Region flag,
                                 // SubChId, Rfa, Region Id Lower Part
                                 Cluster_Id = f[i];
-                                Asw_flags = (f[i+1] << 8) | f[i+2];
+                                Asw_flags = ((unsigned short)f[i+1] << 8) | (unsigned short)f[i+2];
                                 New_flag = (f[i+3] >> 7);
                                 Region_flag = (f[i+3] >> 6) & 0x1;
                                 SubChId = (f[i+3] & 0x3F);
@@ -2586,6 +2589,60 @@ void decodeFIG(FIGalyser &figs,
                                     printbuf(desc, indent+2, NULL, 0);
                                 }
                                 i += (Number_of_EIds * 2);
+                            }
+                        }
+                        break;
+                    case 25: // FIG 0/25 OE Announcement support
+                        {    // ETSI EN 300 401 8.1.10.5.1
+                            unsigned int key;
+                            unsigned short SId, Asu_flags, EId;
+                            unsigned char i = 1, j, Rfu, Number_EIds;
+                            char tmpbuf[256];
+
+                            while (i < (figlen - 4)) {
+                                // iterate over other ensembles announcement support
+                                // SId, Asu flags, Rfu, Number of EIds
+                                SId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                Asu_flags = ((unsigned short)f[i+2] << 8) | (unsigned short)f[i+3];
+                                Rfu = (f[i+4] >> 4);
+                                Number_EIds = (f[i+4] & 0x0F);
+                                sprintf(desc, "SId=0x%X, Asu flags=0x%X", SId, Asu_flags);
+                                if (Rfu != 0) {
+                                    sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
+                                    strcat(desc, tmpbuf);
+                                }
+                                sprintf(tmpbuf, ", Number of EIds=%d", Number_EIds);
+                                strcat(desc, tmpbuf);
+                                key = ((unsigned int)oe << 17) | ((unsigned int)pd << 16) | (unsigned int)SId;
+                                sprintf(tmpbuf, ", database key=0x%05x", key);
+                                strcat(desc, tmpbuf);
+                                // CEI Change Event Indication
+                                if (Number_EIds == 0) {
+                                    sprintf(tmpbuf, ", CEI");
+                                    strcat(desc, tmpbuf);
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                                i += 5;
+
+                                for(j = 0; (j < Number_EIds) && (i < (figlen - 1)); j++) {
+                                    // iterate over EIds
+                                    EId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                    sprintf(desc, "EId=0x%X", EId);
+                                    printbuf(desc, indent+2, NULL, 0);
+                                    i += 2;
+                                }
+                                if (j < Number_EIds) {
+                                    sprintf(desc, "missing EId, fig length too short !");
+                                    printbuf(desc, indent+1, NULL, 0);
+                                }
+
+                                // decode OE announcement support types
+                                for(j = 0; j < 16; j++) {
+                                    if (Asu_flags & (1 << j)) {
+                                        sprintf(desc, "OE Announcement support=%s", announcement_types_str[j]);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
                             }
                         }
                         break;
