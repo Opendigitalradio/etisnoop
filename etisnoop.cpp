@@ -1806,11 +1806,13 @@ void decodeFIG(FIGalyser &figs,
                                             if (k < Length_SubId_list) {
                                                 sprintf(desc, "%d SubId missing, fig length too short !", (Length_SubId_list - k));
                                                 printbuf(desc, indent+3, NULL, 0);
+                                                fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
                                             }
                                         }
                                         if (j < Length_TII_list) {
                                             sprintf(desc, "%d Transmitter group missing, fig length too short !", (Length_TII_list - j));
                                             printbuf(desc, indent+2, NULL, 0);
+                                            fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
                                         }
                                     }
                                 }
@@ -1837,6 +1839,7 @@ void decodeFIG(FIGalyser &figs,
                                     else {
                                         sprintf(tmpbuf, ", Coordinates missing, fig length too short !");
                                         strcat(desc, tmpbuf);
+                                        fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
                                     }
                                     printbuf(desc, indent+1, NULL, 0);
                                     i += 7;
@@ -2102,6 +2105,7 @@ void decodeFIG(FIGalyser &figs,
                                 if (j < Number_clusters) {
                                     sprintf(desc, "missing Cluster Id, fig length too short !");
                                     printbuf(desc, indent+1, NULL, 0);
+                                    fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
                                 }
 
                                 // decode announcement support types
@@ -2132,16 +2136,23 @@ void decodeFIG(FIGalyser &figs,
                                 SubChId = (f[i+3] & 0x3F);
                                 sprintf(desc, "Cluster Id=0x%02x, Asw flags=0x%04x, New flag=%d %s, Region flag=%d last byte %s, SubChId=%d",
                                         Cluster_Id, Asw_flags, New_flag, (New_flag)?"new":"repeat", Region_flag, (Region_flag)?"present":"absent", SubChId);
-                                if ((Region_flag) && (i < (figlen - 4))) {
-                                    // read region lower part
-                                    Rfa = (f[i+4] >> 6);
-                                    RegionId_LP = (f[i+4] & 0x3F);
-                                    if (Rfa != 0) {
-                                        sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
+                                if (Region_flag) {
+                                    if (i < (figlen - 4)) {
+                                        // read region lower part
+                                        Rfa = (f[i+4] >> 6);
+                                        RegionId_LP = (f[i+4] & 0x3F);
+                                        if (Rfa != 0) {
+                                            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        sprintf(tmpbuf, ", Region Lower Part=0x%02x", RegionId_LP);
                                         strcat(desc, tmpbuf);
                                     }
-                                    sprintf(tmpbuf, ", Region Lower Part=0x%02x", RegionId_LP);
-                                    strcat(desc, tmpbuf);
+                                    else {
+                                        sprintf(tmpbuf, "missing Region Lower Part, fig length too short !");
+                                        strcat(desc, tmpbuf);
+                                        fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
+                                    }
                                 }
                                 printbuf(desc, indent+1, NULL, 0);
                                 // decode announcement switching types
@@ -2634,12 +2645,65 @@ void decodeFIG(FIGalyser &figs,
                                 if (j < Number_EIds) {
                                     sprintf(desc, "missing EId, fig length too short !");
                                     printbuf(desc, indent+1, NULL, 0);
+                                    fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
                                 }
 
                                 // decode OE announcement support types
                                 for(j = 0; j < 16; j++) {
                                     if (Asu_flags & (1 << j)) {
                                         sprintf(desc, "OE Announcement support=%s", announcement_types_str[j]);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 26: // FIG 0/26 OE Announcement switching
+                        {    // ETSI EN 300 401 8.1.10.5.2
+                            unsigned short Asw_flags, EId_Other_Ensemble;
+                            unsigned char i = 1, j, Rfa, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
+                            unsigned char Cluster_Id_Other_Ensemble, Region_Id_Other_Ensemble;
+                            bool New_flag, Region_flag;
+                            char tmpbuf[256];
+
+                            while (i < (figlen - 6)) {
+                                // iterate over other ensembles announcement switching
+                                Cluster_Id_Current_Ensemble = f[i];
+                                Asw_flags = ((unsigned short)f[i+1] << 8) | (unsigned short)f[i+2];
+                                New_flag = f[i+3] >> 7;
+                                Region_flag = (f[i+3] >> 6) & 0x01;
+                                Region_Id_Current_Ensemble = f[i+3] & 0x3F;
+                                EId_Other_Ensemble = ((unsigned short)f[i+4] << 8) | (unsigned short)f[i+5];
+                                Cluster_Id_Other_Ensemble = f[i+6];
+                                sprintf(desc, "Cluster Id Current Ensemble=0x%X, Asw flags=0x%X, New flag=%d %s announcement, Region flag=%d last byte %s, Region Id Current Ensemble=0x%X, EId Other Ensemble=0x%X, Cluster Id Other Ensemble=0x%X",
+                                        Cluster_Id_Current_Ensemble, Asw_flags, New_flag, New_flag?"newly introduced":"repeated",
+                                        Region_flag, Region_flag?"present":"absent. The announcement concerns the whole service area",
+                                        Region_Id_Current_Ensemble, EId_Other_Ensemble, Cluster_Id_Other_Ensemble);
+                                i += 7;
+                                if (Region_flag != 0) {
+                                    if (i < figlen) {
+                                        // get Region Id Other Ensemble
+                                        Rfa = (f[i] >> 6);
+                                        Region_Id_Other_Ensemble = f[i] & 0x3F;
+                                        if (Rfa != 0) {
+                                            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
+                                            strcat(desc, tmpbuf);
+                                        }
+                                        sprintf(tmpbuf, ", Region Id Other Ensemble=0x%X", Region_Id_Other_Ensemble);
+                                        strcat(desc, tmpbuf);
+                                    }
+                                    else {
+                                        sprintf(tmpbuf, "missing Region Id Other Ensemble, fig length too short !");
+                                        strcat(desc, tmpbuf);
+                                        fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
+                                    }
+                                    i++;
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                                // decode announcement switching types
+                                for(j = 0; j < 16; j++) {
+                                    if (Asw_flags & (1 << j)) {
+                                        sprintf(desc, "Announcement switching=%s", announcement_types_str[j]);
                                         printbuf(desc, indent+2, NULL, 0);
                                     }
                                 }
