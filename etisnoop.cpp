@@ -2710,6 +2710,53 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 27: // FIG 0/27 FM Announcement support
+                        {    // ETSI EN 300 401 8.1.11.2.1
+                            unsigned short SId, PI;
+                            unsigned char i = 1, j, Rfu, Number_PI_codes, key;
+                            char tmpbuf[256];
+
+                            while (i < (figlen - 2)) {
+                                // iterate over FM announcement support
+                                SId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                Rfu = f[i+2] >> 4;
+                                Number_PI_codes = f[i+2] & 0x0F;
+                                key = (oe << 5) | (pd << 4) | Number_PI_codes;
+                                sprintf(desc, "SId=0x%X", SId);
+                                if (Rfu != 0) {
+                                    sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
+                                    strcat(desc, tmpbuf);
+                                }
+                                sprintf(tmpbuf, ", Number of PI codes=%d", Number_PI_codes);
+                                strcat(desc, tmpbuf);
+                                if (Number_PI_codes > 12) {
+                                    strcat(desc, " above maximum value of 12");
+                                    fprintf(stderr, "WARNING: FIG %d/%d Number of PI codes=%d > 12 (maximum value)\n", figtype, ext, Number_PI_codes);
+                                }
+                                sprintf(tmpbuf, ", database key=0x%02X", key);
+                                strcat(desc, tmpbuf);
+                                // CEI Change Event Indication
+                                if (Number_PI_codes == 0) {
+                                    // The Change Event Indication (CEI) is signalled by the Number of PI codes field = 0
+                                    strcat(desc, ", CEI");
+                                }
+                                printbuf(desc, indent+1, NULL, 0);
+                                i += 3;
+                                for(j = 0; (j < Number_PI_codes) && (i < (figlen - 1)); j++) {
+                                    // iterate over PI
+                                    PI = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                    sprintf(desc, "PI=0x%X", PI);
+                                    printbuf(desc, indent+2, NULL, 0);
+                                    i += 2;
+                                }
+                                if (j != Number_PI_codes) {
+                                    sprintf(desc, "fig length too short !");
+                                    printbuf(desc, indent+2, NULL, 0);
+                                    fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, ext, figlen);
+                                }
+                            }
+                        }
+                        break;
                 }
             }
             break;
@@ -2869,7 +2916,7 @@ void decodeFIG(FIGalyser &figs,
             break;
         case 6:
             {// Conditional access
-                fprintf(stderr, "ERROR: ETI contains unsupported FIG 6");
+                fprintf(stderr, "ERROR: ETI contains unsupported FIG 6\n");
             }
             break;
     }
