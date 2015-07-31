@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2014, 2015 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ bool DabPlusSnoop::seek_valid_firecode()
 {
     if (m_data.size() < 10) {
         // Not enough data
-        return -1;
+        return false;
     }
 
     bool crc_ok = false;
@@ -269,7 +269,8 @@ bool DabPlusSnoop::extract_au(vector<int> au_start)
 
         if (calc_crc != au_crc) {
             printf(DPS_INDENT DPS_PREFIX
-                    "Erroneous CRC for au %zu\n", au);
+                    "Erroneous CRC for au %zu: 0x%04x vs 0x%04x\n",
+                    au, calc_crc, au_crc);
 
             all_crc_ok = false;
         }

@@ -158,6 +158,7 @@ int identify_eti_format(FILE* inputFile, int *streamType)
         }
     }
 
+    (void)nbframes_; // suppress warning "nbframes_ unused"
     fprintf(stderr, "Bad input file format!\n");
     return -1;
 }

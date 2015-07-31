@@ -936,6 +936,8 @@ int eti_analyse(eti_analyse_config_t& config)
             printbuf(sdesc, 1, NULL, 0);
             fib = p + 12 + 4*nst;
             for(int i = 0; i < ficl*4/32; i++) {
+                sprintf(sdesc, "FIB %d", i);
+                printbuf(sdesc, 1, NULL, 0);
                 fig=fib;
                 figs.set_fib(i);
                 endmarker=0;
@@ -964,11 +966,11 @@ int eti_analyse(eti_analyse_config_t& config)
                 }
                 crc =~ crc;
                 if (crc == figcrc)
-                    sprintf(sdesc,"FIB CRC OK");
+                    sprintf(sdesc, "FIB %d CRC OK", i);
                 else
-                    sprintf(sdesc,"FIB CRC Mismatch: %02x",crc);
+                    sprintf(sdesc, "FIB %d CRC Mismatch: %02x", i, crc);
 
-                printbuf("FIB CRC",3,fib+30,2,sdesc);
+                printbuf(sdesc,3,fib+30,2);
                 fib += 32;
             }
 

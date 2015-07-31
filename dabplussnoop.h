@@ -117,6 +117,7 @@ class DabPlusSnoop
         int  m_mpeg_surround_config;
 
         /* Functions */
+
         bool seek_valid_firecode(void);
         bool decode(void);
         bool extract_au(std::vector<int> au_start);
