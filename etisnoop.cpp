@@ -2792,6 +2792,81 @@ void decodeFIG(FIGalyser &figs,
                             }
                         }
                         break;
+                    case 31: // FIG 0/31 FIC re-direction
+                        {    // ETSI EN 300 401 8.1.12
+                            unsigned int FIG_type0_flag_field = 0, flag_field;
+                            unsigned char i = 1, j, FIG_type1_flag_field = 0, FIG_type2_flag_field = 0;
+
+                            if (i < (figlen - 5)) {
+                                // Read FIC re-direction
+                                FIG_type0_flag_field = ((unsigned int)f[i] << 24) | ((unsigned int)f[i+1] << 16) |
+                                                       ((unsigned int)f[i+2] << 8) | (unsigned int)f[i+3];
+                                FIG_type1_flag_field = f[i+4];
+                                FIG_type2_flag_field = f[i+5];
+
+                                sprintf(desc, "FIG type 0 flag field=0x%X, FIG type 1 flag field=0x%X, FIG type 2 flag field=0x%X",
+                                        FIG_type0_flag_field, FIG_type1_flag_field, FIG_type2_flag_field);
+                                printbuf(desc, indent+1, NULL, 0);
+
+                                for(j = 0; j < 32; j++) {
+                                    // iterate over FIG type 0 re-direction
+                                    flag_field = FIG_type0_flag_field & ((unsigned int)1 << j);
+                                    if ((flag_field != 0) && (((j >= 0) && (j <= 5)) || (j == 8) ||
+                                        (j == 10) || (j == 13) || (j == 14) ||
+                                        (j == 19) || (j == 26) || (j == 28))) {
+                                        sprintf(desc, "oe=%d FIG 0/%d carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
+                                                oe, j);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                        fprintf(stderr, "WARNING: FIG %d/%d FIG re-direction of oe=%d FIG0/%d not allowed\n", figtype, ext, oe, j);
+                                    }
+                                    else if ((flag_field != 0) && ((j == 21) || (j == 24))) {
+                                        sprintf(desc, "oe=%d FIG 0/%d carried in AIC, same shall be carried in FIC", oe, j);
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                    else if (flag_field != 0) {
+                                        if (oe == 0) {
+                                            sprintf(desc, "oe=%d FIG 0/%d carried in AIC, same shall be carried in FIC", oe, j);
+                                        }
+                                        else {  // oe == 1
+                                            sprintf(desc, "oe=%d FIG 0/%d carried in AIC, may be carried entirely in AIC", oe, j);
+                                        }
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
+
+                                for(j = 0; j < 8; j++) {
+                                    // iterate over FIG type 1 re-direction
+                                    flag_field = FIG_type1_flag_field & ((unsigned int)1 << j);
+                                    if (flag_field != 0) {
+                                        if (oe == 0) {
+                                            sprintf(desc, "oe=%d FIG 1/%d carried in AIC, same shall be carried in FIC", oe, j);
+                                        }
+                                        else {  // oe == 1
+                                            sprintf(desc, "oe=%d FIG 1/%d carried in AIC, may be carried entirely in AIC", oe, j);
+                                        }
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
+
+                                for(j = 0; j < 8; j++) {
+                                    // iterate over FIG type 2 re-direction
+                                    flag_field = FIG_type2_flag_field & ((unsigned int)1 << j);
+                                    if (flag_field != 0) {
+                                        if (oe == 0) {
+                                            sprintf(desc, "oe=%d FIG 2/%d carried in AIC, same shall be carried in FIC", oe, j);
+                                        }
+                                        else {  // oe == 1
+                                            sprintf(desc, "oe=%d FIG 2/%d carried in AIC, may be carried entirely in AIC", oe, j);
+                                        }
+                                        printbuf(desc, indent+2, NULL, 0);
+                                    }
+                                }
+                            }
+                            if (figlen != 7) {
+                                fprintf(stderr, "WARNING: FIG %d/%d invalid length %d, expecting 7\n", figtype, ext, figlen);
+                            }
+                        }
+                        break;
                 }
             }
             break;
