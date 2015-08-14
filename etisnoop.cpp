@@ -2100,7 +2100,7 @@ void decodeFIG(FIGalyser &figs,
 
                                 for(j = 0; (j < Number_clusters) && (i < figlen); j++) {
                                     // iterate over Cluster Id
-                                    sprintf(desc, "Cluster Id=0x%X", f[j]);
+                                    sprintf(desc, "Cluster Id=0x%X", f[i]);
                                     printbuf(desc, indent+2, NULL, 0);
                                     i++;
                                 }
