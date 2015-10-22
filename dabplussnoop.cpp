@@ -34,6 +34,7 @@
 #include "firecode.h"
 #include "lib_crc.h"
 #include "faad_decoder.h"
+#include "rsdecoder.h"
 
 #define DPS_INDENT "\t\t"
 #define DPS_PREFIX "DAB+ decode:"
@@ -124,9 +125,17 @@ bool DabPlusSnoop::decode()
     printf(DPS_PREFIX " We have %zu bytes of data\n", m_data.size());
 #endif
 
-    if (m_subchannel_index && m_data.size() >= m_subchannel_index * 120) {
+    const size_t sf_len = m_subchannel_index * 120;
+    if (m_subchannel_index && m_data.size() >= sf_len) {
+        std::vector<uint8_t> b(sf_len);
+        std::copy(m_data.begin(), m_data.begin() + sf_len, b.begin());
 
-        uint8_t* b = &m_data[0];
+        RSDecoder rs_dec;
+        int rs_errors = rs_dec.DecodeSuperframe(b, m_subchannel_index);
+
+        if (rs_errors == -1) {
+            return false;
+        }
 
         // -- Parse he_aac_super_frame
         // ---- Parse he_aac_super_frame_header
@@ -171,7 +180,7 @@ bool DabPlusSnoop::decode()
 
 
         // ------ Parse au_start
-        b += 3;
+        auto au_starts = b.begin() + 3;
 
         vector<uint8_t> au_start_nibbles(0);
 
@@ -179,12 +188,12 @@ bool DabPlusSnoop::decode()
          * When we have n AUs, we have n-1 au_start values. */
         for (int i = 0; i < (num_aus-1)*3; i++) {
             if (i % 2 == 0) {
-                char nibble = b[i/2] >> 4;
+                char nibble = au_starts[i/2] >> 4;
 
                 au_start_nibbles.push_back( nibble );
             }
             else {
-                char nibble = b[i/2] & 0x0F;
+                char nibble = au_starts[i/2] & 0x0F;
 
                 au_start_nibbles.push_back( nibble );
             }

@@ -596,7 +596,7 @@ int main(int argc, char *argv[])
         switch (ch) {
             case 'd':
                 {
-                    int subchix = atoi(optarg);
+                int subchix = atoi(optarg);
                 DabPlusSnoop dps;
                 streams_to_decode[subchix] = dps;
                 }

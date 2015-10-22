@@ -25,7 +25,7 @@ set(VERSION_INFO_MAINT_VERSION git)
 # Compiler specific setup
 ########################################################################
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -std=c++11")
 
 
 ########################################################################
@@ -36,6 +36,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall")
 find_package(Faad REQUIRED)
 include_directories(${FAAD_INCLUDE_DIRS})
 
+# libfec
+find_package(Fec REQUIRED)
+include_directories(${FEC_INCLUDE_DIRS})
 
 ########################################################################
 # Setup apps
@@ -49,11 +52,12 @@ list(APPEND etisnoop_sources
     wavfile.c
     etiinput.cpp
     etisnoop.cpp
+    rsdecoder.cpp
 )
 
 set_source_files_properties(${etisnoop_sources} PROPERTIES LANGUAGE "CXX")
 add_executable(etisnoop ${etisnoop_sources})
-target_link_libraries(etisnoop ${FAAD_LIBRARIES})
+target_link_libraries(etisnoop ${FAAD_LIBRARIES} ${FEC_LIBRARIES})
 
 install(TARGETS etisnoop DESTINATION bin)
 
