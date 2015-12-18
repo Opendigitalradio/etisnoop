@@ -1,0 +1,33 @@
+language: c
+sudo: required
+dist: trusty
+
+compiler:
+  - gcc
+  - clang
+
+addons: &addons
+  apt:
+    packages: &packages
+      - libzmq3-dev
+      - libzmq3
+      - libfaad-dev
+      - libfaad2
+
+script:
+  - |
+    pushd /tmp
+    git clone https://github.com/Opendigitalradio/ka9q-fec.git
+    cd ka9q-fec
+    mkdir build
+    cd build
+    cmake ..
+    make
+    sudo make install
+    popd
+  - |
+    mkdir build
+    cd build
+    cmake ..
+    make
+
