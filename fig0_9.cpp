@@ -57,7 +57,7 @@ void fig0_9(fig0_common_t& fig0, int indent)
             // negative Ensemble LTO
             Ensemble_LTO |= 0xC0;
         }
-        sprintf(desc, "fig0.ext() flag=%d extended field %s, LTO uniq=%d %s, Ensemble LTO=0x%X %s%d:%02d",
+        sprintf(desc, "Ext flag=%d extended field %s, LTO uniq=%d %s, Ensemble LTO=0x%X %s%d:%02d",
                 Ext_flag, Ext_flag?"present":"absent", LTO_uniq,
                 LTO_uniq?"several time zones":"one time zone (time specified by Ensemble LTO)",
                 (Ensemble_LTO & 0x3F), (Ensemble_LTO >= 0)?"":"-" , abs(Ensemble_LTO) >> 1, (Ensemble_LTO & 0x01) * 30);

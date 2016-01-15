@@ -57,7 +57,7 @@ void fig0_8(fig0_common_t& fig0, int indent)
         Ext_flag = f[i] >> 7;
         Rfa = (f[i] >> 4) & 0x7;
         SCIdS = f[i] & 0x0F;
-        sprintf(desc, "SId=0x%X, fig0.ext() flag=%d 8-bit Rfa %s", SId, Ext_flag, (Ext_flag)?"present":"absent");
+        sprintf(desc, "SId=0x%X, Ext flag=%d 8-bit Rfa %s", SId, Ext_flag, (Ext_flag)?"present":"absent");
         if (Rfa != 0) {
             sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
             strcat(desc, tmpbuf);

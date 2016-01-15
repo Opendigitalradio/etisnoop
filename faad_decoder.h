@@ -41,12 +41,12 @@ class FaadHandle
             decoder = NeAACDecOpen();
         }
 
-        FaadHandle(const FaadHandle& other)
+        FaadHandle(const FaadHandle&)
         {
             this->decoder = NeAACDecOpen();
         }
 
-        FaadHandle& operator=(const FaadHandle& other)
+        FaadHandle& operator=(const FaadHandle&)
         {
             this->decoder = NeAACDecOpen();
             return *this;
