@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2014 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -37,6 +37,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <inttypes.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -350,7 +351,7 @@ class FIG0_5 {
         // Language_to_char decode fig 0/5 language code in string
         // Input : Language code number
         // Return: Language char *
-        const char * Language_to_char(unsigned char language) {
+        const char * Language_to_char(uint8_t language) {
             if (Language_code_to_char_map.count(language) > 0) {
                 return Language_code_to_char_map[language];
             }
@@ -361,7 +362,7 @@ class FIG0_5 {
 
     private:
         // Map between fig 0/5 Language code and Language char
-        std::map<unsigned char, const char *> Language_code_to_char_map;
+        std::map<uint8_t, const char *> Language_code_to_char_map;
 };
 
 
@@ -380,7 +381,7 @@ struct eti_analyse_config_t {
 
 // Globals
 static int verbosity;
-static unsigned char Mode_Identity = 0;
+static uint8_t Mode_Identity = 0;
 
 // fig 0/2 fig 0/3 DSCTy types string:
 const char *DSCTy_types_str[64] =  {
@@ -420,11 +421,11 @@ const char *DSCTy_types_str[64] =  {
 };
 
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
-std::map<unsigned short, bool> fig0_6_key_la;
+std::map<uint16_t, bool> fig0_6_key_la;
 
 // fig 0/9 global variables
-unsigned char Ensemble_ECC=0, International_Table_Id=0;
-signed char Ensemble_LTO=0;
+uint8_t Ensemble_ECC=0, International_Table_Id=0;
+int8_t Ensemble_LTO=0;
 bool LTO_uniq;
 
 // fig 0/14 FEC Scheme: this 2-bit field shall indicate the Forward Error Correction scheme in use, as follows:
@@ -502,7 +503,7 @@ typedef struct lat_lng {
     double latitude, longitude;
 }Lat_Lng;
 // map for fig 0/22 database
-std::map<unsigned short, Lat_Lng> fig0_22_key_Lat_Lng;
+std::map<uint16_t, Lat_Lng> fig0_22_key_Lat_Lng;
 
 // ETSI TS 102 367 V1.2.1 (2006-01) 5.4.1 Conditional Access Mode (CAMode)
 const char *CAMode_str[8] = {
@@ -520,21 +521,21 @@ void printinfo(string header,
 
 void printbuf(string header,
         int indent_level,
-        unsigned char* buffer,
+        uint8_t* buffer,
         size_t size,
         string desc="");
 
 void decodeFIG(FIGalyser &figs,
                WatermarkDecoder &wm_decoder,
-               unsigned char* figdata,
-               unsigned char figlen,
-               unsigned short int figtype,
-               unsigned short int indent);
+               uint8_t* figdata,
+               uint8_t figlen,
+               uint16_t figtype,
+               int indent);
 
 int eti_analyse(eti_analyse_config_t& config);
 
-const char *get_programme_type_str(unsigned int int_table_Id, unsigned int pty);
-char *strcatPNum(char *dest_str, unsigned short Programme_Number);
+const char *get_programme_type_str(size_t int_table_Id, size_t pty);
+char *strcatPNum(char *dest_str, uint16_t Programme_Number);
 int sprintfMJD(char *dst, int mjd);
 
 std::string get_fig_0_13_userapp(int user_app_type)
@@ -650,16 +651,16 @@ int main(int argc, char *argv[])
 
 int eti_analyse(eti_analyse_config_t& config)
 {
-    unsigned char p[ETINIPACKETSIZE];
+    uint8_t p[ETINIPACKETSIZE];
     string desc;
     char prevsync[3]={0x00,0x00,0x00};
-    unsigned char ficf,nst,fp,mid,ficl;
-    unsigned short int fl,crch;
-    unsigned short int crc;
-    unsigned char scid,tpl,l1;
-    unsigned short int sad[64],stl[64];
+    uint8_t ficf,nst,fp,mid,ficl;
+    uint16_t fl,crch;
+    uint16_t crc;
+    uint8_t scid,tpl,l1;
+    uint16_t sad[64],stl[64];
     char sdesc[256];
-    unsigned int frame_nb = 0, frame_sec = 0, frame_ms = 0, frame_h, frame_m, frame_s;
+    uint32_t frame_nb = 0, frame_sec = 0, frame_ms = 0, frame_h, frame_m, frame_s;
 
     bool running = true;
 
@@ -844,7 +845,7 @@ int eti_analyse(eti_analyse_config_t& config)
             tpl = (p[10+4*i] & 0xFC) >> 2;
 
             if ((tpl & 0x20) >> 5 == 1) {
-                unsigned char opt, plevel;
+                uint8_t opt, plevel;
                 string plevelstr;
                 opt = (tpl & 0x1c) >> 2;
                 plevel = (tpl & 0x03);
@@ -876,7 +877,7 @@ int eti_analyse(eti_analyse_config_t& config)
                 sprintf(sdesc, "0x%02x - Equal Error Protection. %s", tpl, plevelstr.c_str());
             }
             else {
-                unsigned char tsw, uepidx;
+                uint8_t tsw, uepidx;
                 tsw = (tpl & 0x08);
                 uepidx = tpl & 0x07;
                 sprintf(sdesc, "0x%02x - Unequal Error Protection. Table switch %d,  UEP index %d", tpl, tsw, uepidx);
@@ -895,7 +896,7 @@ int eti_analyse(eti_analyse_config_t& config)
 
         // EOH
         printbuf("EOH - End Of Header", 1, p + 8 + 4*nst, 4);
-        unsigned short int mnsc = p[8 + 4*nst] * 256 + \
+        uint16_t mnsc = p[8 + 4*nst] * 256 + \
                                   p[8 + 4*nst + 1];
         {
             stringstream ss;
@@ -924,12 +925,12 @@ int eti_analyse(eti_analyse_config_t& config)
         if (ficf == 1) {
             int endmarker = 0;
             int figcount = 0;
-            unsigned char *fib, *fig;
-            unsigned short int figcrc;
+            uint8_t *fib, *fig;
+            uint16_t figcrc;
 
             FIGalyser figs;
 
-            unsigned char ficdata[32*4];
+            uint8_t ficdata[32*4];
             memcpy(ficdata, p + 12 + 4*nst, ficl*4);
             sprintf(sdesc, "FIC Data (%d bytes)", ficl*4);
             //printbuf(sdesc, 1, ficdata, ficl*4);
@@ -943,7 +944,7 @@ int eti_analyse(eti_analyse_config_t& config)
                 endmarker=0;
                 figcount=0;
                 while (!endmarker) {
-                    unsigned char figtype, figlen;
+                    uint8_t figtype, figlen;
                     figtype = (fig[0] & 0xE0) >> 5;
                     if (figtype != 7) {
                         figlen = fig[0] & 0x1F;
@@ -981,7 +982,7 @@ int eti_analyse(eti_analyse_config_t& config)
 
         int offset = 0;
         for (int i=0; i < nst; i++) {
-            unsigned char streamdata[684*8];
+            uint8_t streamdata[684*8];
             memcpy(streamdata, p + 12 + 4*nst + ficf*ficl*4 + offset, stl[i]*8);
             offset += stl[i] * 8;
             if (config.streams_to_decode.count(i) > 0) {
@@ -1056,10 +1057,10 @@ int eti_analyse(eti_analyse_config_t& config)
 
 void decodeFIG(FIGalyser &figs,
                WatermarkDecoder &wm_decoder,
-               unsigned char* f,
-               unsigned char figlen,
-               unsigned short int figtype,
-               unsigned short int indent)
+               uint8_t* f,
+               uint8_t figlen,
+               uint16_t figtype,
+               int indent)
 {
     char desc[512];
     static FIG0_5 fig0_5;
@@ -1067,7 +1068,7 @@ void decodeFIG(FIGalyser &figs,
     switch (figtype) {
         case 0:
             {
-                unsigned short int ext,cn,oe,pd;
+                uint16_t ext,cn,oe,pd;
 
                 cn = (f[0] & 0x80) >> 7;
                 oe = (f[0] & 0x40) >> 6;
@@ -1083,8 +1084,8 @@ void decodeFIG(FIGalyser &figs,
 
                     case 0: // FIG 0/0 Ensemble information
                         {   // ETSI EN 300 401 6.4
-                            unsigned char cid, al, ch, hic, lowc, occ;
-                            unsigned short int eid, eref;
+                            uint8_t cid, al, ch, hic, lowc, occ;
+                            uint16_t eid, eref;
 
                             eid  =  f[1]*256+f[2];
                             cid  = (f[1] & 0xF0) >> 4;
@@ -1146,7 +1147,7 @@ void decodeFIG(FIGalyser &figs,
                                 }
                                 else {
                                     int table_switch = (f[i+2] >> 6) & 0x01;
-                                    unsigned int table_index  = (f[i+2] & 0x3F);
+                                    uint32_t table_index  = (f[i+2] & 0x3F);
 
 
                                     if (table_switch == 0) {
@@ -1169,8 +1170,8 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 2: // FIG 0/2 Basic service and service component definition
                         {   // ETSI EN 300 401 6.3.1
-                            unsigned short int sref, sid;
-                            unsigned char cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
+                            uint16_t sref, sid;
+                            uint8_t cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
                             int k=1;
                             string psdesc;
                             char sctydesc[32];
@@ -1213,7 +1214,7 @@ void decodeFIG(FIGalyser &figs,
 
                                 k++;
                                 for (int i=0; i<ncomp; i++) {
-                                    unsigned char scomp[2];
+                                    uint8_t scomp[2];
 
                                     memcpy(scomp, f+k, 2);
                                     sprintf(desc, "Component[%d]", i);
@@ -1226,7 +1227,7 @@ void decodeFIG(FIGalyser &figs,
 
                                     /* useless, kept as reference
                                     if (timd == 3) {
-                                        unsigned short int scid;
+                                        uint16_t scid;
                                         scid = scty*64 + subchid;
                                     }
                                     */
@@ -1279,21 +1280,21 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 3: // FIG 0/3 Service component in packet mode with or without Conditional Access
                         {   // ETSI EN 300 401 6.3.2
-                            unsigned short SCId, Packet_address, CAOrg;
-                            unsigned char i = 1, Rfa, DSCTy, SubChId, CAMode, SharedFlag;
+                            uint16_t SCId, Packet_address, CAOrg;
+                            uint8_t i = 1, Rfa, DSCTy, SubChId, CAMode, SharedFlag;
                             char tmpbuf[256];
                             bool CAOrg_flag, DG_flag, Rfu;
 
                             while (i < (figlen - 4)) {
                                 // iterate over service component in packet mode
-                                SCId = ((unsigned short)f[i] << 4) | ((unsigned short)(f[i+1] >> 4) & 0x0F);
+                                SCId = ((uint16_t)f[i] << 4) | ((uint16_t)(f[i+1] >> 4) & 0x0F);
                                 Rfa = (f[i+1] >> 1) & 0x07;
                                 CAOrg_flag = f[i+1] & 0x01;
                                 DG_flag = (f[i+2] >> 7) & 0x01;
                                 Rfu = (f[i+2] >> 6) & 0x01;
                                 DSCTy = f[i+2] & 0x3F;
                                 SubChId = (f[i+3] >> 2);
-                                Packet_address = ((unsigned short)(f[i+3] & 0x03) << 8) | ((unsigned short)f[i+4]);
+                                Packet_address = ((uint16_t)(f[i+3] & 0x03) << 8) | ((uint16_t)f[i+4]);
                                 sprintf(desc, "SCId=0x%X, CAOrg flag=%d CAOrg field %s, DG flag=%d data groups are %sused to transport the service component, DSCTy=%d %s, SubChId=0x%X, Packet address=0x%X",
                                         SCId, CAOrg_flag, CAOrg_flag?"present":"absent", DG_flag, DG_flag?"not ":"", DSCTy, DSCTy_types_str[DSCTy], SubChId, Packet_address);
                                 if (Rfa != 0) {
@@ -1307,7 +1308,7 @@ void decodeFIG(FIGalyser &figs,
                                 i += 5;
                                 if (CAOrg_flag) {
                                     if (i < (figlen - 1)) {
-                                        CAOrg = ((unsigned short)f[i] << 8) | ((unsigned short)f[i+1]);
+                                        CAOrg = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
                                         CAMode = (f[i] >> 5);
                                         SharedFlag = f[i+1];
                                         sprintf(tmpbuf, ", CAOrg=0x%X CAMode=%d \"%s\" SharedFlag=0x%X%s",
@@ -1326,8 +1327,8 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 5: // FIG 0/5 Service component language
                         {   // ETSI EN 300 401 8.1.2
-                            unsigned short SCId;
-                            unsigned char i = 1, SubChId, FIDCId, Language, Rfa;
+                            uint16_t SCId;
+                            uint8_t i = 1, SubChId, FIDCId, Language, Rfa;
                             char tmpbuf[256];
                             bool LS_flag, MSC_FIC_flag;
 
@@ -1357,7 +1358,7 @@ void decodeFIG(FIGalyser &figs,
                                     // Long form (L/S = 1)
                                     if (i < (figlen - 2)) {
                                         Rfa = (f[i] >> 4) & 0x07;
-                                        SCId = (((unsigned short)f[i] & 0x0F) << 8) | (unsigned short)f[i+1];
+                                        SCId = (((uint16_t)f[i] & 0x0F) << 8) | (uint16_t)f[i+1];
                                         Language = f[i+2];
                                         sprintf(desc, "L/S flag=%d long form", LS_flag);
                                         if (Rfa != 0) {
@@ -1376,9 +1377,9 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 6: // FIG 0/6 Service linking information
                         {   // ETSI EN 300 401 8.1.15
-                            unsigned int j;
-                            unsigned short LSN, key;
-                            unsigned char i = 1, Number_of_Ids, IdLQ;
+                            uint32_t j;
+                            uint16_t LSN, key;
+                            uint8_t i = 1, Number_of_Ids, IdLQ;
                             char signal_link[256];
                             bool Id_list_flag, LA, SH, ILS, Shd;
 
@@ -1501,9 +1502,9 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 8: // FIG 0/8 Service component global definition
                         {   // ETSI EN 300 401 6.3.5
-                            unsigned int SId;
-                            unsigned short SCId;
-                            unsigned char i = 1, Rfa, SCIdS, SubChId, FIDCId;
+                            uint32_t SId;
+                            uint16_t SCId;
+                            uint8_t i = 1, Rfa, SCIdS, SubChId, FIDCId;
                             char tmpbuf[256];
                             bool Ext_flag, LS_flag, MSC_FIC_flag;
 
@@ -1516,8 +1517,8 @@ void decodeFIG(FIGalyser &figs,
                                 }
                                 else {
                                     // Data services, 32 bit SId
-                                    SId = ((unsigned int)f[i] << 24) | ((unsigned int)f[i+1] << 16) |
-                                            ((unsigned int)f[i+2] << 8) | (unsigned int)f[i+3];
+                                    SId = ((uint32_t)f[i] << 24) | ((uint32_t)f[i+1] << 16) |
+                                            ((uint32_t)f[i+2] << 8) | (uint32_t)f[i+3];
                                     i += 4;
                                 }
                                 Ext_flag = f[i] >> 7;
@@ -1566,7 +1567,7 @@ void decodeFIG(FIGalyser &figs,
                                         // Long form
                                         if (i < (figlen - 1)) {
                                             Rfa = (f[i] >> 4) & 0x07;
-                                            SCId = (((unsigned short)f[i] & 0x0F) << 8) | (unsigned short)f[i+1];
+                                            SCId = (((uint16_t)f[i] & 0x0F) << 8) | (uint16_t)f[i+1];
                                             if (Rfa != 0) {
                                                 sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
                                                 strcat(desc, tmpbuf);
@@ -1583,15 +1584,15 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 9: // FIG 0/9 Country, LTO and International table
                         {   // ETSI EN 300 401 8.1.3.2
-                            unsigned int SId;
-                            unsigned char i = 1, j, key, Number_of_services, ECC;
-                            signed char LTO;
+                            uint32_t SId;
+                            uint8_t i = 1, j, key, Number_of_services, ECC;
+                            int8_t LTO;
                             char tmpbuf[256];
                             bool Ext_flag;
 
                             if (i < (figlen - 2)) {
                                 // get Ensemble LTO, ECC and International Table Id
-                                key = ((unsigned char)oe << 1) | (unsigned char)pd;
+                                key = ((uint8_t)oe << 1) | (uint8_t)pd;
                                 Ext_flag = f[i] >> 7;
                                 LTO_uniq = (f[i]>> 6) & 0x01;
                                 Ensemble_LTO = f[i] & 0x3F;
@@ -1646,7 +1647,7 @@ void decodeFIG(FIGalyser &figs,
                                                 i++;
                                                 for(j = i; ((j < (i + (Number_of_services * 2))) && (j < figlen)); j += 2) {
                                                     // iterate over SId
-                                                    SId = ((unsigned int)f[j] << 8) | (unsigned int)f[j+1];
+                                                    SId = ((uint32_t)f[j] << 8) | (uint32_t)f[j+1];
                                                     sprintf(desc, "SId 0x%X", SId);
                                                     printbuf(desc, indent+3, NULL, 0);
                                                 }
@@ -1658,8 +1659,8 @@ void decodeFIG(FIGalyser &figs,
                                             printbuf(desc, indent+2, NULL, 0);
                                             for(j = i; ((j < (i + (Number_of_services * 4))) && (j < figlen)); j += 4) {
                                                 // iterate over SId
-                                                SId = ((unsigned int)f[j] << 24) | ((unsigned int)f[j+1] << 16) |
-                                                        ((unsigned int)f[j+2] << 8) | (unsigned int)f[j+3];
+                                                SId = ((uint32_t)f[j] << 24) | ((uint32_t)f[j+1] << 16) |
+                                                        ((uint32_t)f[j+2] << 8) | (uint32_t)f[j+3];
                                                 sprintf(desc, "SId 0x%X", SId);
                                                 printbuf(desc, indent+3, NULL, 0);
                                             }
@@ -1710,10 +1711,10 @@ void decodeFIG(FIGalyser &figs,
                     case 11: // FIG 0/11 Region definition
                         {    // ETSI EN 300 401 8.1.16.1
                             Lat_Lng gps_pos = {0, 0};
-                            signed short Latitude_coarse, Longitude_coarse;
-                            unsigned short Region_Id, Extent_Latitude, Extent_Longitude, key;
-                            unsigned char i = 1, j, k, GATy, Rfu, Length_TII_list, Rfa, MainId, Length_SubId_list, SubId;
-                            signed char bit_pos;
+                            int16_t Latitude_coarse, Longitude_coarse;
+                            uint16_t Region_Id, Extent_Latitude, Extent_Longitude, key;
+                            uint8_t i = 1, j, k, GATy, Rfu, Length_TII_list, Rfa, MainId, Length_SubId_list, SubId;
+                            int8_t bit_pos;
                             char tmpbuf[256];
                             bool GE_flag;
 
@@ -1721,8 +1722,8 @@ void decodeFIG(FIGalyser &figs,
                                 // iterate over Region definition
                                 GATy = f[i] >> 4;
                                 GE_flag = (f[i] >> 3) & 0x01;
-                                Region_Id = ((unsigned short)(f[i] & 0x07) << 8) | ((unsigned short)f[i+1]);
-                                key = ((unsigned short)oe << 12) | ((unsigned short)pd << 11) | Region_Id;
+                                Region_Id = ((uint16_t)(f[i] & 0x07) << 8) | ((uint16_t)f[i+1]);
+                                key = ((uint16_t)oe << 12) | ((uint16_t)pd << 11) | Region_Id;
                                 i += 2;
                                 if (GATy == 0) {
                                     // TII list
@@ -1823,15 +1824,15 @@ void decodeFIG(FIGalyser &figs,
                                     sprintf(desc, "GATy=%d Geographical area defined as a spherical rectangle by the geographical co-ordinates of one corner and its latitude and longitude extents, G/E flag=%d %s coverage area, RegionId=0x%X, database key=0x%X",
                                             GATy, GE_flag, GE_flag?"Global":"Ensemble", Region_Id, key);
                                     if (i < (figlen - 6)) {
-                                        Latitude_coarse = ((signed short)f[i] << 8) | ((unsigned short)f[i+1]);
-                                        Longitude_coarse = ((signed short)f[i+2] << 8) | ((unsigned short)f[i+3]);
+                                        Latitude_coarse = ((int16_t)f[i] << 8) | ((uint16_t)f[i+1]);
+                                        Longitude_coarse = ((int16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
                                         gps_pos.latitude = ((double)Latitude_coarse) * 90 / 32768;
                                         gps_pos.longitude = ((double)Latitude_coarse) * 180 / 32768;
                                         sprintf(tmpbuf, ", Lat Lng coarse=0x%X 0x%X => %f, %f",
                                                 Latitude_coarse, Longitude_coarse, gps_pos.latitude, gps_pos.longitude);
                                         strcat(desc, tmpbuf);
-                                        Extent_Latitude = ((unsigned short)f[i+4] << 4) | ((unsigned short)(f[i+5] >> 4));
-                                        Extent_Longitude = ((unsigned short)(f[i+5] & 0x0F) << 8) | ((unsigned short)f[i+6]);
+                                        Extent_Latitude = ((uint16_t)f[i+4] << 4) | ((uint16_t)(f[i+5] >> 4));
+                                        Extent_Longitude = ((uint16_t)(f[i+5] & 0x0F) << 8) | ((uint16_t)f[i+6]);
                                         gps_pos.latitude += ((double)Extent_Latitude) * 90 / 32768;
                                         gps_pos.longitude += ((double)Extent_Longitude) * 180 / 32768;
                                         sprintf(tmpbuf, ", Extent Lat Lng=0x%X 0x%X => %f, %f",
@@ -1907,7 +1908,7 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 14: // FIG 0/14 FEC sub-channel organization
                         {    // ETSI EN 300 401 6.2.2
-                            unsigned char i = 1, SubChId, FEC_scheme;
+                            uint8_t i = 1, SubChId, FEC_scheme;
 
                             while (i < figlen) {
                                 // iterate over Sub-channel
@@ -1922,15 +1923,15 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 16: // FIG 0/16 Programme Number & OE Programme Number
                         {    // ETSI EN 300 401 8.1.4 & 8.1.10.3
-                            unsigned short SId, PNum, New_SId, New_PNum;
-                            unsigned char i = 1, Rfa, Rfu;
+                            uint16_t SId, PNum, New_SId, New_PNum;
+                            uint8_t i = 1, Rfa, Rfu;
                             char tmpbuf[256];
                             bool Continuation_flag, Update_flag;
 
                             while (i < (figlen - 4)) {
                                 // iterate over Programme Number
-                                SId = ((unsigned short)f[i] << 8) | ((unsigned short)f[i+1]);
-                                PNum = ((unsigned short)f[i+2] << 8) | ((unsigned short)f[i+3]);
+                                SId = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
+                                PNum = ((uint16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
                                 Rfa = f[i+4] >> 6;
                                 Rfu = (f[i+4] >> 2) & 0x0F;
                                 Continuation_flag = (f[i+4] >> 1) & 0x01;
@@ -1959,11 +1960,11 @@ void decodeFIG(FIGalyser &figs,
                                 if (Update_flag != 0) {
                                     // In the case of a re-direction, the New SId and New PNum shall be appended
                                     if (i < (figlen - 1)) {
-                                        New_SId = ((unsigned short)f[i] << 8) | ((unsigned short)f[i+1]);
+                                        New_SId = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
                                         sprintf(tmpbuf, ", New SId=0x%X", New_SId);
                                         strcat(desc, tmpbuf);
                                         if (i < (figlen - 3)) {
-                                            New_PNum = ((unsigned short)f[i+2] << 8) | ((unsigned short)f[i+3]);
+                                            New_PNum = ((uint16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
                                             sprintf(tmpbuf, ", New PNum=0x%X ", New_PNum);
                                             strcat(desc, tmpbuf);
                                             // Append New_PNum decoded string
@@ -1987,8 +1988,8 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 17: // FIG 0/17 Programme Type
                         {    // ETSI EN 300 401 8.1.5
-                            unsigned short SId;
-                            unsigned char i = 1, Rfa, Language, Int_code, Comp_code;
+                            uint16_t SId;
+                            uint8_t i = 1, Rfa, Language, Int_code, Comp_code;
                             char tmpbuf[256];
                             bool SD_flag, PS_flag, L_flag, CC_flag, Rfu;
                             while (i < (figlen - 3)) {
@@ -2068,16 +2069,16 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 18: // FIG 0/18 Announcement support
                         {    // ETSI EN 300 401 8.1.6.1
-                            unsigned int key;
-                            unsigned short SId, Asu_flags;
-                            unsigned char i = 1, j, Rfa, Number_clusters;
+                            uint32_t key;
+                            uint16_t SId, Asu_flags;
+                            uint8_t i = 1, j, Rfa, Number_clusters;
                             char tmpbuf[256];
 
                             while (i < (figlen - 4)) {
                                 // iterate over announcement support
                                 // SId, Asu flags, Rfa, Number of clusters
-                                SId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
-                                Asu_flags = ((unsigned short)f[i+2] << 8) | (unsigned short)f[i+3];
+                                SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
+                                Asu_flags = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
                                 Rfa = (f[i+4] >> 5);
                                 Number_clusters = (f[i+4] & 0x1F);
                                 sprintf(desc, "SId=0x%X, Asu flags=0x%04x", SId, Asu_flags);
@@ -2087,7 +2088,7 @@ void decodeFIG(FIGalyser &figs,
                                 }
                                 sprintf(tmpbuf, ", Number of clusters=%d", Number_clusters);
                                 strcat(desc, tmpbuf);
-                                key = ((unsigned int)oe << 17) | ((unsigned int)pd << 16) | (unsigned int)SId;
+                                key = ((uint32_t)oe << 17) | ((uint32_t)pd << 16) | (uint32_t)SId;
                                 sprintf(tmpbuf, ", database key=0x%05x", key);
                                 strcat(desc, tmpbuf);
                                 // CEI Change Event Indication
@@ -2122,8 +2123,8 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 19: // FIG 0/19 Announcement switching
                         {    // ETSI EN 300 401 8.1.6.2
-                            unsigned short Asw_flags;
-                            unsigned char i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
+                            uint16_t Asw_flags;
+                            uint8_t i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
                             char tmpbuf[256];
                             bool New_flag, Region_flag;
 
@@ -2132,7 +2133,7 @@ void decodeFIG(FIGalyser &figs,
                                 // Cluster Id, Asw flags, New flag, Region flag,
                                 // SubChId, Rfa, Region Id Lower Part
                                 Cluster_Id = f[i];
-                                Asw_flags = ((unsigned short)f[i+1] << 8) | (unsigned short)f[i+2];
+                                Asw_flags = ((uint16_t)f[i+1] << 8) | (uint16_t)f[i+2];
                                 New_flag = (f[i+3] >> 7);
                                 Region_flag = (f[i+3] >> 6) & 0x1;
                                 SubChId = (f[i+3] & 0x3F);
@@ -2171,11 +2172,11 @@ void decodeFIG(FIGalyser &figs,
                     case 21: // FIG 0/21 Frequency Information
                         {    // ETSI EN 300 401 8.1.8
                             float freq;
-                            unsigned int ifreq;
-                            unsigned long long key;
-                            unsigned short RegionId, Id_field;
-                            unsigned char i = 1, j, k, Length_FI_list, RandM, Length_Freq_list, Control_field;
-                            unsigned char Control_field_trans_mode, Id_field2;
+                            uint32_t ifreq;
+                            uint64_t key;
+                            uint16_t RegionId, Id_field;
+                            uint8_t i = 1, j, k, Length_FI_list, RandM, Length_Freq_list, Control_field;
+                            uint8_t Control_field_trans_mode, Id_field2;
                             char tmpbuf[256];
                             bool Continuity_flag;
 
@@ -2302,10 +2303,10 @@ void decodeFIG(FIGalyser &figs,
                                         else {  // oe == 1
                                             strcat(desc, "=reserved for future addition");
                                         }
-                                        key = ((unsigned long long)oe << 32) | ((unsigned long long)pd << 31) | \
-                                                ((unsigned long long)RegionId << 20) | ((unsigned long long)Id_field << 4) | \
-                                                (unsigned long long)RandM;
-                                        sprintf(tmpbuf, ", database key=0x%09llx", key);
+                                        key = ((uint64_t)oe << 32) | ((uint64_t)pd << 31) | \
+                                                ((uint64_t)RegionId << 20) | ((uint64_t)Id_field << 4) | \
+                                                (uint64_t)RandM;
+                                        sprintf(tmpbuf, ", database key=0x%09" PRId64, key);
                                         // CEI Change Event Indication
                                         if (Length_Freq_list == 0) {
                                             strcat(tmpbuf, ", CEI");
@@ -2320,7 +2321,7 @@ void decodeFIG(FIGalyser &figs,
                                             case 0x1:
                                                 while((k + 2) < (j + Length_Freq_list)) {
                                                     // iteration over Freq list
-                                                    ifreq = (((unsigned int)(f[k] & 0x07) << 16) | ((unsigned int)f[k+1] << 8) | (unsigned int)f[k+2]) * 16;
+                                                    ifreq = (((uint32_t)(f[k] & 0x07) << 16) | ((uint32_t)f[k+1] << 8) | (uint32_t)f[k+2]) * 16;
                                                     if (ifreq != 0) {
                                                         Control_field = (f[k] >> 3);
                                                         Control_field_trans_mode = (Control_field >> 1) & 0x07;
@@ -2363,10 +2364,10 @@ void decodeFIG(FIGalyser &figs,
                                                     if (f[k] != 0) {    // freq != 0
                                                         if (RandM == 0xa) {
                                                             if (f[k] < 16) {
-                                                                ifreq = (144 + ((unsigned int)f[k] * 9));
+                                                                ifreq = (144 + ((uint32_t)f[k] * 9));
                                                             }
                                                             else {  // f[k] >= 16
-                                                                ifreq = (387 + ((unsigned int)f[k] * 9));
+                                                                ifreq = (387 + ((uint32_t)f[k] * 9));
                                                             }
                                                             sprintf(desc, "%d KHz", ifreq);
                                                         }
@@ -2385,7 +2386,7 @@ void decodeFIG(FIGalyser &figs,
                                             case 0xc:
                                                 while((k + 1) < (j + Length_Freq_list)) {
                                                     // iteration over Freq list
-                                                    ifreq = (((unsigned int)f[k] << 8) | (unsigned int)f[k+1]) * 5;
+                                                    ifreq = (((uint32_t)f[k] << 8) | (uint32_t)f[k+1]) * 5;
                                                     if (ifreq != 0) {
                                                         sprintf(desc, "%d KHz", ifreq);
                                                     }
@@ -2401,7 +2402,7 @@ void decodeFIG(FIGalyser &figs,
                                                 while((k + 2) < (j + Length_Freq_list)) {
                                                     // iteration over Freq list
                                                     Id_field2 = f[k];
-                                                    ifreq = ((((unsigned int)f[k+1] & 0x7f) << 8) | (unsigned int)f[k+2]);
+                                                    ifreq = ((((uint32_t)f[k+1] & 0x7f) << 8) | (uint32_t)f[k+2]);
                                                     if (ifreq != 0) {
                                                         sprintf(desc, "%d KHz", ifreq);
                                                     }
@@ -2438,11 +2439,11 @@ void decodeFIG(FIGalyser &figs,
                         {    // ETSI EN 300 401 8.1.9
                             Lat_Lng gps_pos = {0, 0};
                             double latitude_sub, longitude_sub;
-                            signed short Latitude_coarse, Longitude_coarse;
-                            unsigned short key, TD;
-                            signed short Latitude_offset, Longitude_offset;
-                            unsigned char i = 1, j, MainId = 0, Rfu, Nb_SubId_fields, SubId;
-                            unsigned char Latitude_fine, Longitude_fine;
+                            int16_t Latitude_coarse, Longitude_coarse;
+                            uint16_t key, TD;
+                            int16_t Latitude_offset, Longitude_offset;
+                            uint8_t i = 1, j, MainId = 0, Rfu, Nb_SubId_fields, SubId;
+                            uint8_t Latitude_fine, Longitude_fine;
                             char tmpbuf[256];
                             bool MS;
 
@@ -2480,8 +2481,8 @@ void decodeFIG(FIGalyser &figs,
                                         Longitude_coarse = (f[i+2] << 8) | f[i+3];
                                         Latitude_fine = f[i+4] >> 4;
                                         Longitude_fine = f[i+4] & 0x0F;
-                                        gps_pos.latitude = (double)((signed int)((((signed int)Latitude_coarse) << 4) | (unsigned int)Latitude_fine)) * 90 / 524288;
-                                        gps_pos.longitude = (double)((signed int)((((signed int)Longitude_coarse) << 4) | (unsigned int)Longitude_fine)) * 180 / 524288;
+                                        gps_pos.latitude = (double)((int32_t)((((int32_t)Latitude_coarse) << 4) | (uint32_t)Latitude_fine)) * 90 / 524288;
+                                        gps_pos.longitude = (double)((int32_t)((((int32_t)Longitude_coarse) << 4) | (uint32_t)Longitude_fine)) * 180 / 524288;
                                         fig0_22_key_Lat_Lng[key] = gps_pos;
                                         sprintf(tmpbuf, ", Lat Lng coarse=0x%X 0x%X, Lat Lng fine=0x%X 0x%X => Lat Lng=%f, %f",
                                                 Latitude_coarse, Longitude_coarse, Latitude_fine, Longitude_fine,
@@ -2554,34 +2555,34 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 24: // FIG 0/24 OE Services
                         {    // ETSI EN 300 401 8.1.10.2
-                            unsigned long long key;
-                            unsigned int SId;
-                            unsigned short EId;
-                            unsigned char i = 1, j, Number_of_EIds, CAId;
+                            uint64_t key;
+                            uint32_t SId;
+                            uint16_t EId;
+                            uint8_t i = 1, j, Number_of_EIds, CAId;
                             char tmpbuf[256];
                             bool Rfa;
 
-                            while (i < (figlen - (((unsigned char)pd + 1) * 2))) {
+                            while (i < (figlen - (((uint8_t)pd + 1) * 2))) {
                                 // iterate over other ensembles services
                                 if (pd == 0) {
-                                    SId = ((unsigned int)f[i] << 8) | (unsigned int)f[i+1];
+                                    SId = ((uint32_t)f[i] << 8) | (uint32_t)f[i+1];
                                     i += 2;
                                 }
                                 else {  // pd == 1
-                                    SId = ((unsigned int)f[i] << 24) | ((unsigned int)f[i+1] << 16) |
-                                            ((unsigned int)f[i+2] << 8) | (unsigned int)f[i+3];
+                                    SId = ((uint32_t)f[i] << 24) | ((uint32_t)f[i+1] << 16) |
+                                            ((uint32_t)f[i+2] << 8) | (uint32_t)f[i+3];
                                     i += 4;
                                 }
                                 Rfa  =  (f[i] >> 7);
                                 CAId  = (f[i] >> 4);
                                 Number_of_EIds  = (f[i] & 0x0f);
-                                key = ((unsigned long long)oe << 33) | ((unsigned long long)pd << 32) | \
-                                        (unsigned long long)SId;
+                                key = ((uint64_t)oe << 33) | ((uint64_t)pd << 32) | \
+                                        (uint64_t)SId;
                                 if (pd == 0) {
-                                    sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
+                                    sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09" PRId64, SId, CAId, Number_of_EIds, key);
                                 }
                                 else {  // pd == 1
-                                    sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09llx", SId, CAId, Number_of_EIds, key);
+                                    sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09" PRId64, SId, CAId, Number_of_EIds, key);
                                 }
                                 if (Rfa != 0) {
                                     sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
@@ -2597,7 +2598,7 @@ void decodeFIG(FIGalyser &figs,
 
                                 for(j = i; ((j < (i + (Number_of_EIds * 2))) && (j < figlen)); j += 2) {
                                     // iterate over EIds
-                                    EId = ((unsigned short)f[j] <<8) | (unsigned short)f[j+1];
+                                    EId = ((uint16_t)f[j] <<8) | (uint16_t)f[j+1];
                                     sprintf(desc, "EId 0x%04x", EId);
                                     printbuf(desc, indent+2, NULL, 0);
                                 }
@@ -2607,16 +2608,16 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 25: // FIG 0/25 OE Announcement support
                         {    // ETSI EN 300 401 8.1.10.5.1
-                            unsigned int key;
-                            unsigned short SId, Asu_flags, EId;
-                            unsigned char i = 1, j, Rfu, Number_EIds;
+                            uint32_t key;
+                            uint16_t SId, Asu_flags, EId;
+                            uint8_t i = 1, j, Rfu, Number_EIds;
                             char tmpbuf[256];
 
                             while (i < (figlen - 4)) {
                                 // iterate over other ensembles announcement support
                                 // SId, Asu flags, Rfu, Number of EIds
-                                SId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
-                                Asu_flags = ((unsigned short)f[i+2] << 8) | (unsigned short)f[i+3];
+                                SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
+                                Asu_flags = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
                                 Rfu = (f[i+4] >> 4);
                                 Number_EIds = (f[i+4] & 0x0F);
                                 sprintf(desc, "SId=0x%X, Asu flags=0x%X", SId, Asu_flags);
@@ -2626,7 +2627,7 @@ void decodeFIG(FIGalyser &figs,
                                 }
                                 sprintf(tmpbuf, ", Number of EIds=%d", Number_EIds);
                                 strcat(desc, tmpbuf);
-                                key = ((unsigned int)oe << 17) | ((unsigned int)pd << 16) | (unsigned int)SId;
+                                key = ((uint32_t)oe << 17) | ((uint32_t)pd << 16) | (uint32_t)SId;
                                 sprintf(tmpbuf, ", database key=0x%05x", key);
                                 strcat(desc, tmpbuf);
                                 // CEI Change Event Indication
@@ -2639,7 +2640,7 @@ void decodeFIG(FIGalyser &figs,
 
                                 for(j = 0; (j < Number_EIds) && (i < (figlen - 1)); j++) {
                                     // iterate over EIds
-                                    EId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                    EId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
                                     sprintf(desc, "EId=0x%X", EId);
                                     printbuf(desc, indent+2, NULL, 0);
                                     i += 2;
@@ -2662,20 +2663,20 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 26: // FIG 0/26 OE Announcement switching
                         {    // ETSI EN 300 401 8.1.10.5.2
-                            unsigned short Asw_flags, EId_Other_Ensemble;
-                            unsigned char i = 1, j, Rfa, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
-                            unsigned char Cluster_Id_Other_Ensemble, Region_Id_Other_Ensemble;
+                            uint16_t Asw_flags, EId_Other_Ensemble;
+                            uint8_t i = 1, j, Rfa, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
+                            uint8_t Cluster_Id_Other_Ensemble, Region_Id_Other_Ensemble;
                             bool New_flag, Region_flag;
                             char tmpbuf[256];
 
                             while (i < (figlen - 6)) {
                                 // iterate over other ensembles announcement switching
                                 Cluster_Id_Current_Ensemble = f[i];
-                                Asw_flags = ((unsigned short)f[i+1] << 8) | (unsigned short)f[i+2];
+                                Asw_flags = ((uint16_t)f[i+1] << 8) | (uint16_t)f[i+2];
                                 New_flag = f[i+3] >> 7;
                                 Region_flag = (f[i+3] >> 6) & 0x01;
                                 Region_Id_Current_Ensemble = f[i+3] & 0x3F;
-                                EId_Other_Ensemble = ((unsigned short)f[i+4] << 8) | (unsigned short)f[i+5];
+                                EId_Other_Ensemble = ((uint16_t)f[i+4] << 8) | (uint16_t)f[i+5];
                                 Cluster_Id_Other_Ensemble = f[i+6];
                                 sprintf(desc, "Cluster Id Current Ensemble=0x%X, Asw flags=0x%X, New flag=%d %s announcement, Region flag=%d last byte %s, Region Id Current Ensemble=0x%X, EId Other Ensemble=0x%X, Cluster Id Other Ensemble=0x%X",
                                         Cluster_Id_Current_Ensemble, Asw_flags, New_flag, New_flag?"newly introduced":"repeated",
@@ -2714,13 +2715,13 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 27: // FIG 0/27 FM Announcement support
                         {    // ETSI EN 300 401 8.1.11.2.1
-                            unsigned short SId, PI;
-                            unsigned char i = 1, j, Rfu, Number_PI_codes, key;
+                            uint16_t SId, PI;
+                            uint8_t i = 1, j, Rfu, Number_PI_codes, key;
                             char tmpbuf[256];
 
                             while (i < (figlen - 2)) {
                                 // iterate over FM announcement support
-                                SId = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
                                 Rfu = f[i+2] >> 4;
                                 Number_PI_codes = f[i+2] & 0x0F;
                                 key = (oe << 5) | (pd << 4) | Number_PI_codes;
@@ -2746,7 +2747,7 @@ void decodeFIG(FIGalyser &figs,
                                 i += 3;
                                 for(j = 0; (j < Number_PI_codes) && (i < (figlen - 1)); j++) {
                                     // iterate over PI
-                                    PI = ((unsigned short)f[i] << 8) | (unsigned short)f[i+1];
+                                    PI = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
                                     sprintf(desc, "PI=0x%X", PI);
                                     printbuf(desc, indent+2, NULL, 0);
                                     i += 2;
@@ -2761,8 +2762,8 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 28: // FIG 0/28 FM Announcement switching
                         {    // ETSI EN 300 401 8.1.11.2.2
-                            unsigned short PI;
-                            unsigned char i = 1, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
+                            uint16_t PI;
+                            uint8_t i = 1, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
                             bool New_flag, Rfa;
                             char tmpbuf[256];
 
@@ -2772,7 +2773,7 @@ void decodeFIG(FIGalyser &figs,
                                 New_flag = f[i+1] >> 7;
                                 Rfa = (f[i+1] >> 6) & 0x01;
                                 Region_Id_Current_Ensemble = f[i+1] & 0x3F;
-                                PI = ((unsigned short)f[i+2] << 8) | (unsigned short)f[i+3];
+                                PI = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
                                 sprintf(desc, "Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble);
                                 if (Cluster_Id_Current_Ensemble == 0) {
                                     strcat(desc, " invalid value");
@@ -2794,13 +2795,13 @@ void decodeFIG(FIGalyser &figs,
                         break;
                     case 31: // FIG 0/31 FIC re-direction
                         {    // ETSI EN 300 401 8.1.12
-                            unsigned int FIG_type0_flag_field = 0, flag_field;
-                            unsigned char i = 1, j, FIG_type1_flag_field = 0, FIG_type2_flag_field = 0;
+                            uint32_t FIG_type0_flag_field = 0, flag_field;
+                            uint8_t i = 1, j, FIG_type1_flag_field = 0, FIG_type2_flag_field = 0;
 
                             if (i < (figlen - 5)) {
                                 // Read FIC re-direction
-                                FIG_type0_flag_field = ((unsigned int)f[i] << 24) | ((unsigned int)f[i+1] << 16) |
-                                                       ((unsigned int)f[i+2] << 8) | (unsigned int)f[i+3];
+                                FIG_type0_flag_field = ((uint32_t)f[i] << 24) | ((uint32_t)f[i+1] << 16) |
+                                                       ((uint32_t)f[i+2] << 8) | (uint32_t)f[i+3];
                                 FIG_type1_flag_field = f[i+4];
                                 FIG_type2_flag_field = f[i+5];
 
@@ -2810,8 +2811,8 @@ void decodeFIG(FIGalyser &figs,
 
                                 for(j = 0; j < 32; j++) {
                                     // iterate over FIG type 0 re-direction
-                                    flag_field = FIG_type0_flag_field & ((unsigned int)1 << j);
-                                    if ((flag_field != 0) && (((j >= 0) && (j <= 5)) || (j == 8) ||
+                                    flag_field = FIG_type0_flag_field & ((uint32_t)1 << j);
+                                    if ((flag_field != 0) && ((j <= 5) || (j == 8) ||
                                         (j == 10) || (j == 13) || (j == 14) ||
                                         (j == 19) || (j == 26) || (j == 28))) {
                                         sprintf(desc, "oe=%d FIG 0/%d carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
@@ -2836,7 +2837,7 @@ void decodeFIG(FIGalyser &figs,
 
                                 for(j = 0; j < 8; j++) {
                                     // iterate over FIG type 1 re-direction
-                                    flag_field = FIG_type1_flag_field & ((unsigned int)1 << j);
+                                    flag_field = FIG_type1_flag_field & ((uint32_t)1 << j);
                                     if (flag_field != 0) {
                                         if (oe == 0) {
                                             sprintf(desc, "oe=%d FIG 1/%d carried in AIC, same shall be carried in FIC", oe, j);
@@ -2850,7 +2851,7 @@ void decodeFIG(FIGalyser &figs,
 
                                 for(j = 0; j < 8; j++) {
                                     // iterate over FIG type 2 re-direction
-                                    flag_field = FIG_type2_flag_field & ((unsigned int)1 << j);
+                                    flag_field = FIG_type2_flag_field & ((uint32_t)1 << j);
                                     if (flag_field != 0) {
                                         if (oe == 0) {
                                             sprintf(desc, "oe=%d FIG 2/%d carried in AIC, same shall be carried in FIC", oe, j);
@@ -2873,8 +2874,8 @@ void decodeFIG(FIGalyser &figs,
 
         case 1:
             {// SHORT LABELS
-                unsigned short int ext,oe,charset;
-                unsigned short int flag;
+                uint16_t ext,oe,charset;
+                uint16_t flag;
                 char label[17];
 
                 charset = (f[0] & 0xF0) >> 4;
@@ -2895,7 +2896,7 @@ void decodeFIG(FIGalyser &figs,
                 switch (ext) {
                     case 0: // FIG 1/0 Ensemble label
                         {   // ETSI EN 300 401 8.1.13
-                            unsigned short int eid;
+                            uint16_t eid;
                             eid = f[1] * 256 + f[2];
                             sprintf(desc, "Ensemble ID 0x%04X label: \"%s\", Short label mask: 0x%04X", eid, label, flag);
                             printinfo(desc, indent+1);
@@ -2904,7 +2905,7 @@ void decodeFIG(FIGalyser &figs,
 
                     case 1: // FIG 1/1 Programme service label
                         {   // ETSI EN 300 401 8.1.14.1
-                            unsigned short int sid;
+                            uint16_t sid;
                             sid = f[1] * 256 + f[2];
                             sprintf(desc, "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
                             printinfo(desc, indent+1);
@@ -2913,8 +2914,8 @@ void decodeFIG(FIGalyser &figs,
 
                     case 4: // FIG 1/4 Service component label
                         {   // ETSI EN 300 401 8.1.14.3
-                            unsigned int sid;
-                            unsigned char pd, SCIdS;
+                            uint32_t sid;
+                            uint8_t pd, SCIdS;
                             pd    = (f[1] & 0x80) >> 7;
                             SCIdS =  f[1] & 0x0F;
                             if (pd == 0) {
@@ -2936,7 +2937,7 @@ void decodeFIG(FIGalyser &figs,
 
                     case 5: // FIG 1/5 Data service label
                         {   // ETSI EN 300 401 8.1.14.2
-                            unsigned int sid;
+                            uint32_t sid;
                             sid = f[1] * 256 * 256 * 256 + \
                                   f[2] * 256 * 256 + \
                                   f[3] * 256 + \
@@ -2952,8 +2953,8 @@ void decodeFIG(FIGalyser &figs,
 
                     case 6: // FIG 1/6 X-PAD user application label
                         {   // ETSI EN 300 401 8.1.14.4
-                            unsigned int sid;
-                            unsigned char pd, SCIdS, xpadapp;
+                            uint32_t sid;
+                            uint8_t pd, SCIdS, xpadapp;
                             string xpadappdesc;
 
                             pd    = (f[1] & 0x80) >> 7;
@@ -2992,7 +2993,7 @@ void decodeFIG(FIGalyser &figs,
             break;
         case 2:
             {// LONG LABELS
-                unsigned short int ext,oe;
+                uint16_t ext,oe;
 
                 uint8_t toggle_flag = (f[0] & 0x80) >> 7;
                 uint8_t segment_index = (f[0] & 0x70) >> 4;
@@ -3009,7 +3010,7 @@ void decodeFIG(FIGalyser &figs,
             break;
         case 5:
             {// FIDC
-                unsigned short int ext;
+                uint16_t ext;
 
                 uint8_t d1 = (f[0] & 0x80) >> 7;
                 uint8_t d2 = (f[0] & 0x40) >> 6;
@@ -3033,7 +3034,7 @@ void decodeFIG(FIGalyser &figs,
 }
 
 // get_programme_type_str return the programme type string from international table Id and programme type
-const char *get_programme_type_str(unsigned int int_table_Id, unsigned int pty) {
+const char *get_programme_type_str(size_t int_table_Id, size_t pty) {
     if ((int_table_Id - 1) < INTERNATIONAL_TABLE_SIZE) {
        if (pty < PROGRAMME_TYPE_CODES_SIZE) {
            return Programme_type_codes_str[int_table_Id - 1][pty];
@@ -3051,13 +3052,13 @@ const char *get_programme_type_str(unsigned int int_table_Id, unsigned int pty) 
 // Programme_Number: this 16-bit field shall define the date and time at which
 // a programme begins or will be continued. This field is coded in the same way
 // as the RDS "Programme Item Number (PIN)" feature (EN 62106).
-char *strcatPNum(char *dest_str, unsigned short Programme_Number) {
-    unsigned char day, hour, minute;
+char *strcatPNum(char *dest_str, uint16_t Programme_Number) {
+    uint8_t day, hour, minute;
     char tempbuf[256];
 
-    minute = (unsigned char)(Programme_Number & 0x003F);
-    hour = (unsigned char)((Programme_Number >> 6) & 0x001F);
-    day = (unsigned char)((Programme_Number >> 11) & 0x001F);
+    minute = (uint8_t)(Programme_Number & 0x003F);
+    hour = (uint8_t)((Programme_Number >> 6) & 0x001F);
+    day = (uint8_t)((Programme_Number >> 11) & 0x001F);
     if (day != 0) {
         sprintf(tempbuf, "day of month=%d time=%02d:%02d", day, hour, minute);
     }
@@ -3130,7 +3131,7 @@ void printinfo(string header,
 
 void printbuf(string header,
         int indent_level,
-        unsigned char* buffer,
+        uint8_t* buffer,
         size_t size,
         string desc)
 {
