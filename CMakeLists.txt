@@ -73,6 +73,7 @@ list(APPEND etisnoop_sources
     fig0_27.cpp
     fig0_28.cpp
     fig0_31.cpp
+    fig1.cpp
     figs.cpp
     firecode.c
     lib_crc.c

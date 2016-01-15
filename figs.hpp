@@ -52,6 +52,21 @@ struct fig0_common_t {
     uint16_t ext(void) { return f[0] & 0x1F; }
 };
 
+struct fig1_common_t {
+    fig1_common_t(
+            uint8_t* fig_data,
+            uint16_t fig_len) :
+        f(fig_data),
+        figlen(fig_len) {}
+
+    uint8_t* f;
+    uint16_t figlen;
+
+    uint8_t charset() { return (f[0] & 0xF0) >> 4; }
+    uint8_t oe() { return (f[0] & 0x08) >> 3; }
+    uint8_t ext() { return f[0] & 0x07; }
+};
+
 // FIG 0/11 and 0/22 struct
 struct Lat_Lng {
     double latitude, longitude;
@@ -93,4 +108,6 @@ void fig0_26(fig0_common_t& fig0, int indent);
 void fig0_27(fig0_common_t& fig0, int indent);
 void fig0_28(fig0_common_t& fig0, int indent);
 void fig0_31(fig0_common_t& fig0, int indent);
+
+void fig1_select(fig1_common_t& fig1, int indent);
 
