@@ -17,24 +17,6 @@ Make sure you have cmake installed and do
     cmake ..
     make
 
-
-Build with old makefile
------------------------
-
-Alternatively, use the old Makefile. There are two
-variants:
-
-    make etisnoop
-
-compiles the tool, dynamically linked against libfaad
-
-Or you can extract the sources for libfaad2-2.7 into a subfolder of the
-same name, configure it, and if required modify it. Then you can do
-
-    make etisnoop-static
-
-to compile a version of etisnoop compiled against your own copy of FAAD.
-
 About
 -----
 
