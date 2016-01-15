@@ -1,16 +1,16 @@
 
 CXX=g++
 
-SOURCES=etisnoop.cpp dabplussnoop.cpp lib_crc.c firecode.c faad_decoder.cpp wavfile.c etiinput.cpp
-HEADERS=dabplussnoop.h lib_crc.h firecode.h faad_decoder.h wavfile.h etiinput.h
+SOURCES=etisnoop.cpp dabplussnoop.cpp lib_crc.c firecode.c faad_decoder.cpp wavfile.c etiinput.cpp rsdecoder.cpp
+HEADERS=dabplussnoop.h lib_crc.h firecode.h faad_decoder.h wavfile.h etiinput.h rsdecoder.h
 
 all: etisnoop
 
 etisnoop: $(SOURCES) $(HEADERS)
-	$(CXX) -Wall -ggdb $(SOURCES) $(HEADERS) -lfaad -o etisnoop
+	$(CXX) -std=c++11 -Wall -ggdb $(SOURCES) -lfaad -lfec -o etisnoop
 
 etisnoop-static: libfaad $(SOURCES) $(HEADERS)
-	$(CXX) -Wall -ggdb $(SOURCES) $(HEADERS) -Ifaad2-2.7/include faad2-2.7/libfaad/.libs/libfaad.a -o etisnoop
+	$(CXX) -std=c++11 -Wall -ggdb $(SOURCES) -lfec -Ifaad2-2.7/include faad2-2.7/libfaad/.libs/libfaad.a -o etisnoop
 
 libfaad:
 	make -C ./faad2-2.7
