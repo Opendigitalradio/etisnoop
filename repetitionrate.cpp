@@ -77,7 +77,7 @@ void rate_announce_fig(int figtype, int figextension, bool complete)
     rate.in_fib.insert(current_fib);
 }
 
-void rate_disply_analysis()
+void rate_display_analysis(bool clear)
 {
     printf("FIG carousel analysis. Format:\n"
          "  average FIGs per second (total count, delta variance in frames)\n"
@@ -87,16 +87,10 @@ void rate_disply_analysis()
         auto& frames_complete = fig_rate.second.frames_complete;
 
         const size_t n_present = frames_present.size();
-        const size_t n_complete = frames_complete.size();
-
-        if (n_present and n_complete) {
+        if (n_present) {
             double average_present_interval =
                 (double)(frames_present.back() - frames_present.front()) /
                 (double)(frames_present.size() - 1);
-
-            double average_complete_interval =
-                (double)(frames_complete.back() - frames_complete.front()) /
-                (double)(frames_complete.size() - 1);
 
             double variance_of_delta_present = 0;
             for (size_t i = 1; i < frames_present.size(); i++) {
@@ -108,6 +102,22 @@ void rate_disply_analysis()
             }
             variance_of_delta_present /= frames_present.size();
 
+            const double n_present_per_second = 1 /
+                (average_present_interval * frame_duration);
+
+            printf("FIG%2d/%2d %2.2f (%6zu %2.2f)",
+                    fig_rate.first.figtype, fig_rate.first.figextension,
+                    n_present_per_second, n_present, variance_of_delta_present);
+        }
+
+        const size_t n_complete = frames_complete.size();
+        if (n_complete) {
+
+            double average_complete_interval =
+                (double)(frames_complete.back() - frames_complete.front()) /
+                (double)(frames_complete.size() - 1);
+
+
             double variance_of_delta_complete = 0;
             for (size_t i = 1; i < frames_complete.size(); i++) {
                 double s =
@@ -118,21 +128,20 @@ void rate_disply_analysis()
             }
             variance_of_delta_complete /= frames_complete.size();
 
-            const double n_present_per_second =
-                (double)n_present / (double)current_frame_number / frame_duration;
+            const double n_complete_per_second = 1 /
+                (average_complete_interval * frame_duration);
 
-            const double n_complete_per_second =
-                (double)n_complete / (double)current_frame_number / frame_duration;
-
-            printf("FIG%2d/%2d %2.2f (%6zu %2.2f) %2.2f (%6zu %2.2f)\n",
-                    fig_rate.first.figtype, fig_rate.first.figextension,
-                    n_present_per_second, n_present, variance_of_delta_present,
+            printf(" %2.2f (%6zu %2.2f)\n",
                     n_complete_per_second, n_complete, variance_of_delta_complete);
         }
         else {
             printf("FIG%2d/%2d 0\n",
                     fig_rate.first.figtype, fig_rate.first.figextension);
         }
+    }
+
+    if (clear) {
+        fig_rates.clear();
     }
 }
 

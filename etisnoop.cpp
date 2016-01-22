@@ -649,7 +649,7 @@ int eti_analyse(eti_analyse_config_t& config)
         }
 
         if (config.analyse_fig_rates and (fct % 250) == 0) {
-            rate_disply_analysis();
+            rate_display_analysis(true);
         }
     }
 
@@ -667,7 +667,7 @@ int eti_analyse(eti_analyse_config_t& config)
     }
 
     if (config.analyse_fig_rates) {
-        rate_disply_analysis();
+        rate_display_analysis(false);
     }
 
     figs_cleardb();

@@ -32,6 +32,7 @@ void rate_announce_fig(int figtype, int figextension, bool complete);
  */
 void rate_new_fib(int fib);
 
-/* Print analysis
+/* Print analysis, optionally clear all statistics
  */
-void rate_disply_analysis(void);
+void rate_display_analysis(bool clear);
+
