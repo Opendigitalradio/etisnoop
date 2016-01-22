@@ -25,7 +25,7 @@ set(VERSION_INFO_MAINT_VERSION git)
 # Compiler specific setup
 ########################################################################
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -W -Wall -std=c++11")
 
 
 ########################################################################
@@ -77,6 +77,7 @@ list(APPEND etisnoop_sources
     figs.cpp
     firecode.c
     lib_crc.c
+    repetitionrate.cpp
     rsdecoder.cpp
     tables.cpp
     utils.cpp

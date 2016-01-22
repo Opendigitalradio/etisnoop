@@ -28,21 +28,40 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> services_seen;
+
+bool fig0_27_is_complete(int services_id)
+{
+    bool complete = services_seen.count(services_id);
+
+    if (complete) {
+        services_seen.clear();
+    }
+    else {
+        services_seen.insert(services_id);
+    }
+
+    return complete;
+}
 
 
 // FIG 0/27 FM Announcement support
 // ETSI EN 300 401 8.1.11.2.1
-void fig0_27(fig0_common_t& fig0, int indent)
+bool fig0_27(fig0_common_t& fig0, int indent)
 {
     uint16_t SId, PI;
     uint8_t i = 1, j, Rfu, Number_PI_codes, key;
     char tmpbuf[256];
     char desc[256];
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - 2)) {
         // iterate over FM announcement support
         SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
+        complete |= fig0_27_is_complete(SId);
         Rfu = f[i+2] >> 4;
         Number_PI_codes = f[i+2] & 0x0F;
         key = (fig0.oe() << 5) | (fig0.pd() << 4) | Number_PI_codes;
@@ -79,5 +98,7 @@ void fig0_27(fig0_common_t& fig0, int indent)
             fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
         }
     }
+
+    return complete;
 }
 

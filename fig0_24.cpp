@@ -28,10 +28,27 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> services_seen;
+
+bool fig0_24_is_complete(int services_id)
+{
+    bool complete = services_seen.count(services_id);
+
+    if (complete) {
+        services_seen.clear();
+    }
+    else {
+        services_seen.insert(services_id);
+    }
+
+    return complete;
+}
 
 // FIG 0/24 fig0.oe() Services
 // ETSI EN 300 401 8.1.10.2
-void fig0_24(fig0_common_t& fig0, int indent)
+bool fig0_24(fig0_common_t& fig0, int indent)
 {
     uint64_t key;
     uint32_t SId;
@@ -41,6 +58,7 @@ void fig0_24(fig0_common_t& fig0, int indent)
     char desc[256];
     uint8_t* f = fig0.f;
     bool Rfa;
+    bool complete = false;
 
     while (i < (fig0.figlen - (((uint8_t)fig0.pd() + 1) * 2))) {
         // iterate over other ensembles services
@@ -53,6 +71,7 @@ void fig0_24(fig0_common_t& fig0, int indent)
                 ((uint32_t)f[i+2] << 8) | (uint32_t)f[i+3];
             i += 4;
         }
+        complete |= fig0_24_is_complete(SId);
         Rfa  =  (f[i] >> 7);
         CAId  = (f[i] >> 4);
         Number_of_EIds  = (f[i] & 0x0f);
@@ -84,5 +103,7 @@ void fig0_24(fig0_common_t& fig0, int indent)
         }
         i += (Number_of_EIds * 2);
     }
+
+    return complete;
 }
 

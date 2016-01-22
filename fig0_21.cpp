@@ -28,11 +28,28 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> regions_seen;
+
+bool fig0_21_is_complete(int region_id)
+{
+    bool complete = regions_seen.count(region_id);
+
+    if (complete) {
+        regions_seen.clear();
+    }
+    else {
+        regions_seen.insert(region_id);
+    }
+
+    return complete;
+}
 
 
 // FIG 0/21 Frequency Information
 // ETSI EN 300 401 8.1.8
-void fig0_21(fig0_common_t& fig0, int indent)
+bool fig0_21(fig0_common_t& fig0, int indent)
 {
     float freq;
     uint32_t ifreq;
@@ -44,11 +61,13 @@ void fig0_21(fig0_common_t& fig0, int indent)
     char desc[256];
     bool Continuity_flag;
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - 1)) {
         // iterate over frequency information
         // decode RegionId, Length of FI list
         RegionId  =  (f[i] << 3) | (f[i+1] >> 5);
+        complete |= fig0_21_is_complete(RegionId);
         Length_FI_list  = (f[i+1] & 0x1F);
         sprintf(desc, "RegionId=0x%03x", RegionId);
         printbuf(desc, indent+1, NULL, 0);
@@ -298,5 +317,7 @@ void fig0_21(fig0_common_t& fig0, int indent)
             i += Length_FI_list;
         }
     }
+
+    return complete;
 }
 

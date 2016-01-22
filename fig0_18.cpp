@@ -28,11 +28,28 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> services_seen;
+
+bool fig0_18_is_complete(int services_id)
+{
+    bool complete = services_seen.count(services_id);
+
+    if (complete) {
+        services_seen.clear();
+    }
+    else {
+        services_seen.insert(services_id);
+    }
+
+    return complete;
+}
 
 
 // FIG 0/18 Announcement support
 // ETSI EN 300 401 8.1.6.1
-void fig0_18(fig0_common_t& fig0, int indent)
+bool fig0_18(fig0_common_t& fig0, int indent)
 {
     uint32_t key;
     uint16_t SId, Asu_flags;
@@ -41,11 +58,13 @@ void fig0_18(fig0_common_t& fig0, int indent)
     char desc[256];
     uint8_t* f = fig0.f;
     const int figtype = 0;
+    bool complete = false;
 
     while (i < (fig0.figlen - 4)) {
         // iterate over announcement support
         // SId, Asu flags, Rfa, Number of clusters
         SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
+        complete |= fig0_18_is_complete(SId);
         Asu_flags = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
         Rfa = (f[i+4] >> 5);
         Number_clusters = (f[i+4] & 0x1F);
@@ -87,5 +106,7 @@ void fig0_18(fig0_common_t& fig0, int indent)
             }
         }
     }
+
+    return complete;
 }
 

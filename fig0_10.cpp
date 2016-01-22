@@ -31,7 +31,7 @@
 
 // FIG 0/10 Date and time
 // ETSI EN 300 401 8.1.3.1
-void fig0_10(fig0_common_t& fig0, int indent)
+bool fig0_10(fig0_common_t& fig0, int indent)
 {
     char desc[256];
     char dateStr[256];
@@ -68,5 +68,7 @@ void fig0_10(fig0_common_t& fig0, int indent)
                 fig0.ext(), MJD, dateStr, LSI, ConfInd, hours, minutes);
         printbuf(desc, indent+1, NULL, 0);
     }
+
+    return true;
 }
 

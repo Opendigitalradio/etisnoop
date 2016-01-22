@@ -28,6 +28,25 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> identifiers_seen;
+
+bool fig0_22_is_complete(int M_S, int MainId)
+{
+    int identifier = (M_S << 7) | MainId;
+
+    bool complete = identifiers_seen.count(identifier);
+
+    if (complete) {
+        identifiers_seen.clear();
+    }
+    else {
+        identifiers_seen.insert(identifier);
+    }
+
+    return complete;
+}
 
 
 // map for fig 0/22 database
@@ -40,7 +59,7 @@ void fig0_22_cleardb()
 
 // FIG 0/22 Transmitter Identification Information (TII) database
 // ETSI EN 300 401 8.1.9
-void fig0_22(fig0_common_t& fig0, int indent)
+bool fig0_22(fig0_common_t& fig0, int indent)
 {
     Lat_Lng gps_pos = {0, 0};
     double latitude_sub, longitude_sub;
@@ -54,11 +73,13 @@ void fig0_22(fig0_common_t& fig0, int indent)
     bool MS;
     const uint8_t Mode_Identity = get_mode_identity();
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < fig0.figlen) {
         // iterate over Transmitter Identification Information (TII) fields
         MS = f[i] >> 7;
         MainId = f[i] & 0x7F;
+        complete |= fig0_22_is_complete(MS, MainId);
         key = (fig0.oe() << 8) | (fig0.pd() << 7) | MainId;
         sprintf(desc, "M/S=%d %sidentifier, MainId=0x%X",
                 MS, MS?"Sub-":"Main ", MainId);
@@ -159,5 +180,7 @@ void fig0_22(fig0_common_t& fig0, int indent)
             }
         }
     }
+
+    return complete;
 }
 

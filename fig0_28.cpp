@@ -28,11 +28,28 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> clusters_seen;
+
+bool fig0_28_is_complete(int cluster_id)
+{
+    bool complete = clusters_seen.count(cluster_id);
+
+    if (complete) {
+        clusters_seen.clear();
+    }
+    else {
+        clusters_seen.insert(cluster_id);
+    }
+
+    return complete;
+}
 
 
 // FIG 0/28 FM Announcement switching
 // ETSI EN 300 401 8.1.11.2.2
-void fig0_28(fig0_common_t& fig0, int indent)
+bool fig0_28(fig0_common_t& fig0, int indent)
 {
     uint16_t PI;
     uint8_t i = 1, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
@@ -40,10 +57,12 @@ void fig0_28(fig0_common_t& fig0, int indent)
     char tmpbuf[256];
     char desc[256];
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - 3)) {
         // iterate over FM announcement switching
         Cluster_Id_Current_Ensemble = f[i];
+        complete = fig0_28_is_complete(Cluster_Id_Current_Ensemble);
         New_flag = f[i+1] >> 7;
         Rfa = (f[i+1] >> 6) & 0x01;
         Region_Id_Current_Ensemble = f[i+1] & 0x3F;
@@ -65,5 +84,7 @@ void fig0_28(fig0_common_t& fig0, int indent)
         printbuf(desc, indent+1, NULL, 0);
         i += 4;
     }
+
+    return complete;
 }
 

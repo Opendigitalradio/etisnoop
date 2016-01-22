@@ -29,7 +29,7 @@
 
 // FIG 0/0 Ensemble information
 // ETSI EN 300 401 6.4
-void fig0_0(fig0_common_t& fig0, int indent)
+bool fig0_0(fig0_common_t& fig0, int indent)
 {
     uint8_t cid, al, ch, hic, lowc, occ;
     uint16_t eid, eref;
@@ -56,5 +56,7 @@ void fig0_0(fig0_common_t& fig0, int indent)
                 eid, cid, eref, ch, al, hic, lowc);
     }
     printbuf(desc, indent+1, NULL, 0);
+
+    return true;
 }
 

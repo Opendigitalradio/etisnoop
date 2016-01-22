@@ -28,6 +28,24 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> subch_ids_seen;
+
+bool fig0_14_is_complete(int subch_id)
+{
+    bool complete = subch_ids_seen.count(subch_id);
+
+    if (complete) {
+        subch_ids_seen.clear();
+    }
+    else {
+        subch_ids_seen.insert(subch_id);
+    }
+
+    return complete;
+}
+
 
 // fig 0/14 FEC Scheme: this 2-bit field shall indicate the Forward Error Correction scheme in use, as follows:
 const char *FEC_schemes_str[4] =  {
@@ -40,20 +58,24 @@ const char *FEC_schemes_str[4] =  {
 
 // FIG 0/14 FEC sub-channel organization
 // ETSI EN 300 401 6.2.2
-void fig0_14(fig0_common_t& fig0, int indent)
+bool fig0_14(fig0_common_t& fig0, int indent)
 {
     uint8_t i = 1, SubChId, FEC_scheme;
     uint8_t* f = fig0.f;
     char desc[256];
+    bool complete = false;
 
     while (i < fig0.figlen) {
         // iterate over Sub-channel
         SubChId = f[i] >> 2;
+        complete |= fig0_14_is_complete(SubChId);
         FEC_scheme = f[i] & 0x3;
         sprintf(desc, "SubChId=0x%X, FEC scheme=%d %s",
                 SubChId, FEC_scheme, FEC_schemes_str[FEC_scheme]);
         printbuf(desc, indent+1, NULL, 0);
         i++;
     }
+
+    return complete;
 }
 

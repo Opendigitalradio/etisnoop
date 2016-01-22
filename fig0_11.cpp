@@ -28,10 +28,28 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> region_ids_seen;
+
+bool fig0_11_is_complete(int region_id)
+{
+    bool complete = region_ids_seen.count(region_id);
+
+    if (complete) {
+        region_ids_seen.clear();
+    }
+    else {
+        region_ids_seen.insert(region_id);
+    }
+
+    return complete;
+}
+
 
 // FIG 0/11 Region definition
 // ETSI EN 300 401 8.1.16.1
-void fig0_11(fig0_common_t& fig0, int indent)
+bool fig0_11(fig0_common_t& fig0, int indent)
 {
     Lat_Lng gps_pos = {0, 0};
     int16_t Latitude_coarse, Longitude_coarse;
@@ -43,12 +61,15 @@ void fig0_11(fig0_common_t& fig0, int indent)
     bool GE_flag;
     uint8_t* f = fig0.f;
     uint8_t Mode_Identity = get_mode_identity();
+    bool complete = false;
 
     while (i < (fig0.figlen - 1)) {
         // iterate over Region definition
         GATy = f[i] >> 4;
         GE_flag = (f[i] >> 3) & 0x01;
         Region_Id = ((uint16_t)(f[i] & 0x07) << 8) | ((uint16_t)f[i+1]);
+        complete |= fig0_11_is_complete(Region_Id);
+
         key = ((uint16_t)fig0.oe() << 12) | ((uint16_t)fig0.pd() << 11) | Region_Id;
         i += 2;
         if (GATy == 0) {
@@ -182,4 +203,7 @@ void fig0_11(fig0_common_t& fig0, int indent)
             i = fig0.figlen;
         }
     }
+
+    return complete;
 }
+

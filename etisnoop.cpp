@@ -49,6 +49,7 @@
 #include "etiinput.h"
 #include "figs.hpp"
 #include "watermarkdecoder.hpp"
+#include "repetitionrate.hpp"
 
 struct FIG
 {
@@ -154,6 +155,7 @@ struct eti_analyse_config_t {
     bool ignore_error;
     std::map<int, DabPlusSnoop> streams_to_decode;
     bool analyse_fic_carousel;
+    bool analyse_fig_rates;
     bool decode_watermark;
 };
 
@@ -193,6 +195,7 @@ void usage(void)
             "   -v      increase verbosity (can be given more than once)\n"
             "   -d N    decode subchannel N into .dabp and .wav files\n"
             "   -f      analyse FIC carousel\n"
+            "   -r      analyse FIG rates\n"
             "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n");
 }
 
@@ -201,36 +204,36 @@ int main(int argc, char *argv[])
     int index;
     int ch = 0;
     string file_name("-");
-    map<int, DabPlusSnoop> streams_to_decode;
 
-    bool ignore_error = false;
-    bool analyse_fic_carousel = false;
-    bool decode_watermark = false;
+    eti_analyse_config_t config;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efhvwi:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efhrvwi:", longopts, &index);
         switch (ch) {
             case 'd':
                 {
                 int subchix = atoi(optarg);
                 DabPlusSnoop dps;
-                streams_to_decode[subchix] = dps;
+                config.streams_to_decode[subchix] = dps;
                 }
                 break;
             case 'e':
-                ignore_error = true;
+                config.ignore_error = true;
                 break;
             case 'i':
                 file_name = optarg;
                 break;
             case 'f':
-                analyse_fic_carousel = true;
+                config.analyse_fic_carousel = true;
+                break;
+            case 'r':
+                config.analyse_fig_rates = true;
                 break;
             case 'v':
                 set_verbosity(get_verbosity() + 1);
                 break;
             case 'w':
-                decode_watermark = true;
+                config.decode_watermark = true;
                 break;
             case 'h':
                 usage();
@@ -252,14 +255,8 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
+    config.etifd = etifd;
 
-    eti_analyse_config_t config = {
-        .etifd = etifd,
-        .ignore_error = ignore_error,
-        .streams_to_decode = streams_to_decode,
-        .analyse_fic_carousel = analyse_fic_carousel,
-        .decode_watermark = decode_watermark
-    };
     eti_analyse(config);
     fclose(etifd);
 }
@@ -377,9 +374,10 @@ int eti_analyse(eti_analyse_config_t& config)
         // LIDATA - FC
         printbuf("FC - Frame Characterization field", 1, p+4, 4);
         // LIDATA - FC - FCT
-        char fct[25];
-        sprintf(fct, "%d", p[4]);
-        printbuf("FCT  - Frame Count", 2, p+4, 1, fct);
+        char fct_str[25];
+        sprintf(fct_str, "%d", p[4]);
+        int fct = p[4];
+        printbuf("FCT  - Frame Count", 2, p+4, 1, fct_str);
         // LIDATA - FC - FICF
         ficf = (p[5] & 0x80) >> 7;
 
@@ -556,6 +554,7 @@ int eti_analyse(eti_analyse_config_t& config)
                 printbuf(sdesc, 1, NULL, 0);
                 fig=fib;
                 figs.set_fib(i);
+                rate_new_fib(i);
                 endmarker=0;
                 figcount=0;
                 while (!endmarker) {
@@ -648,6 +647,10 @@ int eti_analyse(eti_analyse_config_t& config)
         if (get_verbosity()) {
             printf("-------------------------------------------------------------------------------------------------------------\n");
         }
+
+        if (config.analyse_fig_rates and (fct % 250) == 0) {
+            rate_disply_analysis();
+        }
     }
 
 
@@ -663,7 +666,12 @@ int eti_analyse(eti_analyse_config_t& config)
         printf("Watermark:\n  %s\n", watermark.c_str());
     }
 
+    if (config.analyse_fig_rates) {
+        rate_disply_analysis();
+    }
+
     figs_cleardb();
+
 
     return 0;
 }
@@ -688,7 +696,8 @@ void decodeFIG(FIGalyser &figs,
 
                 figs.push_back(figtype, fig0.ext(), figlen);
 
-                fig0_select(fig0, indent);
+                bool complete = fig0_select(fig0, indent);
+                rate_announce_fig(figtype, fig0.ext(), complete);
             }
             break;
 
@@ -698,7 +707,8 @@ void decodeFIG(FIGalyser &figs,
 
                 figs.push_back(figtype, fig1.ext(), figlen);
 
-                fig1_select(fig1, indent);
+                bool complete = fig1_select(fig1, indent);
+                rate_announce_fig(figtype, fig1.ext(), complete);
             }
             break;
         case 2:
@@ -716,6 +726,9 @@ void decodeFIG(FIGalyser &figs,
                 printbuf(desc, indent, f+1, figlen-1);
 
                 figs.push_back(figtype, ext, figlen);
+
+                bool complete = true; // TODO verify
+                rate_announce_fig(figtype, ext, complete);
             }
             break;
         case 5:
@@ -733,11 +746,19 @@ void decodeFIG(FIGalyser &figs,
                 printbuf(desc, indent, f+1, figlen-1);
 
                 figs.push_back(figtype, ext, figlen);
+
+                bool complete = true; // TODO verify
+                rate_announce_fig(figtype, ext, complete);
             }
             break;
         case 6:
             {// Conditional access
                 fprintf(stderr, "ERROR: ETI contains unsupported FIG 6\n");
+            }
+            break;
+        default:
+            {
+                fprintf(stderr, "ERROR: ETI contains unknown FIG %d\n", figtype);
             }
             break;
     }

@@ -28,11 +28,28 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> services_seen;
+
+bool fig0_25_is_complete(int services_id)
+{
+    bool complete = services_seen.count(services_id);
+
+    if (complete) {
+        services_seen.clear();
+    }
+    else {
+        services_seen.insert(services_id);
+    }
+
+    return complete;
+}
 
 
 // FIG 0/25 fig0.oe() Announcement support
 // ETSI EN 300 401 8.1.10.5.1
-void fig0_25(fig0_common_t& fig0, int indent)
+bool fig0_25(fig0_common_t& fig0, int indent)
 {
     uint32_t key;
     uint16_t SId, Asu_flags, EId;
@@ -40,11 +57,13 @@ void fig0_25(fig0_common_t& fig0, int indent)
     char tmpbuf[256];
     char desc[256];
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - 4)) {
         // iterate over other ensembles announcement support
         // SId, Asu flags, Rfu, Number of EIds
         SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
+        complete |= fig0_25_is_complete(SId);
         Asu_flags = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
         Rfu = (f[i+4] >> 4);
         Number_EIds = (f[i+4] & 0x0F);
@@ -87,5 +106,7 @@ void fig0_25(fig0_common_t& fig0, int indent)
             }
         }
     }
+
+    return complete;
 }
 

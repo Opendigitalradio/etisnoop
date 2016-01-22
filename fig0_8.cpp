@@ -28,10 +28,36 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <set>
+
+/* EN 300 401, 8.1.14.3 Service component label
+ * The combination of the SId and the SCIdS provides a service component
+ * identifier which is valid globally.
+ */
+using SId_t = int;
+using SCIdS_t = int;
+static std::set<std::pair<SId_t, SCIdS_t> > components_seen;
+
+bool fig0_8_is_complete(SId_t SId, SCIdS_t SCIdS)
+{
+    auto key = std::make_pair(SId, SCIdS);
+    bool complete = components_seen.count(key);
+
+    if (complete) {
+        components_seen.clear();
+    }
+    else {
+        components_seen.insert(key);
+    }
+
+    return complete;
+}
+
+
 
 // FIG 0/8 Service component global definition
 // ETSI EN 300 401 6.3.5
-void fig0_8(fig0_common_t& fig0, int indent)
+bool fig0_8(fig0_common_t& fig0, int indent)
 {
     uint32_t SId;
     uint16_t SCId;
@@ -40,6 +66,7 @@ void fig0_8(fig0_common_t& fig0, int indent)
     char desc[256];
     bool Ext_flag, LS_flag, MSC_FIC_flag;
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - (2 + (2 * fig0.pd())))) {
         // iterate over service component global definition
@@ -57,6 +84,7 @@ void fig0_8(fig0_common_t& fig0, int indent)
         Ext_flag = f[i] >> 7;
         Rfa = (f[i] >> 4) & 0x7;
         SCIdS = f[i] & 0x0F;
+        complete |= fig0_8_is_complete(SId, SCIdS);
         sprintf(desc, "SId=0x%X, Ext flag=%d 8-bit Rfa %s", SId, Ext_flag, (Ext_flag)?"present":"absent");
         if (Rfa != 0) {
             sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
@@ -113,5 +141,7 @@ void fig0_8(fig0_common_t& fig0, int indent)
         }
         printbuf(desc, indent+1, NULL, 0);
     }
+
+    return complete;
 }
 

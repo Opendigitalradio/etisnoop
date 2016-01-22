@@ -27,22 +27,42 @@
 #include "figs.hpp"
 #include <cstdio>
 #include <cstring>
+#include <unordered_set>
+
+static std::unordered_set<int> components_ids_seen;
+
+bool fig0_3_is_complete(int components_id)
+{
+    bool complete = components_ids_seen.count(components_id);
+
+    if (complete) {
+        components_ids_seen.clear();
+    }
+    else {
+        components_ids_seen.insert(components_id);
+    }
+
+    return complete;
+}
+
 
 // FIG 0/3 Service component in packet mode with or without Conditional Access
 // ETSI EN 300 401 6.3.2
-void fig0_3(fig0_common_t& fig0, int indent)
+bool fig0_3(fig0_common_t& fig0, int indent)
 {
     uint16_t SCId, Packet_address, CAOrg;
     uint8_t i = 1, Rfa, DSCTy, SubChId, CAMode, SharedFlag;
     char tmpbuf[256];
     char desc[256];
     bool CAOrg_flag, DG_flag, Rfu;
+    bool complete = false;
 
     uint8_t* f = fig0.f;
 
     while (i < (fig0.figlen - 4)) {
         // iterate over service component in packet mode
         SCId = ((uint16_t)f[i] << 4) | ((uint16_t)(f[i+1] >> 4) & 0x0F);
+        complete |= fig0_3_is_complete(SCId);
         Rfa = (f[i+1] >> 1) & 0x07;
         CAOrg_flag = f[i+1] & 0x01;
         DG_flag = (f[i+2] >> 7) & 0x01;
@@ -84,5 +104,7 @@ void fig0_3(fig0_common_t& fig0, int indent)
         }
         printbuf(desc, indent+1, NULL, 0);
     }
+
+    return complete;
 }
 

@@ -28,6 +28,23 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> links_seen;
+
+bool fig0_6_is_complete(int link_key)
+{
+    bool complete = links_seen.count(link_key);
+
+    if (complete) {
+        links_seen.clear();
+    }
+    else {
+        links_seen.insert(link_key);
+    }
+
+    return complete;
+}
 
 // map between fig 0/6 database key and LA to detect activation and deactivation of links
 static std::map<uint16_t, bool> fig0_6_key_la;
@@ -39,7 +56,7 @@ void fig0_6_cleardb()
 
 // FIG 0/6 Service linking information
 // ETSI EN 300 401 8.1.15
-void fig0_6(fig0_common_t& fig0, int indent)
+bool fig0_6(fig0_common_t& fig0, int indent)
 {
     uint32_t j;
     uint16_t LSN, key;
@@ -47,6 +64,7 @@ void fig0_6(fig0_common_t& fig0, int indent)
     char signal_link[256];
     char desc[256];
     bool Id_list_flag, LA, SH, ILS, Shd;
+    bool complete = false;
 
     uint8_t* f = fig0.f;
 
@@ -58,6 +76,7 @@ void fig0_6(fig0_common_t& fig0, int indent)
         ILS = (f[i] >> 4) & 0x01;
         LSN = ((f[i] & 0x0F) << 8) | f[i+1];
         key = (fig0.oe() << 15) | (fig0.pd() << 14) | (SH << 13) | (ILS << 12) | LSN;
+        complete |= fig0_6_is_complete(key);
         strcpy(signal_link, "");
         // check activation / deactivation
         if ((fig0_6_key_la.count(key) > 0) && (fig0_6_key_la[key] != LA)) {
@@ -165,6 +184,7 @@ void fig0_6(fig0_common_t& fig0, int indent)
             }
         }
     }
-}
 
+    return complete;
+}
 

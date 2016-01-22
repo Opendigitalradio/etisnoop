@@ -28,10 +28,27 @@
 #include <cstdio>
 #include <string>
 #include <cstring>
+#include <unordered_set>
+
+static std::unordered_set<int> services_seen;
+
+bool fig0_2_is_complete(int services_id)
+{
+    bool complete = services_seen.count(services_id);
+
+    if (complete) {
+        services_seen.clear();
+    }
+    else {
+        services_seen.insert(services_id);
+    }
+
+    return complete;
+}
 
 // FIG 0/2 Basic service and service component definition
 // ETSI EN 300 401 6.3.1
-void fig0_2(fig0_common_t& fig0, int indent)
+bool fig0_2(fig0_common_t& fig0, int indent)
 {
     uint16_t sref, sid;
     uint8_t cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
@@ -40,6 +57,7 @@ void fig0_2(fig0_common_t& fig0, int indent)
     uint8_t* f = fig0.f;
     char sctydesc[32];
     char desc[256];
+    bool complete = false;
 
     while (k < fig0.figlen) {
         if (fig0.pd() == 0) {
@@ -62,6 +80,8 @@ void fig0_2(fig0_common_t& fig0, int indent)
 
             k += 4;
         }
+
+        complete |= fig0_2_is_complete(sid);
 
         local = (f[k] & 0x80) >> 7;
         caid  = (f[k] & 0x70) >> 4;
@@ -141,6 +161,7 @@ void fig0_2(fig0_common_t& fig0, int indent)
             k += 2;
         }
     }
-}
 
+    return complete;
+}
 

@@ -28,15 +28,33 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<uint64_t> figtype_flags_seen;
+
+bool fig0_31_is_complete(uint64_t figtype_flags)
+{
+    bool complete = figtype_flags_seen.count(figtype_flags);
+
+    if (complete) {
+        figtype_flags_seen.clear();
+    }
+    else {
+        figtype_flags_seen.insert(figtype_flags);
+    }
+
+    return complete;
+}
 
 // FIG 0/31 FIC re-direction
 // ETSI EN 300 401 8.1.12
-void fig0_31(fig0_common_t& fig0, int indent)
+bool fig0_31(fig0_common_t& fig0, int indent)
 {
     uint32_t FIG_type0_flag_field = 0, flag_field;
     uint8_t i = 1, j, FIG_type1_flag_field = 0, FIG_type2_flag_field = 0;
     char desc[256];
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     if (i < (fig0.figlen - 5)) {
         // Read FIC re-direction
@@ -44,6 +62,9 @@ void fig0_31(fig0_common_t& fig0, int indent)
             ((uint32_t)f[i+2] << 8) | (uint32_t)f[i+3];
         FIG_type1_flag_field = f[i+4];
         FIG_type2_flag_field = f[i+5];
+
+        uint64_t key = ((uint64_t)FIG_type1_flag_field << 32) | ((uint64_t)FIG_type2_flag_field << 40) | FIG_type0_flag_field;
+        complete |= fig0_31_is_complete(key);
 
         sprintf(desc, "FIG type 0 flag field=0x%X, FIG type 1 flag field=0x%X, FIG type 2 flag field=0x%X",
                 FIG_type0_flag_field, FIG_type1_flag_field, FIG_type2_flag_field);
@@ -106,5 +127,7 @@ void fig0_31(fig0_common_t& fig0, int indent)
     if (fig0.figlen != 7) {
         fprintf(stderr, "WARNING: FIG 0/%d invalid length %d, expecting 7\n", fig0.ext(), fig0.figlen);
     }
+
+    return complete;
 }
 

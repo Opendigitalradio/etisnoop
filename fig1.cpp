@@ -32,7 +32,7 @@
 using namespace std;
 
 // SHORT LABELS
-void fig1_select(fig1_common_t& fig1, int indent)
+bool fig1_select(fig1_common_t& fig1, int indent)
 {
     uint16_t ext,oe,charset;
     uint16_t flag;
@@ -60,7 +60,7 @@ void fig1_select(fig1_common_t& fig1, int indent)
                 uint16_t eid;
                 eid = f[1] * 256 + f[2];
                 sprintf(desc, "Ensemble ID 0x%04X label: \"%s\", Short label mask: 0x%04X", eid, label, flag);
-                printinfo(desc, indent+1);
+                printinfo(desc, indent+1, 1);
             }
             break;
 
@@ -69,7 +69,7 @@ void fig1_select(fig1_common_t& fig1, int indent)
                 uint16_t sid;
                 sid = f[1] * 256 + f[2];
                 sprintf(desc, "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
-                printinfo(desc, indent+1);
+                printinfo(desc, indent+1, 1);
             }
             break;
 
@@ -92,7 +92,7 @@ void fig1_select(fig1_common_t& fig1, int indent)
                 sprintf(desc,
                         "Service ID  0x%X , Service Component ID 0x%04X Short, label: \"%s\", label mask: 0x%04X",
                         sid, SCIdS, label, flag);
-                printinfo(desc, indent+1);
+                printinfo(desc, indent+1, 1);
             }
             break;
 
@@ -107,7 +107,7 @@ void fig1_select(fig1_common_t& fig1, int indent)
                 sprintf(desc,
                         "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X",
                         sid, label, flag);
-                printinfo(desc, indent+1);
+                printinfo(desc, indent+1, 1);
             }
             break;
 
@@ -150,7 +150,8 @@ void fig1_select(fig1_common_t& fig1, int indent)
             }
             break;
     }
+
+    // FIG1s always contain a complete set of information
+    return true;
 }
-
-
 

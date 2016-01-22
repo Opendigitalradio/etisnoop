@@ -28,10 +28,27 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
+
+static std::unordered_set<int> services_ids_seen;
+
+bool fig0_17_is_complete(int services_id)
+{
+    bool complete = services_ids_seen.count(services_id);
+
+    if (complete) {
+        services_ids_seen.clear();
+    }
+    else {
+        services_ids_seen.insert(services_id);
+    }
+
+    return complete;
+}
 
 // FIG 0/17 Programme Type
 // ETSI EN 300 401 8.1.5
-void fig0_17(fig0_common_t& fig0, int indent)
+bool fig0_17(fig0_common_t& fig0, int indent)
 {
     uint16_t SId;
     uint8_t i = 1, Rfa, Language, Int_code, Comp_code;
@@ -39,10 +56,12 @@ void fig0_17(fig0_common_t& fig0, int indent)
     char desc[256];
     bool SD_flag, PS_flag, L_flag, CC_flag, Rfu;
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - 3)) {
         // iterate over announcement support
         SId = (f[i] << 8) | f[i+1];
+        complete |= fig0_17_is_complete(SId);
         SD_flag = (f[i+2] >> 7);
         PS_flag = ((f[i+2] >> 6) & 0x01);
         L_flag = ((f[i+2] >> 5) & 0x01);
@@ -113,5 +132,7 @@ void fig0_17(fig0_common_t& fig0, int indent)
         }
         printbuf(desc, indent+1, NULL, 0);
     }
+
+    return complete;
 }
 

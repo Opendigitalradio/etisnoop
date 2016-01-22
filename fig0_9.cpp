@@ -37,7 +37,7 @@ bool LTO_uniq;
 
 // FIG 0/9 Country, LTO and International table
 // ETSI EN 300 401 8.1.3.2
-void fig0_9(fig0_common_t& fig0, int indent)
+bool fig0_9(fig0_common_t& fig0, int indent)
 {
     uint32_t SId;
     uint8_t i = 1, j, key, Number_of_services, ECC;
@@ -127,5 +127,7 @@ void fig0_9(fig0_common_t& fig0, int indent)
             }
         }
     }
+
+    return true;
 }
 

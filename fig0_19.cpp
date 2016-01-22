@@ -28,11 +28,27 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <unordered_set>
 
+static std::unordered_set<int> clusters_seen;
+
+bool fig0_19_is_complete(int clusters_id)
+{
+    bool complete = clusters_seen.count(clusters_id);
+
+    if (complete) {
+        clusters_seen.clear();
+    }
+    else {
+        clusters_seen.insert(clusters_id);
+    }
+
+    return complete;
+}
 
 // FIG 0/19 Announcement switching
 // ETSI EN 300 401 8.1.6.2
-void fig0_19(fig0_common_t& fig0, int indent)
+bool fig0_19(fig0_common_t& fig0, int indent)
 {
     uint16_t Asw_flags;
     uint8_t i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
@@ -41,12 +57,14 @@ void fig0_19(fig0_common_t& fig0, int indent)
     bool New_flag, Region_flag;
     uint8_t* f = fig0.f;
     const int figtype = 0;
+    bool complete = false;
 
     while (i < (fig0.figlen - 3)) {
         // iterate over announcement switching
         // Cluster Id, Asw flags, New flag, Region flag,
         // SubChId, Rfa, Region Id Lower Part
         Cluster_Id = f[i];
+        complete |= fig0_19_is_complete(Cluster_Id);
         Asw_flags = ((uint16_t)f[i+1] << 8) | (uint16_t)f[i+2];
         New_flag = (f[i+3] >> 7);
         Region_flag = (f[i+3] >> 6) & 0x1;
@@ -81,5 +99,7 @@ void fig0_19(fig0_common_t& fig0, int indent)
         }
         i += (4 + Region_flag);
     }
+
+    return complete;
 }
 

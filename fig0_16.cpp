@@ -28,10 +28,33 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <set>
+
+/* SId and PNum look like good candidates to uniquely identify a FIG0_16
+ */
+using SId_t = int;
+using PNum_t = int;
+static std::set<std::pair<SId_t, PNum_t> > components_seen;
+
+bool fig0_16_is_complete(SId_t SId, PNum_t PNum)
+{
+    auto key = std::make_pair(SId, PNum);
+    bool complete = components_seen.count(key);
+
+    if (complete) {
+        components_seen.clear();
+    }
+    else {
+        components_seen.insert(key);
+    }
+
+    return complete;
+}
+
 
 // FIG 0/16 Programme Number & fig0.oe() Programme Number
 // ETSI EN 300 401 8.1.4 & 8.1.10.3
-void fig0_16(fig0_common_t& fig0, int indent)
+bool fig0_16(fig0_common_t& fig0, int indent)
 {
     uint16_t SId, PNum, New_SId, New_PNum;
     uint8_t i = 1, Rfa, Rfu;
@@ -39,11 +62,13 @@ void fig0_16(fig0_common_t& fig0, int indent)
     char desc[256];
     bool Continuation_flag, Update_flag;
     uint8_t* f = fig0.f;
+    bool complete = false;
 
     while (i < (fig0.figlen - 4)) {
         // iterate over Programme Number
         SId = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
         PNum = ((uint16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
+        complete |= fig0_16_is_complete(SId, PNum);
         Rfa = f[i+4] >> 6;
         Rfu = (f[i+4] >> 2) & 0x0F;
         Continuation_flag = (f[i+4] >> 1) & 0x01;
@@ -96,5 +121,7 @@ void fig0_16(fig0_common_t& fig0, int indent)
 
         printbuf(desc, indent+1, NULL, 0);
     }
+
+    return complete;
 }
 

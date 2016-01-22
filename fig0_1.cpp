@@ -26,18 +26,38 @@
 
 #include "figs.hpp"
 #include <cstdio>
+#include <unordered_set>
+
+static std::unordered_set<int> subchannels_seen;
+
+bool fig0_1_is_complete(int subch_id)
+{
+    bool complete = subchannels_seen.count(subch_id);
+
+    if (complete) {
+        subchannels_seen.clear();
+    }
+    else {
+        subchannels_seen.insert(subch_id);
+    }
+
+    return complete;
+}
 
 // FIG 0/1 Basic sub-channel organization
 // ETSI EN 300 401 6.2.1
-void fig0_1(fig0_common_t& fig0, int indent)
+bool fig0_1(fig0_common_t& fig0, int indent)
 {
     int i = 1;
     uint8_t* f = fig0.f;
     char desc[128];
+    bool complete = false;
 
     while (i < fig0.figlen-3) {
         // iterate over subchannels
         int subch_id = f[i] >> 2;
+        complete |= fig0_1_is_complete(subch_id);
+
         int start_addr = ((f[i] & 0x03) << 8) |
             (f[i+1]);
         int long_flag  = (f[i+2] >> 7);
@@ -87,5 +107,6 @@ void fig0_1(fig0_common_t& fig0, int indent)
         printbuf(desc, indent+1, NULL, 0);
     }
 
+    return complete;
 }
 

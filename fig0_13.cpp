@@ -28,6 +28,31 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <set>
+
+/* EN 300 401, 8.1.20, User application information
+ * The combination of the SId and the SCIdS provides a service component
+ * identifier which is valid globally.
+ */
+using SId_t = int;
+using SCIdS_t = int;
+static std::set<std::pair<SId_t, SCIdS_t> > components_ids_seen;
+
+bool fig0_13_is_complete(SId_t SId, SCIdS_t SCIdS)
+{
+    auto key = std::make_pair(SId, SCIdS);
+    bool complete = components_ids_seen.count(key);
+
+    if (complete) {
+        components_ids_seen.clear();
+    }
+    else {
+        components_ids_seen.insert(key);
+    }
+
+    return complete;
+}
+
 
 std::string get_fig_0_13_userapp(int user_app_type)
 {
@@ -48,7 +73,7 @@ std::string get_fig_0_13_userapp(int user_app_type)
 
 // FIG 0/13 User application information
 // ETSI EN 300 401 8.1.20
-void fig0_13(fig0_common_t& fig0, int indent)
+bool fig0_13(fig0_common_t& fig0, int indent)
 {
     uint32_t SId;
     uint8_t  SCIdS;
@@ -56,6 +81,7 @@ void fig0_13(fig0_common_t& fig0, int indent)
     uint8_t* f = fig0.f;
     const int figtype = 0;
     char desc[256];
+    bool complete = false;
 
     int k = 1;
 
@@ -81,6 +107,8 @@ void fig0_13(fig0_common_t& fig0, int indent)
 
     }
 
+    complete |= fig0_13_is_complete(SId, SCIdS);
+
     sprintf(desc, "FIG %d/%d: SId=0x%X SCIdS=%u No=%u",
             figtype, fig0.ext(), SId, SCIdS, No);
     printbuf(desc, indent+1, NULL, 0);
@@ -97,5 +125,7 @@ void fig0_13(fig0_common_t& fig0, int indent)
                 user_app_len);
         printbuf(desc, indent+2, NULL, 0);
     }
+
+    return complete;
 }
 

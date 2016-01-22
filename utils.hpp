@@ -44,7 +44,7 @@ void printbuf(std::string header,
 
 void printinfo(std::string header,
         int indent_level,
-        int min_verb = 0);
+        int min_verb);
 
 // sprintfMJD: convert MJD (Modified Julian Date) into date string
 int sprintfMJD(char *dst, int mjd);
