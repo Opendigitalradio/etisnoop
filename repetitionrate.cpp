@@ -22,7 +22,7 @@
 #include "repetitionrate.hpp"
 #include <vector>
 #include <map>
-#include <unordered_set>
+#include <set>
 
 using namespace std;
 
@@ -50,7 +50,7 @@ struct FIGRateInfo {
     vector<int> frames_complete;
 
     // Which FIBs this FIG was seen in
-    unordered_set<int> in_fib;
+    set<int> in_fib;
 };
 
 
@@ -109,9 +109,13 @@ void rate_display_analysis(bool clear)
                     fig_rate.first.figtype, fig_rate.first.figextension,
                     n_present_per_second, n_present, variance_of_delta_present);
         }
+        else {
+            printf("FIG%2d/%2d 0\n",
+                    fig_rate.first.figtype, fig_rate.first.figextension);
+        }
 
         const size_t n_complete = frames_complete.size();
-        if (n_complete) {
+        if (n_present and n_complete) {
 
             double average_complete_interval =
                 (double)(frames_complete.back() - frames_complete.front()) /
@@ -131,13 +135,16 @@ void rate_display_analysis(bool clear)
             const double n_complete_per_second = 1 /
                 (average_complete_interval * frame_duration);
 
-            printf(" %2.2f (%6zu %2.2f)\n",
+            printf(" %2.2f (%6zu %2.2f)",
                     n_complete_per_second, n_complete, variance_of_delta_complete);
         }
-        else {
-            printf("FIG%2d/%2d 0\n",
-                    fig_rate.first.figtype, fig_rate.first.figextension);
+
+        printf(" in FIB(s): ");
+        for (auto& fib : fig_rate.second.in_fib) {
+            printf("%d ", fib);
         }
+        printf("\n");
+
     }
 
     if (clear) {
