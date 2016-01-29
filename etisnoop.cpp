@@ -269,7 +269,7 @@ int eti_analyse(eti_analyse_config_t& config)
     uint8_t ficf,nst,fp,mid,ficl;
     uint16_t fl,crch;
     uint16_t crc;
-    uint8_t scid,tpl,l1;
+    uint8_t scid,tpl;
     uint16_t sad[64],stl[64];
     char sdesc[256];
     uint32_t frame_nb = 0, frame_sec = 0, frame_ms = 0, frame_h, frame_m, frame_s;
@@ -618,7 +618,8 @@ int eti_analyse(eti_analyse_config_t& config)
 
         }
 
-        // EOF
+        //* EOF (4 Bytes)
+        // CRC (2 Bytes)
         crch = p[12 + 4*nst + ficf*ficl*4 + offset] * 256 + \
                p[12 + 4*nst + ficf*ficl*4 + offset + 1];
 
@@ -635,14 +636,18 @@ int eti_analyse(eti_analyse_config_t& config)
         printbuf("EOF", 1, p + 12 + 4*nst + ficf*ficl*4 + offset, 4);
         printbuf("CRC", 2, p + 12 + 4*nst + ficf*ficl*4 + offset, 2, sdesc);
 
-        //RFU
+        // RFU (2 Bytes)
         printbuf("RFU", 2, p + 12 + 4*nst + ficf*ficl*4 + offset + 2, 2);
 
-        //TIST
-        l1 = (p[12 + 4*nst + ficf*ficl*4 + offset + 5] & 0xfe) >> 1;
-        sprintf(sdesc, "%d ms", l1*8);
-        printbuf("TIST - Time Stamp", 1, p+12+4*nst+ficf*ficl*4+offset+4, 4, sdesc);
+        //* TIST (4 Bytes)
+        const size_t tist_ix = 12 + 4*nst + ficf*ficl*4 + offset + 4;
+        uint32_t TIST = (uint32_t)(p[tist_ix]) << 24 |
+                        (uint32_t)(p[tist_ix+1]) << 16 |
+                        (uint32_t)(p[tist_ix+2]) << 8 |
+                        (uint32_t)(p[tist_ix+3]);
 
+        sprintf(sdesc, "%f ms", (TIST & 0xFFFFFF) / 16384.0);
+        printbuf("TIST - Time Stamp", 1, p + tist_ix, 4, sdesc);
 
         if (get_verbosity()) {
             printf("-------------------------------------------------------------------------------------------------------------\n");
