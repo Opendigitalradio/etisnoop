@@ -156,6 +156,7 @@ struct eti_analyse_config_t {
     std::map<int, DabPlusSnoop> streams_to_decode;
     bool analyse_fic_carousel;
     bool analyse_fig_rates;
+    bool analyse_fig_rates_per_second;
     bool decode_watermark;
 };
 
@@ -187,15 +188,19 @@ const struct option longopts[] = {
 void usage(void)
 {
     fprintf(stderr,
-            "ETISnoop analyser\n\n"
-            "The ETSnoop analyser decodes and prints out a RAW ETI file in a\n"
+            "Opendigitalradio ETISnoop analyser\n\n"
+            "The ETISnoop analyser decodes and prints out a RAW ETI file in a\n"
             "form that makes analysis easier.\n"
+            "\n"
+            "  http://www.opendigitalradio.org\n"
+            "\n"
             "Usage: etisnoop [-v] [-f] [-w] [-i filename] [-d stream_index]\n"
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
             "   -d N    decode subchannel N into .dabp and .wav files\n"
             "   -f      analyse FIC carousel\n"
-            "   -r      analyse FIG rates\n"
+            "   -r      analyse FIG rates in FIGs per second\n"
+            "   -R      analyse FIG rates in frames per FIG\n"
             "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n");
 }
 
@@ -208,7 +213,7 @@ int main(int argc, char *argv[])
     eti_analyse_config_t config;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efhrvwi:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efhrRvwi:", longopts, &index);
         switch (ch) {
             case 'd':
                 {
@@ -228,6 +233,11 @@ int main(int argc, char *argv[])
                 break;
             case 'r':
                 config.analyse_fig_rates = true;
+                config.analyse_fig_rates_per_second = true;
+                break;
+            case 'R':
+                config.analyse_fig_rates = true;
+                config.analyse_fig_rates_per_second = false;
                 break;
             case 'v':
                 set_verbosity(get_verbosity() + 1);
@@ -295,6 +305,10 @@ int eti_analyse(eti_analyse_config_t& config)
     }
 
     WatermarkDecoder wm_decoder;
+
+    if (config.analyse_fig_rates) {
+        rate_display_header(config.analyse_fig_rates_per_second);
+    }
 
     while (running) {
 
@@ -654,7 +668,7 @@ int eti_analyse(eti_analyse_config_t& config)
         }
 
         if (config.analyse_fig_rates and (fct % 250) == 0) {
-            rate_display_analysis(true);
+            rate_display_analysis(false, config.analyse_fig_rates_per_second);
         }
     }
 
@@ -672,7 +686,7 @@ int eti_analyse(eti_analyse_config_t& config)
     }
 
     if (config.analyse_fig_rates) {
-        rate_display_analysis(false);
+        rate_display_analysis(false, config.analyse_fig_rates_per_second);
     }
 
     figs_cleardb();

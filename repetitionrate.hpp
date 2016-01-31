@@ -32,7 +32,16 @@ void rate_announce_fig(int figtype, int figextension, bool complete);
  */
 void rate_new_fib(int fib);
 
-/* Print analysis, optionally clear all statistics
+/* Print small header to explain rate display
+ * per_second: if true, rates are calculated in FIGs per second.
+ * If false, rate is given in frames per FIG
  */
-void rate_display_analysis(bool clear);
+void rate_display_header(bool per_second);
+
+/* Print analysis.
+ * optionally clear all statistics
+ * per_second: if true, rates are calculated in FIGs per second.
+ * If false, rate is given in frames per FIG
+ */
+void rate_display_analysis(bool clear, bool per_second);
 

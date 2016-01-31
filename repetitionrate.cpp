@@ -23,10 +23,12 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <cmath>
+#include <limits>
 
 using namespace std;
 
-const double frame_duration = 24e-3;
+const double FRAME_DURATION = 24e-3;
 
 struct FIGTypeExt {
     int figtype;
@@ -77,71 +79,102 @@ void rate_announce_fig(int figtype, int figextension, bool complete)
     rate.in_fib.insert(current_fib);
 }
 
-void rate_display_analysis(bool clear)
+// Calculate the minimal, maximum and average repetition rate (FIGs per
+// second).
+void rate_min_max_avg(
+        const std::vector<int>& fig_positions,
+        double* min,
+        double* max,
+        double* avg,
+        bool per_second)
 {
-    printf("FIG carousel analysis. Format:\n"
-         "  average FIGs per second (total count, delta variance in frames)\n"
-         "  average complete FIGs per second (total count, delta variance in frames)\n");
+    double avg_interval =
+        (double)(fig_positions.back() - fig_positions.front()) /
+        (double)(fig_positions.size() - 1);
+
+    int min_delta = std::numeric_limits<int>::max();
+    int max_delta = 0;
+    for (size_t i = 1; i < fig_positions.size(); i++) {
+        const int delta = fig_positions[i] - fig_positions[i-1];
+
+        // Min
+        if (min_delta > delta) {
+            min_delta = delta;
+        }
+
+        // Max
+        if (max_delta < delta) {
+            max_delta = delta;
+        }
+    }
+
+    *avg = avg_interval;
+    *min = min_delta;
+    *max = max_delta;
+
+    if (per_second) {
+        *avg = 1.0 /
+            (*avg * FRAME_DURATION);
+        *min = 1.0 / (*min * FRAME_DURATION);
+        *max = 1.0 / (*min * FRAME_DURATION);
+    }
+
+}
+
+void rate_display_header(bool per_second)
+{
+    if (per_second) {
+        printf("FIG carousel analysis. Format:\n"
+                "  min, average, max FIGs per second (total count) - \n"
+                "  min, average, max complete FIGs per second (total count)\n");
+    }
+    else {
+        printf("FIG carousel analysis. Format:\n"
+                "  min, average, max frames per FIG (total count) - \n"
+                "  min, average, max frames per complete FIGs (total count)\n");
+    }
+}
+
+void rate_display_analysis(bool clear, bool per_second)
+{
     for (auto& fig_rate : fig_rates) {
         auto& frames_present = fig_rate.second.frames_present;
         auto& frames_complete = fig_rate.second.frames_complete;
 
+        double min = 0.0;
+        double max = 0.0;
+        double avg = 0.0;
+
         const size_t n_present = frames_present.size();
-        if (n_present) {
-            double average_present_interval =
-                (double)(frames_present.back() - frames_present.front()) /
-                (double)(frames_present.size() - 1);
+        const size_t n_complete = frames_complete.size();
+        if (n_present >= 2) {
 
-            double variance_of_delta_present = 0;
-            for (size_t i = 1; i < frames_present.size(); i++) {
-                double s =
-                    (double)(frames_present[i] - frames_present[i-1]) -
-                    average_present_interval;
+            rate_min_max_avg(frames_present, &min, &max, &avg, per_second);
 
-                variance_of_delta_present += s * s;
-            }
-            variance_of_delta_present /= frames_present.size();
-
-            const double n_present_per_second = 1 /
-                (average_present_interval * frame_duration);
-
-            printf("FIG%2d/%2d %2.2f (%6zu %2.2f)",
+            printf("FIG%2d/%2d %4.2f %4.2f %4.2f (%5zu)",
                     fig_rate.first.figtype, fig_rate.first.figextension,
-                    n_present_per_second, n_present, variance_of_delta_present);
+                    min, avg, max,
+                    n_present);
+
+            if (n_complete >= 2) {
+                rate_min_max_avg(frames_complete, &min, &max, &avg, per_second);
+
+                printf(" - %4.2f %4.2f %4.2f (%5zu)",
+                        min, avg, max,
+                        n_present);
+            }
+            else {
+                printf(" - None complete");
+            }
         }
         else {
-            printf("FIG%2d/%2d 0\n",
+            printf("FIG%2d/%2d 0",
                     fig_rate.first.figtype, fig_rate.first.figextension);
         }
 
-        const size_t n_complete = frames_complete.size();
-        if (n_present and n_complete) {
-
-            double average_complete_interval =
-                (double)(frames_complete.back() - frames_complete.front()) /
-                (double)(frames_complete.size() - 1);
-
-
-            double variance_of_delta_complete = 0;
-            for (size_t i = 1; i < frames_complete.size(); i++) {
-                double s =
-                    (double)(frames_complete[i] - frames_complete[i-1]) -
-                    average_complete_interval;
-
-                variance_of_delta_complete += s * s;
-            }
-            variance_of_delta_complete /= frames_complete.size();
-
-            const double n_complete_per_second = 1 /
-                (average_complete_interval * frame_duration);
-
-            printf(" %2.2f (%6zu %2.2f)",
-                    n_complete_per_second, n_complete, variance_of_delta_complete);
-        }
-
-        printf(" in FIB(s): ");
+        printf(" - in FIB(s):");
         for (auto& fib : fig_rate.second.in_fib) {
-            printf("%d ", fib);
+            printf(" %d", fib);
         }
         printf("\n");
 
