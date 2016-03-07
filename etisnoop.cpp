@@ -151,6 +151,15 @@ struct FIG0_13_shortAppInfo
 using namespace std;
 
 struct eti_analyse_config_t {
+    eti_analyse_config_t() :
+        etifd(nullptr),
+        ignore_error(false),
+        streams_to_decode(),
+        analyse_fic_carousel(false),
+        analyse_fig_rates(false),
+        analyse_fig_rates_per_second(false),
+        decode_watermark(false) {}
+
     FILE* etifd;
     bool ignore_error;
     std::map<int, DabPlusSnoop> streams_to_decode;
