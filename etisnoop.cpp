@@ -206,7 +206,7 @@ void usage(void)
             "Usage: etisnoop [-v] [-f] [-w] [-i filename] [-d stream_index]\n"
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
-            "   -d N    decode subchannel N into .dabp and .wav files\n"
+            "   -d N    decode subchannel N into .msc and .wav files\n"
             "   -f      analyse FIC carousel\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
