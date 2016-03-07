@@ -19,6 +19,7 @@
 
     Authors:
          Matthias P. Braendli <matthias@mpb.li>
+	 Mathias Coinchon <coinchon@yahoo.com>
 */
 
 #include <stdio.h>
@@ -45,20 +46,6 @@ using namespace std;
 
 void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
 {
-    // First dump to file
-    if (m_raw_data_stream_fd == NULL) {
-        stringstream dump_filename;
-        dump_filename << "stream-" << m_index << ".msc";
-
-        m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
-
-        if (m_raw_data_stream_fd == NULL) {
-            perror("File open failed");
-        }
-    }
-
-    fwrite(streamdata, 1, streamsize, m_raw_data_stream_fd);
-
     // Try to decode audio
     size_t original_size = m_data.size();
     m_data.resize(original_size + streamsize);
@@ -66,9 +53,25 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
 
     if (seek_valid_firecode()) {
         // m_data now points to a valid header
+
         if (decode()) {
-            // We have been able to decode the AUs
-            m_data.erase(m_data.begin(), m_data.begin() + m_subchannel_index * 120);
+
+	  // First dump to subchannel file (superframe+parity word)
+          if (m_raw_data_stream_fd == NULL) {
+            stringstream dump_filename;
+            dump_filename << "stream-" << m_index << ".msc";
+
+            m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
+
+          if (m_raw_data_stream_fd == NULL) {
+            perror("File open failed");
+          }
+        }
+ 
+	fwrite(&m_data[0], m_subchannel_index, 120, m_raw_data_stream_fd);
+
+        // We have been able to decode the AUs, now flush vector
+	m_data.clear();
         }
     }
 }
@@ -104,7 +107,7 @@ bool DabPlusSnoop::seek_valid_firecode()
 #if DPS_DEBUG
         printf(DPS_PREFIX " Found valid FireCode at %zu\n", i);
 #endif
-
+	//erase elements before the header
         m_data.erase(m_data.begin(), m_data.begin() + i);
         return true;
     }
@@ -288,6 +291,8 @@ bool DabPlusSnoop::extract_au(vector<int> au_start)
         return analyse_au(aus);
     }
     else {
+	//discard faulty superframe (to be improved to correct/conceal)
+	m_data.clear();
         return false;
     }
 }
