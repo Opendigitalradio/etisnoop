@@ -52,8 +52,8 @@ bool fig0_17(fig0_common_t& fig0, int indent)
 {
     uint16_t SId;
     uint8_t i = 1, Rfa, Language, Int_code, Comp_code;
-    char tmpbuf[256];
-    char desc[256];
+    char tmpbuf[512];
+    char desc[512];
     bool SD_flag, PS_flag, L_flag, CC_flag, Rfu;
     uint8_t* f = fig0.f;
     bool complete = false;
