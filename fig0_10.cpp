@@ -57,7 +57,7 @@ bool fig0_10(fig0_common_t& fig0, int indent)
 
     if (UTC) {
         uint8_t seconds = f[5] >> 2;
-        uint16_t milliseconds = ((uint16_t)(f[5] & 0x2) << 8) | f[6];
+        uint16_t milliseconds = ((uint16_t)(f[5] & 0x3) << 8) | f[6];
 
         sprintf(desc, "FIG 0/%d(long): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d:%02d.%d",
                 fig0.ext(), MJD, dateStr, LSI, ConfInd, hours, minutes, seconds, milliseconds);
