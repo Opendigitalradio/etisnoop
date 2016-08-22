@@ -62,6 +62,7 @@ bool fig0_2(fig0_common_t& fig0, int indent)
     while (k < fig0.figlen) {
         if (fig0.pd() == 0) {
             sid  =  f[k] * 256 + f[k+1];
+            ecc  = 0;
             cid  = (f[k] & 0xF0) >> 4;
             sref = (f[k] & 0x0F) * 256 + f[k+1];
             k += 2;
