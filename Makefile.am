@@ -7,7 +7,8 @@ else
 GITVERSION_FLAGS =
 endif
 
-AM_CPPFLAGS = -g -O2 $(GITVERSION_FLAGS)
+AM_CPPFLAGS = -Wall $(GITVERSION_FLAGS)
+AM_CFLAGS = -Wall
 
 etisnoop_SOURCES     = dabplussnoop.cpp dabplussnoop.hpp \
 					   etiinput.cpp etiinput.hpp \
