@@ -9,7 +9,7 @@ http://www.nd.edu/~dthain/courses/cse20211/fall2013/wavfile
 #define WAVFILE_H
 
 #include <stdio.h>
-#include <inttypes.h>
+#include <cinttypes>
 
 FILE * wavfile_open( const char *filename, int rate );
 void wavfile_write( FILE *file, short data[], int length );

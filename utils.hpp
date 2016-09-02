@@ -31,7 +31,7 @@
 
 #include <string>
 #include <cstdint>
-#include <inttypes.h>
+#include <cinttypes>
 
 void set_verbosity(int v);
 int  get_verbosity(void);
