@@ -10,44 +10,44 @@ endif
 AM_CPPFLAGS = -Wall $(GITVERSION_FLAGS)
 AM_CFLAGS = -Wall
 
-etisnoop_SOURCES     = dabplussnoop.cpp dabplussnoop.hpp \
-					   etiinput.cpp etiinput.hpp \
-					   etisnoop.cpp \
-					   faad_decoder.cpp faad_decoder.hpp \
-					   fig0_0.cpp \
-					   fig0_10.cpp \
-					   fig0_11.cpp \
-					   fig0_13.cpp \
-					   fig0_14.cpp \
-					   fig0_16.cpp \
-					   fig0_17.cpp \
-					   fig0_18.cpp \
-					   fig0_19.cpp \
-					   fig0_1.cpp \
-					   fig0_21.cpp \
-					   fig0_22.cpp \
-					   fig0_24.cpp \
-					   fig0_25.cpp \
-					   fig0_26.cpp \
-					   fig0_27.cpp \
-					   fig0_28.cpp \
-					   fig0_2.cpp \
-					   fig0_31.cpp \
-					   fig0_3.cpp \
-					   fig0_5.cpp \
-					   fig0_6.cpp \
-					   fig0_8.cpp \
-					   fig0_9.cpp \
-					   fig1.cpp \
-					   figs.cpp figs.hpp \
-					   firecode.c firecode.h \
-					   lib_crc.c lib_crc.h \
-					   repetitionrate.cpp repetitionrate.hpp \
-					   rsdecoder.cpp rsdecoder.hpp \
-					   tables.cpp tables.hpp \
-					   utils.cpp utils.hpp \
-					   watermarkdecoder.hpp \
-					   wavfile.c wavfile.h
+etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
+					   src/etiinput.cpp src/etiinput.hpp \
+					   src/etisnoop.cpp \
+					   src/faad_decoder.cpp src/faad_decoder.hpp \
+					   src/fig0_0.cpp \
+					   src/fig0_10.cpp \
+					   src/fig0_11.cpp \
+					   src/fig0_13.cpp \
+					   src/fig0_14.cpp \
+					   src/fig0_16.cpp \
+					   src/fig0_17.cpp \
+					   src/fig0_18.cpp \
+					   src/fig0_19.cpp \
+					   src/fig0_1.cpp \
+					   src/fig0_21.cpp \
+					   src/fig0_22.cpp \
+					   src/fig0_24.cpp \
+					   src/fig0_25.cpp \
+					   src/fig0_26.cpp \
+					   src/fig0_27.cpp \
+					   src/fig0_28.cpp \
+					   src/fig0_2.cpp \
+					   src/fig0_31.cpp \
+					   src/fig0_3.cpp \
+					   src/fig0_5.cpp \
+					   src/fig0_6.cpp \
+					   src/fig0_8.cpp \
+					   src/fig0_9.cpp \
+					   src/fig1.cpp \
+					   src/figs.cpp src/figs.hpp \
+					   src/firecode.c src/firecode.h \
+					   src/lib_crc.c src/lib_crc.h \
+					   src/repetitionrate.cpp src/repetitionrate.hpp \
+					   src/rsdecoder.cpp src/rsdecoder.hpp \
+					   src/tables.cpp src/tables.hpp \
+					   src/utils.cpp src/utils.hpp \
+					   src/watermarkdecoder.hpp \
+					   src/wavfile.c src/wavfile.h
 
 bin_PROGRAMS =  etisnoop$(EXEEXT)
 
