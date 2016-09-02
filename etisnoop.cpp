@@ -199,7 +199,7 @@ const struct option longopts[] = {
 void usage(void)
 {
     fprintf(stderr,
-            "Opendigitalradio ETISnoop analyser\n\n"
+            "Opendigitalradio ETISnoop analyser %s compiled at %s, %s\n\n"
             "The ETISnoop analyser decodes and prints out a RAW ETI file in a\n"
             "form that makes analysis easier.\n"
             "\n"
@@ -212,7 +212,13 @@ void usage(void)
             "   -f      analyse FIC carousel\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
-            "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n");
+            "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n",
+#if defined(GITVERSION)
+            GITVERSION,
+#else
+            VERSION,
+#endif
+            __DATE__, __TIME__);
 }
 
 int main(int argc, char *argv[])
