@@ -21,8 +21,10 @@
          Matthias P. Braendli <matthias@mpb.li>
 */
 
-#include "faad_decoder.h"
+#include "faad_decoder.hpp"
+extern "C" {
 #include "wavfile.h"
+}
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>

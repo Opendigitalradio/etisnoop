@@ -27,7 +27,7 @@
    You should have received a copy of the GNU General Public License
    along with ODR-DabMod.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "etiinput.h"
+#include "etiinput.hpp"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>

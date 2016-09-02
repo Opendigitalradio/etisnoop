@@ -13,6 +13,7 @@ addons: &addons
       - libzmq3
       - libfaad-dev
       - libfaad2
+      - automake
 
 script:
   - |
@@ -26,8 +27,11 @@ script:
     sudo make install
     popd
   - |
-    mkdir build
-    cd build
-    cmake ..
+    ./bootstrap.sh
+    CC=clang CXX=clang++ ./configure
+    make
+  - |
+    ./bootstrap.sh
+    ./configure
     make
 

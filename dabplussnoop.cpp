@@ -31,11 +31,13 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
-#include "dabplussnoop.h"
+#include "dabplussnoop.hpp"
+extern "C" {
 #include "firecode.h"
 #include "lib_crc.h"
-#include "faad_decoder.h"
-#include "rsdecoder.h"
+}
+#include "faad_decoder.hpp"
+#include "rsdecoder.hpp"
 
 #define DPS_INDENT "\t\t"
 #define DPS_PREFIX "DAB+ decode:"

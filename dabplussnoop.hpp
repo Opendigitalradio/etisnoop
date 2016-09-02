@@ -76,7 +76,7 @@ he_aac_super_frame(subchannel_index)
 #include <string>
 #include <sstream>
 #include <vector>
-#include "faad_decoder.h"
+#include "faad_decoder.hpp"
 
 #ifndef __DABPLUSSNOOP_H_
 #define __DABPLUSSNOOP_H_

@@ -43,10 +43,12 @@
 #include <map>
 #include <sstream>
 #include <time.h>
+extern "C" {
 #include "lib_crc.h"
+}
+#include "dabplussnoop.hpp"
 #include "utils.hpp"
-#include "dabplussnoop.h"
-#include "etiinput.h"
+#include "etiinput.hpp"
 #include "figs.hpp"
 #include "watermarkdecoder.hpp"
 #include "repetitionrate.hpp"

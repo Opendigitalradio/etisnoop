@@ -10,12 +10,14 @@ and extract a DAB+ subchannel into a file.
 Build
 -----
 
-Make sure you have cmake installed and do
+etisnoop is using autotools. If you do not have a release containing a ./configure script,
+run ./bootstrap.sh
 
-    mkdir build
-    cd build
-    cmake ..
+Then do
+
+    ./configure
     make
+    sudo make install
 
 About
 -----

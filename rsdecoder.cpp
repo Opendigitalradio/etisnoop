@@ -18,7 +18,7 @@
    */
 
 #include <stdexcept>
-#include "rsdecoder.h"
+#include "rsdecoder.hpp"
 
 RSDecoder::RSDecoder()
 {
