@@ -47,13 +47,20 @@ etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/tables.cpp src/tables.hpp \
 					   src/utils.cpp src/utils.hpp \
 					   src/watermarkdecoder.hpp \
-					   src/wavfile.c src/wavfile.h
+					   src/wavfile.c src/wavfile.h \
+					   src/fec/char.h \
+					   src/fec/decode_rs_char.c src/fec/decode_rs.h \
+					   src/fec/encode_rs_char.c src/fec/encode_rs.h \
+					   src/fec/fec.h \
+					   src/fec/init_rs_char.c src/fec/init_rs.h \
+					   src/fec/rs-common.h
 
 bin_PROGRAMS =  etisnoop$(EXEEXT)
 
-EXTRA_DIST = \
-    $(top_srcdir)/bootstrap.sh \
-    $(top_srcdir)/LICENCE \
-    $(top_srcdir)/README.md \
-    $(top_srcdir)/remove-duplicate-frames.py
+EXTRA_DIST = $(top_srcdir)/bootstrap.sh \
+			 $(top_srcdir)/LICENCE \
+			 $(top_srcdir)/README.md \
+			 $(top_srcdir)/remove-duplicate-frames.py \
+			 $(top_srcdir)/src/fec/LICENSE \
+			 $(top_srcdir)/src/fec/README.md
 

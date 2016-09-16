@@ -21,7 +21,7 @@
 #include <vector>
 
 extern "C" {
-#include <fec.h>
+#include "fec/fec.h"
 }
 
 class RSDecoder {

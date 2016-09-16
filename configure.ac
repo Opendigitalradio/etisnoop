@@ -30,10 +30,6 @@ AX_PTHREAD( [
 
 AC_CHECK_LIB([m], [sin])
 
-AC_SEARCH_LIBS([init_rs_char], [fec], [], [
-  AC_MSG_ERROR([unable to find libfec])
-])
-
 AC_SEARCH_LIBS([NeAACDecDecode], [faad], [], [
   AC_MSG_ERROR([unable to find libfaad])
 ])
