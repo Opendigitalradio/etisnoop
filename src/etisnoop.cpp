@@ -166,7 +166,7 @@ struct eti_analyse_config_t {
 
     FILE* etifd;
     bool ignore_error;
-    std::map<int, DabPlusSnoop> streams_to_decode;
+    std::map<int, StreamSnoop> streams_to_decode;
     bool analyse_fic_carousel;
     bool analyse_fig_rates;
     bool analyse_fig_rates_per_second;
@@ -210,7 +210,7 @@ void usage(void)
             "Usage: etisnoop [-v] [-f] [-w] [-i filename] [-d stream_index]\n"
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
-            "   -d N    decode subchannel N into .msc and .wav files\n"
+            "   -d N    decode subchannel N into .msc file and if DAB+, decode to .wav file\n"
             "   -f      analyse FIC carousel\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
@@ -237,8 +237,8 @@ int main(int argc, char *argv[])
             case 'd':
                 {
                 int subchix = atoi(optarg);
-                DabPlusSnoop dps;
-                config.streams_to_decode[subchix] = dps;
+                StreamSnoop snoop;
+                config.streams_to_decode[subchix] = snoop;
                 }
                 break;
             case 'e':
@@ -691,12 +691,8 @@ int eti_analyse(eti_analyse_config_t& config)
         }
     }
 
-
-    std::map<int, DabPlusSnoop>::iterator it;
-    for (it = config.streams_to_decode.begin();
-            it != config.streams_to_decode.end();
-            ++it) {
-        it->second.close();
+    for (auto& snoop : config.streams_to_decode) {
+        snoop.second.close();
     }
 
     if (config.decode_watermark) {

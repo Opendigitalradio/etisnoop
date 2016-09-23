@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014, 2015 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,21 +57,6 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
         // m_data now points to a valid header
 
         if (decode()) {
-
-            // First dump to subchannel file (superframe+parity word)
-            if (m_raw_data_stream_fd == NULL) {
-                stringstream dump_filename;
-                dump_filename << "stream-" << m_index << ".msc";
-
-                m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
-
-                if (m_raw_data_stream_fd == NULL) {
-                    perror("File open failed");
-                }
-            }
-
-            fwrite(&m_data[0], m_subchannel_index, 120, m_raw_data_stream_fd);
-
             // We have been able to decode the AUs, now flush vector
             m_data.clear();
         }
@@ -138,7 +123,13 @@ bool DabPlusSnoop::decode()
         int rs_errors = rs_dec.DecodeSuperframe(b, m_subchannel_index);
 
         if (rs_errors == -1) {
+            // Uncorrectable errors, flush our buffer
+            m_data.clear();
             return false;
+        }
+        else if (rs_errors > 0) {
+            printf("RS Decoder for stream %d: %d uncorrected errors\n",
+                    m_index, rs_errors);
         }
 
         // -- Parse he_aac_super_frame
@@ -257,7 +248,7 @@ bool DabPlusSnoop::extract_au(vector<int> au_start)
     {
 #if DPS_DEBUG
         printf(DPS_PREFIX DPS_INDENT
-                "Copy au %zu of size %zu\n",
+                "Copy au %zu of size %d\n",
                 au,
                 au_start[au+1] - au_start[au]-2 );
 #endif
@@ -317,8 +308,36 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
 void DabPlusSnoop::close()
 {
     m_faad_decoder.close();
+}
 
+void StreamSnoop::close()
+{
     if (m_raw_data_stream_fd) {
         fclose(m_raw_data_stream_fd);
     }
+
+    dps.close();
+}
+
+void StreamSnoop::push(uint8_t* streamdata, size_t streamsize)
+{
+    if (m_index == -1) {
+        throw std::runtime_error("StreamSnoop not properly initialised");
+    }
+
+    // First dump to subchannel file (superframe+parity word)
+    if (m_raw_data_stream_fd == NULL) {
+        stringstream dump_filename;
+        dump_filename << "stream-" << m_index << ".msc";
+
+        m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
+
+        if (m_raw_data_stream_fd == NULL) {
+            perror("File open failed");
+        }
+    }
+
+    fwrite(streamdata, streamsize, 1, m_raw_data_stream_fd);
+
+    dps.push(streamdata, streamsize);
 }

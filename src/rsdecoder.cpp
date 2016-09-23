@@ -1,7 +1,6 @@
 /*
    Copyright (C) 2015 Stefan Pöschel
-
-   Copyright (C) 2015 Matthias P. Braendli (http://www.opendigitalradio.org)
+   Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +18,8 @@
 
 #include <stdexcept>
 #include "rsdecoder.hpp"
+
+#define RSDEC_DEBUG 0
 
 RSDecoder::RSDecoder()
 {
@@ -67,6 +68,7 @@ int RSDecoder::DecodeSuperframe(std::vector<uint8_t> &sf, int subch_index)
         }
     }
 
+#if RSDEC_DEBUG
     // output statistics
     if (total_corr_count || uncorr_errors) {
         printf("RS uncorrected errors:\n");
@@ -76,6 +78,7 @@ int RSDecoder::DecodeSuperframe(std::vector<uint8_t> &sf, int subch_index)
         }
         printf("\n");
     }
+#endif
 
     return uncorr_errors ? -1 : total_corr_count;
 }

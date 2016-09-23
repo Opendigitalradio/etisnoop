@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     dabplussnoop.cpp
-          Parse DAB+ frames from a ETI file
+          Extract MSC data and parse DAB+ frames from a ETI file
 
     Authors:
          Matthias P. Braendli <matthias@mpb.li>
@@ -81,15 +81,14 @@ he_aac_super_frame(subchannel_index)
 #ifndef __DABPLUSSNOOP_H_
 #define __DABPLUSSNOOP_H_
 
-
+// DabPlusSnoop is responsible for decoding DAB+ audio
 class DabPlusSnoop
 {
     public:
         DabPlusSnoop() :
             m_index(0),
             m_subchannel_index(0),
-            m_data(0),
-            m_raw_data_stream_fd(NULL) {}
+            m_data(0) {}
 
         void set_subchannel_index(unsigned subchannel_index)
         {
@@ -125,9 +124,40 @@ class DabPlusSnoop
 
         unsigned m_subchannel_index;
         std::vector<uint8_t> m_data;
+};
+
+// StreamSnoop is responsible for saving msc data into files,
+// and calling DabPlusSnoop's decode routine if it's a DAB+ subchannel
+class StreamSnoop
+{
+    public:
+        StreamSnoop() :
+            dps(),
+            m_index(-1),
+            m_raw_data_stream_fd(NULL) {}
+
+        void set_subchannel_index(unsigned subchannel_index)
+        {
+            dps.set_subchannel_index(subchannel_index);
+        }
+
+        void set_index(int index)
+        {
+            m_index = index;
+            dps.set_index(index);
+        }
+
+        void push(uint8_t* streamdata, size_t streamsize);
+
+        void close(void);
+
+    private:
+        DabPlusSnoop dps;
+        int m_index;
 
         FILE* m_raw_data_stream_fd;
 };
+
 
 #endif
 
