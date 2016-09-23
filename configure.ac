@@ -1,7 +1,7 @@
 dnl                                               -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([etisnoop], [1.0.0], [http://opendigitalradio.org/])
+AC_INIT([etisnoop], [1.1.0], [http://opendigitalradio.org/])
 AC_CONFIG_AUX_DIR(.)
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wall tar-ustar foreign subdir-objects])
