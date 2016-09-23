@@ -94,7 +94,11 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                 strcat(signal_link, " CEI");
             }
             sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, database key=0x%04x%s",
-                    Id_list_flag, LA, (LA)?"active":"inactive", SH, (SH)?"Hard":"Soft", ILS, (ILS)?"international":"national", LSN, key, signal_link);
+                    Id_list_flag,
+                    LA, LA ? "active" : "inactive",
+                    SH, SH ? "Hard" : "Soft",
+                    ILS, ILS ? "international" : "national",
+                    LSN, key, signal_link);
             printbuf(desc, indent+1, NULL, 0);
         }
         else {  // Id_list_flag == 1
@@ -103,29 +107,36 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                 if (fig0.pd() == 0) {
                     IdLQ = (f[i] >> 5) & 0x03;
                     Shd   = (f[i] >> 4) & 0x01;
-                    sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, database key=0x%04x, IdLQ=%d, Shd=%d %s, Number of Ids=%d%s",
-                            Id_list_flag, LA, (LA)?"active":"inactive", SH, (SH)?"Hard":"Soft", ILS, (ILS)?"international":"national", LSN, key, IdLQ, Shd, (Shd)?"b11-8 in 4-F are different services":"single service", Number_of_Ids, signal_link);
+                    sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, "
+                            "database key=0x%04x, IdLQ=%d, Shd=%d %s, Number of Ids=%d%s",
+                            Id_list_flag,
+                            LA, (LA)?"active":"inactive",
+                            SH, (SH)?"Hard":"Soft",
+                            ILS, (ILS)?"international":"national",
+                            LSN, key, IdLQ,
+                            Shd, (Shd)?"b11-8 in 4-F are different services":"single service",
+                            Number_of_Ids, signal_link);
                     printbuf(desc, indent+1, NULL, 0);
                     if (ILS == 0) {
                         // read Id list
                         for(j = 0; ((j < Number_of_Ids) && ((i+2+(j*2)) < fig0.figlen)); j++) {
-                            // ETSI EN 300 401 8.1.15:
-                            // The IdLQ shall not apply to the first entry in the Id list when fig0.oe() = "0" and 
-                            // when the version number of the type 0 field is set to "0" (using the C/N flag, see clause 5.2.2.1)
-                            // ... , the first entry in the Id list of each Service linking field shall be 
-                            // the SId that applies to the service in the ensemble.
+                            // ETSI EN 300 401 8.1.15. Some changes were introducted in spec V2
                             if (((j == 0) && (fig0.oe() == 0) && (fig0.cn() == 0)) ||
                                     (IdLQ == 0)) {
-                                sprintf(desc, "DAB SId       0x%X", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                sprintf(desc, "DAB SId          0x%X",
+                                        ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                             }
                             else if (IdLQ == 1) {
-                                sprintf(desc, "RDS PI        0x%X", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                sprintf(desc, "RDS PI           0x%X",
+                                        ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                             }
                             else if (IdLQ == 2) {
-                                sprintf(desc, "AM-FM service 0x%X", ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
+                                sprintf(desc, "(AM-FM legacy)   0x%X",
+                                        ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                             }
                             else {  // IdLQ == 3
-                                sprintf(desc, "invalid ILS IdLQ configuration");
+                                sprintf(desc, "DRM-AMSS service 0x%X",
+                                        ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                             }
                             printbuf(desc, indent+2, NULL, 0);
                         }
@@ -139,11 +150,6 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                     else {  // fig0.pd() == 0 && ILS == 1
                         // read Id list
                         for(j = 0; ((j < Number_of_Ids) && ((i+3+(j*3)) < fig0.figlen)); j++) {
-                            // ETSI EN 300 401 8.1.15:
-                            // The IdLQ shall not apply to the first entry in the Id list when fig0.oe() = "0" and 
-                            // when the version number of the type 0 field is set to "0" (using the C/N flag, see clause 5.2.2.1)
-                            // ... , the first entry in the Id list of each Service linking field shall be 
-                            // the SId that applies to the service in the ensemble.
                             if (((j == 0) && (fig0.oe() == 0) && (fig0.cn() == 0)) ||
                                     (IdLQ == 0)) {
                                 sprintf(desc, "DAB SId          ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
@@ -152,7 +158,7 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                                 sprintf(desc, "RDS PI           ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                             }
                             else if (IdLQ == 2) {
-                                sprintf(desc, "AM-FM service    ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
+                                sprintf(desc, "(AM-FM legacy)   ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                             }
                             else {  // IdLQ == 3
                                 sprintf(desc, "DRM/AMSS service ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
