@@ -31,6 +31,7 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <stdexcept>
 #include "dabplussnoop.hpp"
 extern "C" {
 #include "firecode.h"
