@@ -53,7 +53,7 @@ bool fig0_1(fig0_common_t& fig0, int indent)
     char desc[128];
     bool complete = false;
 
-    while (i < fig0.figlen-3) {
+    while (i <= fig0.figlen-3) {
         // iterate over subchannels
         int subch_id = f[i] >> 2;
         complete |= fig0_1_is_complete(subch_id);
