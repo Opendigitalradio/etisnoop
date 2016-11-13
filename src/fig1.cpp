@@ -32,7 +32,7 @@
 using namespace std;
 
 // SHORT LABELS
-bool fig1_select(fig1_common_t& fig1, int indent)
+bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 {
     uint16_t ext,oe,charset;
     uint16_t flag;
@@ -48,7 +48,7 @@ bool fig1_select(fig1_common_t& fig1, int indent)
             "FIG %d/%d: OE=%d, Charset=%d",
             figtype, ext, oe, charset);
 
-    printbuf(desc, indent, f+1, fig1.figlen-1);
+    printbuf(desc, disp, f+1, fig1.figlen-1);
     memcpy(label, f+fig1.figlen-18, 16);
     label[16] = 0x00;
     flag = f[fig1.figlen-2] * 256 + \
@@ -60,7 +60,7 @@ bool fig1_select(fig1_common_t& fig1, int indent)
                 uint16_t eid;
                 eid = f[1] * 256 + f[2];
                 sprintf(desc, "Ensemble ID 0x%04X label: \"%s\", Short label mask: 0x%04X", eid, label, flag);
-                printinfo(desc, indent+1, 1);
+                printinfo(desc, disp+1, 1);
             }
             break;
 
@@ -69,7 +69,7 @@ bool fig1_select(fig1_common_t& fig1, int indent)
                 uint16_t sid;
                 sid = f[1] * 256 + f[2];
                 sprintf(desc, "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
-                printinfo(desc, indent+1, 1);
+                printinfo(desc, disp+1, 1);
             }
             break;
 
@@ -92,7 +92,7 @@ bool fig1_select(fig1_common_t& fig1, int indent)
                 sprintf(desc,
                         "Service ID  0x%X , Service Component ID 0x%04X Short, label: \"%s\", label mask: 0x%04X",
                         sid, SCIdS, label, flag);
-                printinfo(desc, indent+1, 1);
+                printinfo(desc, disp+1, 1);
             }
             break;
 
@@ -107,7 +107,7 @@ bool fig1_select(fig1_common_t& fig1, int indent)
                 sprintf(desc,
                         "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X",
                         sid, label, flag);
-                printinfo(desc, indent+1, 1);
+                printinfo(desc, disp+1, 1);
             }
             break;
 
@@ -146,7 +146,7 @@ bool fig1_select(fig1_common_t& fig1, int indent)
 
                 sprintf(desc,"Service ID  0x%X , Service Component ID 0x%04X Short, X-PAD App %02X (%s), label: \"%s\", label mask: 0x%04X",
                         sid, SCIdS, xpadapp, xpadappdesc.c_str(), label, flag);
-                printbuf(desc,indent+1,NULL,0,"");
+                printbuf(desc,disp+1,NULL,0,"");
             }
             break;
     }

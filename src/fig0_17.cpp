@@ -48,7 +48,7 @@ bool fig0_17_is_complete(int services_id)
 
 // FIG 0/17 Programme Type
 // ETSI EN 300 401 8.1.5
-bool fig0_17(fig0_common_t& fig0, int indent)
+bool fig0_17(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SId;
     uint8_t i = 1, Rfa, Language, Int_code, Comp_code;
@@ -130,7 +130,7 @@ bool fig0_17(fig0_common_t& fig0, int indent)
                 strcat(desc, tmpbuf);
             }
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
 
     return complete;

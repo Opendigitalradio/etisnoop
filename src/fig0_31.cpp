@@ -48,7 +48,7 @@ bool fig0_31_is_complete(uint64_t figtype_flags)
 
 // FIG 0/31 FIC re-direction
 // ETSI EN 300 401 8.1.12
-bool fig0_31(fig0_common_t& fig0, int indent)
+bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t FIG_type0_flag_field = 0, flag_field;
     uint8_t i = 1, j, FIG_type1_flag_field = 0, FIG_type2_flag_field = 0;
@@ -68,7 +68,7 @@ bool fig0_31(fig0_common_t& fig0, int indent)
 
         sprintf(desc, "FIG type 0 flag field=0x%X, FIG type 1 flag field=0x%X, FIG type 2 flag field=0x%X",
                 FIG_type0_flag_field, FIG_type1_flag_field, FIG_type2_flag_field);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
 
         for(j = 0; j < 32; j++) {
             // iterate over FIG type 0 re-direction
@@ -78,12 +78,12 @@ bool fig0_31(fig0_common_t& fig0, int indent)
                         (j == 19) || (j == 26) || (j == 28))) {
                 sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
                         fig0.oe(), j);
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
                 fprintf(stderr, "WARNING: FIG 0/%d FIG re-direction of fig0.oe()=%d FIG0/%d not allowed\n", fig0.ext(), fig0.oe(), j);
             }
             else if ((flag_field != 0) && ((j == 21) || (j == 24))) {
                 sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j);
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
             else if (flag_field != 0) {
                 if (fig0.oe() == 0) {
@@ -92,7 +92,7 @@ bool fig0_31(fig0_common_t& fig0, int indent)
                 else {  // fig0.oe() == 1
                     sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j);
                 }
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
 
@@ -106,7 +106,7 @@ bool fig0_31(fig0_common_t& fig0, int indent)
                 else {  // fig0.oe() == 1
                     sprintf(desc, "fig0.oe()=%d FIG 1/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j);
                 }
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
 
@@ -120,7 +120,7 @@ bool fig0_31(fig0_common_t& fig0, int indent)
                 else {  // fig0.oe() == 1
                     sprintf(desc, "fig0.oe()=%d FIG 2/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j);
                 }
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
     }

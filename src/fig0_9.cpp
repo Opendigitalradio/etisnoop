@@ -37,7 +37,7 @@ bool LTO_uniq;
 
 // FIG 0/9 Country, LTO and International table
 // ETSI EN 300 401 8.1.3.2
-bool fig0_9(fig0_common_t& fig0, int indent)
+bool fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t SId;
     uint8_t i = 1, j, key, Number_of_services, ECC;
@@ -71,7 +71,7 @@ bool fig0_9(fig0_common_t& fig0, int indent)
         sprintf(tmpbuf, ", Ensemble ECC=0x%X, International Table Id=0x%X, database key=0x%x",
                 Ensemble_ECC, International_Table_Id, key);
         strcat(desc, tmpbuf);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i += 3;
         if (Ext_flag == 1) {
             // extended field present
@@ -101,26 +101,26 @@ bool fig0_9(fig0_common_t& fig0, int indent)
                         ECC = f[i];
                         sprintf(tmpbuf, ", ECC=0x%X", ECC);
                         strcat(desc, tmpbuf);
-                        printbuf(desc, indent+2, NULL, 0);
+                        printbuf(desc, disp+2, NULL, 0);
                         i++;
                         for(j = i; ((j < (i + (Number_of_services * 2))) && (j < fig0.figlen)); j += 2) {
                             // iterate over SId
                             SId = ((uint32_t)f[j] << 8) | (uint32_t)f[j+1];
                             sprintf(desc, "SId 0x%X", SId);
-                            printbuf(desc, indent+3, NULL, 0);
+                            printbuf(desc, disp+3, NULL, 0);
                         }
                         i += (Number_of_services * 2);
                     }
                 }
                 else {
                     // Data services, 32 bit SId
-                    printbuf(desc, indent+2, NULL, 0);
+                    printbuf(desc, disp+2, NULL, 0);
                     for(j = i; ((j < (i + (Number_of_services * 4))) && (j < fig0.figlen)); j += 4) {
                         // iterate over SId
                         SId = ((uint32_t)f[j] << 24) | ((uint32_t)f[j+1] << 16) |
                             ((uint32_t)f[j+2] << 8) | (uint32_t)f[j+3];
                         sprintf(desc, "SId 0x%X", SId);
-                        printbuf(desc, indent+3, NULL, 0);
+                        printbuf(desc, disp+3, NULL, 0);
                     }
                     i += (Number_of_services * 4);
                 }

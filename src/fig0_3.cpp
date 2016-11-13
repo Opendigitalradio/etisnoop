@@ -48,7 +48,7 @@ bool fig0_3_is_complete(int components_id)
 
 // FIG 0/3 Service component in packet mode with or without Conditional Access
 // ETSI EN 300 401 6.3.2
-bool fig0_3(fig0_common_t& fig0, int indent)
+bool fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SCId, Packet_address, CAOrg;
     uint8_t i = 1, Rfa, DSCTy, SubChId, CAMode, SharedFlag;
@@ -102,7 +102,7 @@ bool fig0_3(fig0_common_t& fig0, int indent)
             }
             i += 2;
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
 
     return complete;

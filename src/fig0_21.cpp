@@ -49,7 +49,7 @@ bool fig0_21_is_complete(int region_id)
 
 // FIG 0/21 Frequency Information
 // ETSI EN 300 401 8.1.8
-bool fig0_21(fig0_common_t& fig0, int indent)
+bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
 {
     float freq;
     uint32_t ifreq;
@@ -70,7 +70,7 @@ bool fig0_21(fig0_common_t& fig0, int indent)
         complete |= fig0_21_is_complete(RegionId);
         Length_FI_list  = (f[i+1] & 0x1F);
         sprintf(desc, "RegionId=0x%03x", RegionId);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i += 2;
         if ((i + Length_FI_list) <= fig0.figlen) {
             j = i;
@@ -196,7 +196,7 @@ bool fig0_21(fig0_common_t& fig0, int indent)
                     strcat(tmpbuf, ", CEI");
                 }
                 strcat(desc, tmpbuf);
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
                 j += 3; // add header
 
                 k = j;
@@ -236,7 +236,7 @@ bool fig0_21(fig0_common_t& fig0, int indent)
                             else {
                                 sprintf(desc, "Frequency not to be used (0)");
                             }
-                            printbuf(desc, indent+3, NULL, 0);
+                            printbuf(desc, disp+3, NULL, 0);
                             k += 3;
                         }
                         break;
@@ -263,7 +263,7 @@ bool fig0_21(fig0_common_t& fig0, int indent)
                             else {
                                 sprintf(desc, "Frequency not to be used (0)");
                             }
-                            printbuf(desc, indent+3, NULL, 0);
+                            printbuf(desc, disp+3, NULL, 0);
                             k++;
                         }
                         break;
@@ -277,7 +277,7 @@ bool fig0_21(fig0_common_t& fig0, int indent)
                             else {
                                 sprintf(desc, "Frequency not to be used (0)");
                             }
-                            printbuf(desc, indent+3, NULL, 0);
+                            printbuf(desc, disp+3, NULL, 0);
                             k += 2;
                         }
                         break;
@@ -305,7 +305,7 @@ bool fig0_21(fig0_common_t& fig0, int indent)
                                 sprintf(tmpbuf, ", invalid Rfu b15 set to 1 instead of 0");
                                 strcat(desc, tmpbuf);
                             }
-                            printbuf(desc, indent+3, NULL, 0);
+                            printbuf(desc, disp+3, NULL, 0);
                             k += 3;
                         }
                         break;

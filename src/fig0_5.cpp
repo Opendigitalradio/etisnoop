@@ -48,7 +48,7 @@ bool fig0_5_is_complete(int components_id)
 
 // FIG 0/5 Service component language
 // ETSI EN 300 401 8.1.2
-bool fig0_5(fig0_common_t& fig0, int indent)
+bool fig0_5(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SCId;
     uint8_t i = 1, SubChId, FIDCId, Language, Rfa;
@@ -83,7 +83,7 @@ bool fig0_5(fig0_common_t& fig0, int indent)
 
             int key = (MSC_FIC_flag << 7) | (f[i] % 0x3F);
             complete |= fig0_5_is_complete(key);
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
             i += 2;
         }
         else {
@@ -103,7 +103,7 @@ bool fig0_5(fig0_common_t& fig0, int indent)
                         SCId, Language,
                         get_language_name(Language));
                 strcat(desc, tmpbuf);
-                printbuf(desc, indent+1, NULL, 0);
+                printbuf(desc, disp+1, NULL, 0);
             }
             i += 3;
         }

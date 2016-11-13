@@ -36,14 +36,34 @@
 void set_verbosity(int v);
 int  get_verbosity(void);
 
+struct display_settings_t {
+    display_settings_t(bool _print, int _indent) :
+        print(_print), indent(_indent) {}
+
+    display_settings_t operator+(int indent_offset) const;
+
+    bool print;
+    int indent;
+};
+
+
 void printbuf(std::string header,
-        int indent_level,
+        const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
         std::string desc="");
 
-void printinfo(std::string header,
-        int indent_level,
+void printbuf(std::string header,
+        int indent,
+        uint8_t* buffer,
+        size_t size,
+        std::string desc="");
+
+void printinfo(const std::string &header,
+        const display_settings_t &disp,
+        int min_verb);
+
+void printinfo(const std::string &header,
         int min_verb);
 
 // sprintfMJD: convert MJD (Modified Julian Date) into date string

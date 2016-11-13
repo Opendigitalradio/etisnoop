@@ -57,7 +57,7 @@ bool fig0_8_is_complete(SId_t SId, SCIdS_t SCIdS)
 
 // FIG 0/8 Service component global definition
 // ETSI EN 300 401 6.3.5
-bool fig0_8(fig0_common_t& fig0, int indent)
+bool fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t SId;
     uint16_t SCId;
@@ -139,7 +139,7 @@ bool fig0_8(fig0_common_t& fig0, int indent)
                 i += 2;
             }
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
 
     return complete;

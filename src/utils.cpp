@@ -44,14 +44,29 @@ int get_verbosity()
     return verbosity;
 }
 
+display_settings_t display_settings_t::operator+(int indent_offset) const
+{
+    return display_settings_t(print, indent+indent_offset);
+}
+
+void printbuf(std::string header,
+        int indent,
+        uint8_t* buffer,
+        size_t size,
+        std::string desc)
+{
+    display_settings_t disp(true, indent);
+    printbuf(header, disp, buffer, size, desc);
+}
+
 void printbuf(string header,
-        int indent_level,
+        const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
         string desc)
 {
     if (verbosity > 0) {
-        for (int i = 0; i < indent_level; i++) {
+        for (int i = 0; i < disp.indent; i++) {
             printf("\t");
         }
 
@@ -75,16 +90,23 @@ void printbuf(string header,
     }
 }
 
-void printinfo(string header,
-        int indent_level,
+void printinfo(const string &header,
+        const display_settings_t &disp,
         int min_verb)
 {
     if (verbosity >= min_verb) {
-        for (int i = 0; i < indent_level; i++) {
+        for (int i = 0; i < disp.indent; i++) {
             printf("\t");
         }
         printf("%s\n", header.c_str());
     }
+}
+
+void printinfo(const std::string &header,
+        int min_verb)
+{
+    const display_settings_t disp(true, 0);
+    printinfo(header, min_verb);
 }
 
 int sprintfMJD(char *dst, int mjd) {

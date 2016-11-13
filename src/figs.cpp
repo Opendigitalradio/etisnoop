@@ -74,37 +74,37 @@ void figs_cleardb()
 }
 
 
-bool fig0_select(fig0_common_t& fig0, int indent)
+bool fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
 {
     switch (fig0.ext()) {
-        case 0: return fig0_0(fig0, indent); break;
-        case 1: return fig0_1(fig0, indent); break;
-        case 2: return fig0_2(fig0, indent); break;
-        case 3: return fig0_3(fig0, indent); break;
-        case 5: return fig0_5(fig0, indent); break;
-        case 6: return fig0_6(fig0, indent); break;
-        case 8: return fig0_8(fig0, indent); break;
-        case 9: return fig0_9(fig0, indent); break;
-        case 10: return fig0_10(fig0, indent); break;
-        case 11: return fig0_11(fig0, indent); break;
-        case 13: return fig0_13(fig0, indent); break;
-        case 14: return fig0_14(fig0, indent); break;
-        case 16: return fig0_16(fig0, indent); break;
-        case 17: return fig0_17(fig0, indent); break;
-        case 18: return fig0_18(fig0, indent); break;
-        case 19: return fig0_19(fig0, indent); break;
-        case 21: return fig0_21(fig0, indent); break;
-        case 22: return fig0_22(fig0, indent); break;
-        case 24: return fig0_24(fig0, indent); break;
-        case 25: return fig0_25(fig0, indent); break;
-        case 26: return fig0_26(fig0, indent); break;
-        case 27: return fig0_27(fig0, indent); break;
-        case 28: return fig0_28(fig0, indent); break;
-        case 31: return fig0_31(fig0, indent); break;
+        case 0: return fig0_0(fig0, disp); break;
+        case 1: return fig0_1(fig0, disp); break;
+        case 2: return fig0_2(fig0, disp); break;
+        case 3: return fig0_3(fig0, disp); break;
+        case 5: return fig0_5(fig0, disp); break;
+        case 6: return fig0_6(fig0, disp); break;
+        case 8: return fig0_8(fig0, disp); break;
+        case 9: return fig0_9(fig0, disp); break;
+        case 10: return fig0_10(fig0, disp); break;
+        case 11: return fig0_11(fig0, disp); break;
+        case 13: return fig0_13(fig0, disp); break;
+        case 14: return fig0_14(fig0, disp); break;
+        case 16: return fig0_16(fig0, disp); break;
+        case 17: return fig0_17(fig0, disp); break;
+        case 18: return fig0_18(fig0, disp); break;
+        case 19: return fig0_19(fig0, disp); break;
+        case 21: return fig0_21(fig0, disp); break;
+        case 22: return fig0_22(fig0, disp); break;
+        case 24: return fig0_24(fig0, disp); break;
+        case 25: return fig0_25(fig0, disp); break;
+        case 26: return fig0_26(fig0, disp); break;
+        case 27: return fig0_27(fig0, disp); break;
+        case 28: return fig0_28(fig0, disp); break;
+        case 31: return fig0_31(fig0, disp); break;
         default: {
                      char desc[256];
                      sprintf(desc, "FIG 0/%d: unknown", fig0.ext());
-                     printbuf(desc, indent, fig0.f+1, fig0.figlen-1);
+                     printbuf(desc, disp, fig0.f+1, fig0.figlen-1);
                      break;
                  }
     }

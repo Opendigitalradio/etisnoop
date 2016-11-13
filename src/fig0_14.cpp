@@ -58,7 +58,7 @@ const char *FEC_schemes_str[4] =  {
 
 // FIG 0/14 FEC sub-channel organization
 // ETSI EN 300 401 6.2.2
-bool fig0_14(fig0_common_t& fig0, int indent)
+bool fig0_14(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint8_t i = 1, SubChId, FEC_scheme;
     uint8_t* f = fig0.f;
@@ -72,7 +72,7 @@ bool fig0_14(fig0_common_t& fig0, int indent)
         FEC_scheme = f[i] & 0x3;
         sprintf(desc, "SubChId=0x%X, FEC scheme=%d %s",
                 SubChId, FEC_scheme, FEC_schemes_str[FEC_scheme]);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i++;
     }
 

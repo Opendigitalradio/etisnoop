@@ -54,7 +54,7 @@ bool fig0_16_is_complete(SId_t SId, PNum_t PNum)
 
 // FIG 0/16 Programme Number & fig0.oe() Programme Number
 // ETSI EN 300 401 8.1.4 & 8.1.10.3
-bool fig0_16(fig0_common_t& fig0, int indent)
+bool fig0_16(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SId, PNum, New_SId, New_PNum;
     uint8_t i = 1, Rfa, Rfu;
@@ -119,7 +119,7 @@ bool fig0_16(fig0_common_t& fig0, int indent)
             i += 4;
         }
 
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
 
     return complete;

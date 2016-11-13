@@ -49,7 +49,7 @@ bool fig0_25_is_complete(int services_id)
 
 // FIG 0/25 fig0.oe() Announcement support
 // ETSI EN 300 401 8.1.10.5.1
-bool fig0_25(fig0_common_t& fig0, int indent)
+bool fig0_25(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t key;
     uint16_t SId, Asu_flags, EId;
@@ -82,19 +82,19 @@ bool fig0_25(fig0_common_t& fig0, int indent)
             sprintf(tmpbuf, ", CEI");
             strcat(desc, tmpbuf);
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i += 5;
 
         for(j = 0; (j < Number_EIds) && (i < (fig0.figlen - 1)); j++) {
             // iterate over EIds
             EId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
             sprintf(desc, "EId=0x%X", EId);
-            printbuf(desc, indent+2, NULL, 0);
+            printbuf(desc, disp+2, NULL, 0);
             i += 2;
         }
         if (j < Number_EIds) {
             sprintf(desc, "missing EId, fig length too short !");
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
             fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
         }
 
@@ -102,7 +102,7 @@ bool fig0_25(fig0_common_t& fig0, int indent)
         for(j = 0; j < 16; j++) {
             if (Asu_flags & (1 << j)) {
                 sprintf(desc, "fig0.oe() Announcement support=%s", get_announcement_type(j));
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
     }

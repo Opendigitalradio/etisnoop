@@ -49,7 +49,7 @@ bool fig0_26_is_complete(int cluster_id)
 
 // FIG 0/26 fig0.oe() Announcement switching
 // ETSI EN 300 401 8.1.10.5.2
-bool fig0_26(fig0_common_t& fig0, int indent)
+bool fig0_26(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t Asw_flags, EId_Other_Ensemble;
     uint8_t i = 1, j, Rfa, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
@@ -94,12 +94,12 @@ bool fig0_26(fig0_common_t& fig0, int indent)
             }
             i++;
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         // decode announcement switching types
         for(j = 0; j < 16; j++) {
             if (Asw_flags & (1 << j)) {
                 sprintf(desc, "Announcement switching=%s", get_announcement_type(j));
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
     }

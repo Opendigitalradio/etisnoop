@@ -10,6 +10,7 @@ endif
 AM_CPPFLAGS = -Wall $(GITVERSION_FLAGS)
 AM_CFLAGS = -Wall
 
+etisnoop_LDADD       = -lboost_regex
 etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/etiinput.cpp src/etiinput.hpp \
 					   src/etisnoop.cpp \

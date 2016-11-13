@@ -49,7 +49,7 @@ bool fig0_27_is_complete(int services_id)
 
 // FIG 0/27 FM Announcement support
 // ETSI EN 300 401 8.1.11.2.1
-bool fig0_27(fig0_common_t& fig0, int indent)
+bool fig0_27(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SId, PI;
     uint8_t i = 1, j, Rfu, Number_PI_codes, key;
@@ -83,18 +83,18 @@ bool fig0_27(fig0_common_t& fig0, int indent)
             // The Change Event Indication (CEI) is signalled by the Number of PI codes field = 0
             strcat(desc, ", CEI");
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i += 3;
         for(j = 0; (j < Number_PI_codes) && (i < (fig0.figlen - 1)); j++) {
             // iterate over PI
             PI = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
             sprintf(desc, "PI=0x%X", PI);
-            printbuf(desc, indent+2, NULL, 0);
+            printbuf(desc, disp+2, NULL, 0);
             i += 2;
         }
         if (j != Number_PI_codes) {
             sprintf(desc, "fig length too short !");
-            printbuf(desc, indent+2, NULL, 0);
+            printbuf(desc, disp+2, NULL, 0);
             fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
         }
     }

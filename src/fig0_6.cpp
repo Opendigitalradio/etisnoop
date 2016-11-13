@@ -56,7 +56,7 @@ void fig0_6_cleardb()
 
 // FIG 0/6 Service linking information
 // ETSI EN 300 401 8.1.15
-bool fig0_6(fig0_common_t& fig0, int indent)
+bool fig0_6(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t j;
     uint16_t LSN, key;
@@ -99,7 +99,7 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                     SH, SH ? "Hard" : "Soft",
                     ILS, ILS ? "international" : "national",
                     LSN, key, signal_link);
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
         }
         else {  // Id_list_flag == 1
             if (i < fig0.figlen) {
@@ -116,7 +116,7 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                             LSN, key, IdLQ,
                             Shd, (Shd)?"b11-8 in 4-F are different services":"single service",
                             Number_of_Ids, signal_link);
-                    printbuf(desc, indent+1, NULL, 0);
+                    printbuf(desc, disp+1, NULL, 0);
                     if (ILS == 0) {
                         // read Id list
                         for(j = 0; ((j < Number_of_Ids) && ((i+2+(j*2)) < fig0.figlen)); j++) {
@@ -138,12 +138,12 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                                 sprintf(desc, "DRM-AMSS service 0x%X",
                                         ((f[i+1+(j*2)] << 8) | f[i+2+(j*2)]));
                             }
-                            printbuf(desc, indent+2, NULL, 0);
+                            printbuf(desc, disp+2, NULL, 0);
                         }
                         // check deadlink
                         if ((Number_of_Ids == 0) && (IdLQ == 1)) {
                             sprintf(desc, "deadlink");
-                            printbuf(desc, indent+2, NULL, 0);
+                            printbuf(desc, disp+2, NULL, 0);
                         }
                         i += (Number_of_Ids * 2) + 1;
                     }
@@ -163,12 +163,12 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                             else {  // IdLQ == 3
                                 sprintf(desc, "DRM/AMSS service ecc 0x%02X Id 0x%04X", f[i+1+(j*3)], ((f[i+2+(j*3)] << 8) | f[i+3+(j*3)]));
                             }
-                            printbuf(desc, indent+2, NULL, 0);
+                            printbuf(desc, disp+2, NULL, 0);
                         }
                         // check deadlink
                         if ((Number_of_Ids == 0) && (IdLQ == 1)) {
                             sprintf(desc, "deadlink");
-                            printbuf(desc, indent+2, NULL, 0);
+                            printbuf(desc, disp+2, NULL, 0);
                         }
                         i += (Number_of_Ids * 3) + 1;
                     }
@@ -176,13 +176,13 @@ bool fig0_6(fig0_common_t& fig0, int indent)
                 else {  // fig0.pd() == 1
                     sprintf(desc, "Id list flag=%d, LA=%d %s, S/H=%d %s, ILS=%d %s, LSN=%d, database key=0x%04x, Number of Ids=%d%s",
                             Id_list_flag, LA, (LA)?"active":"inactive", SH, (SH)?"Hard":"Soft", ILS, (ILS)?"international":"national", LSN, key, Number_of_Ids, signal_link);
-                    printbuf(desc, indent+1, NULL, 0);
+                    printbuf(desc, disp+1, NULL, 0);
                     if (Number_of_Ids > 0) {
                         // read Id list
                         for(j = 0; ((j < Number_of_Ids) && ((i+4+(j*4)) < fig0.figlen)); j++) {
                             sprintf(desc, "SId 0x%X",
                                     ((f[i+1+(j*4)] << 24) | (f[i+2+(j*4)] << 16) | (f[i+3+(j*4)] << 8) | f[i+4+(j*4)]));
-                            printbuf(desc, indent+2, NULL, 0);
+                            printbuf(desc, disp+2, NULL, 0);
                         }
                     }
                     i += (Number_of_Ids * 4) + 1;

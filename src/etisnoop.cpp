@@ -41,8 +41,10 @@
 #include <string.h>
 #include <cinttypes>
 #include <string>
+#include <boost/regex.hpp>
 #include <vector>
 #include <map>
+#include <list>
 #include <sstream>
 #include <time.h>
 extern "C" {
@@ -54,93 +56,7 @@ extern "C" {
 #include "figs.hpp"
 #include "watermarkdecoder.hpp"
 #include "repetitionrate.hpp"
-
-struct FIG
-{
-    int type;
-    int ext;
-    int len;
-};
-
-class FIGalyser
-{
-    public:
-        FIGalyser()
-        {
-            clear();
-        }
-
-        void set_fib(int fib)
-        {
-            m_fib = fib;
-        }
-
-        void push_back(int type, int ext, int len)
-        {
-            struct FIG fig = {
-                .type = type,
-                .ext  = ext,
-                .len  = len };
-
-            m_figs[m_fib].push_back(fig);
-        }
-
-        void analyse()
-        {
-            printf("FIC ");
-
-            for (size_t fib = 0; fib < m_figs.size(); fib++) {
-                int consumed = 7;
-                int fic_size = 0;
-                printf("[%1zu ", fib);
-
-                for (size_t i = 0; i < m_figs[fib].size(); i++) {
-                    FIG &f = m_figs[fib][i];
-                    printf("%01d/%02d (%2d) ", f.type, f.ext, f.len);
-
-                    consumed += 10;
-
-                    fic_size += f.len;
-                }
-
-                printf(" ");
-
-                int align = 60 - consumed;
-                if (align > 0) {
-                    while (align--) {
-                        printf(" ");
-                    }
-                }
-
-                printf("|");
-
-                for (int i = 0; i < 15; i++) {
-                    if (2*i < fic_size) {
-                        printf("#");
-                    }
-                    else {
-                        printf("-");
-                    }
-                }
-
-                printf("| ]   ");
-
-            }
-
-            printf("\n");
-        }
-
-        void clear()
-        {
-            m_figs.clear();
-            m_figs.resize(3);
-        }
-
-    private:
-        int m_fib;
-        std::vector<std::vector<FIG> > m_figs;
-};
-
+#include "figalyser.hpp"
 
 struct FIG0_13_shortAppInfo
 {
@@ -167,22 +83,36 @@ struct eti_analyse_config_t {
     FILE* etifd;
     bool ignore_error;
     std::map<int, StreamSnoop> streams_to_decode;
+    std::list<std::pair<int, int> > figs_to_display;
     bool analyse_fic_carousel;
     bool analyse_fig_rates;
     bool analyse_fig_rates_per_second;
     bool decode_watermark;
+
+    bool is_fig_to_be_printed(int type, int extension) const {
+        if (figs_to_display.empty()) {
+            return true;
+        }
+
+        return std::find(
+                figs_to_display.begin(),
+                figs_to_display.end(),
+                make_pair(type, extension)) != figs_to_display.end();
+    }
 };
 
 
 // Function prototypes
-void decodeFIG(FIGalyser &figs,
-               WatermarkDecoder &wm_decoder,
-               uint8_t* figdata,
-               uint8_t figlen,
-               uint16_t figtype,
-               int indent);
+void decodeFIG(
+        const eti_analyse_config_t &config,
+        FIGalyser &figs,
+        WatermarkDecoder &wm_decoder,
+        uint8_t* figdata,
+        uint8_t figlen,
+        uint16_t figtype,
+        int indent);
 
-int eti_analyse(eti_analyse_config_t& config);
+int eti_analyse(eti_analyse_config_t &config);
 
 const char *get_programme_type_str(size_t int_table_Id, size_t pty);
 int sprintfMJD(char *dst, int mjd);
@@ -191,10 +121,13 @@ int sprintfMJD(char *dst, int mjd);
 #define required_argument 1
 #define optional_argument 2
 const struct option longopts[] = {
+    {"analyse-figs",       no_argument,        0, 'f'},
     {"help",               no_argument,        0, 'h'},
-    {"verbose",            no_argument,        0, 'v'},
     {"ignore-error",       no_argument,        0, 'e'},
+    {"input-file",         no_argument,        0, 'i'},
+    {"verbose",            no_argument,        0, 'v'},
     {"decode-stream",      required_argument,  0, 'd'},
+    {"filter-fig",         required_argument,  0, 'F'},
     {"input",              required_argument,  0, 'i'}
 };
 
@@ -214,7 +147,11 @@ void usage(void)
             "   -f      analyse FIC carousel\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
-            "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n",
+            "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n"
+            "   -F <type>/<ext>\n"
+            "           add FIG type/ext to list of FIGs to display.\n"
+            "           if the option is not given, all FIGs are displayed.\n"
+            "\n",
 #if defined(GITVERSION)
             GITVERSION,
 #else
@@ -232,7 +169,7 @@ int main(int argc, char *argv[])
     eti_analyse_config_t config;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efhrRvwi:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efF:hrRvwi:", longopts, &index);
         switch (ch) {
             case 'd':
                 {
@@ -249,6 +186,26 @@ int main(int argc, char *argv[])
                 break;
             case 'f':
                 config.analyse_fic_carousel = true;
+                break;
+            case 'F':
+                {
+                const string type_ext(optarg);
+                const boost::regex regex("^([0-9]+)/([0-9]+)$");
+                boost::smatch match;
+                bool is_match = boost::regex_search(type_ext, match, regex);
+                if (not is_match) {
+                    fprintf(stderr, "Incorrect -F format\n");
+                    return 1;
+                }
+
+                const string type_str = match[1];
+                const int type = std::atoi(type_str.c_str());
+                const string extension_str = match[2];
+                const int extension = std::atoi(extension_str.c_str());
+
+                fprintf(stderr, "Adding FIG %d/%d to filter\n", type, extension);
+                config.figs_to_display.emplace_back(type, extension);
+                }
                 break;
             case 'r':
                 config.analyse_fig_rates = true;
@@ -290,7 +247,7 @@ int main(int argc, char *argv[])
     fclose(etifd);
 }
 
-int eti_analyse(eti_analyse_config_t& config)
+int eti_analyse(eti_analyse_config_t &config)
 {
     uint8_t p[ETINIPACKETSIZE];
     string desc;
@@ -597,7 +554,7 @@ int eti_analyse(eti_analyse_config_t& config)
                         figlen = fig[0] & 0x1F;
                         sprintf(sdesc, "FIG %d [%d bytes]", figtype, figlen);
                         printbuf(sdesc, 3, fig+1, figlen);
-                        decodeFIG(figs, wm_decoder, fig+1, figlen, figtype, 4);
+                        decodeFIG(config, figs, wm_decoder, fig+1, figlen, figtype, 4);
                         fig += figlen + 1;
                         figcount += figlen + 1;
                         if (figcount >= 29)
@@ -710,12 +667,14 @@ int eti_analyse(eti_analyse_config_t& config)
     return 0;
 }
 
-void decodeFIG(FIGalyser &figs,
-               WatermarkDecoder &wm_decoder,
-               uint8_t* f,
-               uint8_t figlen,
-               uint16_t figtype,
-               int indent)
+void decodeFIG(
+        const eti_analyse_config_t &config,
+        FIGalyser &figs,
+        WatermarkDecoder &wm_decoder,
+        uint8_t* f,
+        uint8_t figlen,
+        uint16_t figtype,
+        int indent)
 {
     char desc[512];
 
@@ -724,13 +683,17 @@ void decodeFIG(FIGalyser &figs,
             {
                 fig0_common_t fig0(f, figlen, wm_decoder);
 
-                sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d",
-                        figtype, fig0.ext(), fig0.cn(), fig0.oe(), fig0.pd());
-                printbuf(desc, indent, f+1, figlen-1);
+                const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig0.ext()), indent);
+
+                if (disp.print) {
+                    sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d",
+                            figtype, fig0.ext(), fig0.cn(), fig0.oe(), fig0.pd());
+                    printbuf(desc, disp.indent, f+1, figlen-1);
+                }
 
                 figs.push_back(figtype, fig0.ext(), figlen);
 
-                bool complete = fig0_select(fig0, indent);
+                bool complete = fig0_select(fig0, disp);
                 rate_announce_fig(figtype, fig0.ext(), complete);
             }
             break;
@@ -739,9 +702,11 @@ void decodeFIG(FIGalyser &figs,
             {// SHORT LABELS
                 fig1_common_t fig1(f, figlen);
 
+                const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig1.ext()), indent);
+
                 figs.push_back(figtype, fig1.ext(), figlen);
 
-                bool complete = fig1_select(fig1, indent);
+                bool complete = fig1_select(fig1, disp);
                 rate_announce_fig(figtype, fig1.ext(), complete);
             }
             break;
@@ -753,11 +718,15 @@ void decodeFIG(FIGalyser &figs,
                 uint8_t segment_index = (f[0] & 0x70) >> 4;
                 oe = (f[0] & 0x08) >> 3;
                 ext = f[0] & 0x07;
-                sprintf(desc,
-                        "FIG %d/%d: Toggle flag=%d, Segment_index=%d, OE=%d",
-                        figtype, ext, toggle_flag, segment_index, oe);
 
-                printbuf(desc, indent, f+1, figlen-1);
+                const display_settings_t disp(config.is_fig_to_be_printed(figtype, ext), indent);
+                if (disp.print) {
+                    sprintf(desc,
+                            "FIG %d/%d: Toggle flag=%d, Segment_index=%d, OE=%d",
+                            figtype, ext, toggle_flag, segment_index, oe);
+
+                    printbuf(desc, disp.indent, f+1, figlen-1);
+                }
 
                 figs.push_back(figtype, ext, figlen);
 
@@ -773,11 +742,16 @@ void decodeFIG(FIGalyser &figs,
                 uint8_t d2 = (f[0] & 0x40) >> 6;
                 uint8_t tcid = (f[0] & 0x38) >> 5;
                 ext = f[0] & 0x07;
+
+                const display_settings_t disp(config.is_fig_to_be_printed(figtype, ext), indent);
+
                 sprintf(desc,
                         "FIG %d/%d: D1=%d, D2=%d, TCId=%d",
                         figtype, ext, d1, d2, tcid);
 
-                printbuf(desc, indent, f+1, figlen-1);
+                if (disp.print) {
+                    printbuf(desc, disp.indent, f+1, figlen-1);
+                }
 
                 figs.push_back(figtype, ext, figlen);
 

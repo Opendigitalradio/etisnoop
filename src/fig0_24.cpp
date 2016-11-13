@@ -48,7 +48,7 @@ bool fig0_24_is_complete(int services_id)
 
 // FIG 0/24 fig0.oe() Services
 // ETSI EN 300 401 8.1.10.2
-bool fig0_24(fig0_common_t& fig0, int indent)
+bool fig0_24(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint64_t key;
     uint32_t SId;
@@ -92,14 +92,14 @@ bool fig0_24(fig0_common_t& fig0, int indent)
             sprintf(tmpbuf, ", CEI");
             strcat(desc, tmpbuf);
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i++;
 
         for(j = i; ((j < (i + (Number_of_EIds * 2))) && (j < fig0.figlen)); j += 2) {
             // iterate over EIds
             EId = ((uint16_t)f[j] <<8) | (uint16_t)f[j+1];
             sprintf(desc, "EId 0x%04x", EId);
-            printbuf(desc, indent+2, NULL, 0);
+            printbuf(desc, disp+2, NULL, 0);
         }
         i += (Number_of_EIds * 2);
     }

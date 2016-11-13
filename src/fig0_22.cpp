@@ -59,7 +59,7 @@ void fig0_22_cleardb()
 
 // FIG 0/22 Transmitter Identification Information (TII) database
 // ETSI EN 300 401 8.1.9
-bool fig0_22(fig0_common_t& fig0, int indent)
+bool fig0_22(fig0_common_t& fig0, const display_settings_t &disp)
 {
     Lat_Lng gps_pos = {0, 0};
     double latitude_sub, longitude_sub;
@@ -122,7 +122,7 @@ bool fig0_22(fig0_common_t& fig0, int indent)
             else {
                 strcat(desc, ", invalid length of Latitude Longitude coarse fine");
             }
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
         }
         else {  // MS == 1
             // Sub-identifier
@@ -137,7 +137,7 @@ bool fig0_22(fig0_common_t& fig0, int indent)
                 sprintf(tmpbuf, ", Number of SubId fields=%d%s",
                         Nb_SubId_fields, (Nb_SubId_fields == 0)?", CEI":"");
                 strcat(desc, tmpbuf);
-                printbuf(desc, indent+1, NULL, 0);
+                printbuf(desc, disp+1, NULL, 0);
                 i++;
 
                 for(j = i; ((j < (i + (Nb_SubId_fields * 6))) && (j < (fig0.figlen - 5))); j += 6) {
@@ -170,13 +170,13 @@ bool fig0_22(fig0_common_t& fig0, int indent)
                         sprintf(tmpbuf, " => Lat Lng=%f, %f wrong value because Main identifier latitude/longitude not available in database", latitude_sub, longitude_sub);
                         strcat(desc, tmpbuf);
                     }
-                    printbuf(desc, indent+2, NULL, 0);
+                    printbuf(desc, disp+2, NULL, 0);
                 }
                 i += (Nb_SubId_fields * 6);
             }
             else {
                 strcat(desc, ", invalid fig length or Number of SubId fields length");
-                printbuf(desc, indent+1, NULL, 0);
+                printbuf(desc, disp+1, NULL, 0);
             }
         }
     }

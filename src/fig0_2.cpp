@@ -48,7 +48,7 @@ bool fig0_2_is_complete(int services_id)
 
 // FIG 0/2 Basic service and service component definition
 // ETSI EN 300 401 6.3.1
-bool fig0_2(fig0_common_t& fig0, int indent)
+bool fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t sref, sid;
     uint8_t cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
@@ -96,7 +96,7 @@ bool fig0_2(fig0_common_t& fig0, int indent)
             sprintf(desc,
                     "Service ID=0x%X (ECC=%d, Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
                     sid, ecc, cid, sref, ncomp, local, caid);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
 
         k++;
         for (int i=0; i<ncomp; i++) {
@@ -104,7 +104,7 @@ bool fig0_2(fig0_common_t& fig0, int indent)
 
             memcpy(scomp, f+k, 2);
             sprintf(desc, "Component[%d]", i);
-            printbuf(desc, indent+2, scomp, 2, "");
+            printbuf(desc, disp+2, scomp, 2, "");
             timd    = (scomp[0] & 0xC0) >> 6;
             ps      = (scomp[1] & 0x02) >> 1;
             ca      =  scomp[1] & 0x01;
@@ -140,24 +140,24 @@ bool fig0_2(fig0_common_t& fig0, int indent)
                     sprintf(sctydesc, "Unknown ASCTy (%d)", scty);
 
                 sprintf(desc, "Stream audio mode, %s, %s, SubChannel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
-                printbuf(desc, indent+3, NULL, 0);
+                printbuf(desc, disp+3, NULL, 0);
             }
             else if (timd == 1) {
                 // MSC stream data
                 sprintf(sctydesc, "DSCTy=%d %s", scty, get_dscty_type(scty));
                 sprintf(desc, "Stream data mode, %s, %s, SubChannel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
-                printbuf(desc, indent+3, NULL, 0);
+                printbuf(desc, disp+3, NULL, 0);
             }
             else if (timd == 2) {
                 // FIDC
                 sprintf(sctydesc, "DSCTy=%d %s", scty, get_dscty_type(scty));
                 sprintf(desc, "FIDC mode, %s, %s, Fast Information Data Channel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
-                printbuf(desc, indent+3, NULL, 0);
+                printbuf(desc, disp+3, NULL, 0);
             }
             else if (timd == 3) {
                 // MSC Packet mode
                 sprintf(desc, "MSC Packet Mode, %s, Service Component ID=%02X, CA=%d", psdesc.c_str(), subchid, ca);
-                printbuf(desc, indent+3, NULL, 0);
+                printbuf(desc, disp+3, NULL, 0);
             }
             k += 2;
         }

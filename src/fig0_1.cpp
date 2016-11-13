@@ -46,7 +46,7 @@ bool fig0_1_is_complete(int subch_id)
 
 // FIG 0/1 Basic sub-channel organization
 // ETSI EN 300 401 6.2.1
-bool fig0_1(fig0_common_t& fig0, int indent)
+bool fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
 {
     int i = 1;
     uint8_t* f = fig0.f;
@@ -104,7 +104,7 @@ bool fig0_1(fig0_common_t& fig0, int indent)
 
             i += 3;
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
 
     return complete;

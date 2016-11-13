@@ -49,7 +49,7 @@ bool fig0_28_is_complete(int cluster_id)
 
 // FIG 0/28 FM Announcement switching
 // ETSI EN 300 401 8.1.11.2.2
-bool fig0_28(fig0_common_t& fig0, int indent)
+bool fig0_28(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t PI;
     uint8_t i = 1, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
@@ -81,7 +81,7 @@ bool fig0_28(fig0_common_t& fig0, int indent)
         }
         sprintf(tmpbuf, ", Region Id Current Ensemble=0x%X, PI=0x%X", Region_Id_Current_Ensemble, PI);
         strcat(desc, tmpbuf);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i += 4;
     }
 

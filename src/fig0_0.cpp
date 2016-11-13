@@ -29,7 +29,7 @@
 
 // FIG 0/0 Ensemble information
 // ETSI EN 300 401 6.4
-bool fig0_0(fig0_common_t& fig0, int indent)
+bool fig0_0(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint8_t cid, al, ch, hic, lowc, occ;
     uint16_t eid, eref;
@@ -55,7 +55,7 @@ bool fig0_0(fig0_common_t& fig0, int indent)
                 "Ensemble ID=0x%02x (Country id=%d, Ensemble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d",
                 eid, cid, eref, ch, al, hic, lowc);
     }
-    printbuf(desc, indent+1, NULL, 0);
+    printbuf(desc, disp+1, NULL, 0);
 
     return true;
 }

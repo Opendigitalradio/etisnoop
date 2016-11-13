@@ -28,6 +28,8 @@ AX_PTHREAD( [
             LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
             CC="$PTHREAD_CC"], [AC_MSG_ERROR([requires pthread])] )
 
+AX_BOOST_BASE([1.48.0], [], AC_MSG_ERROR([BOOST 1.48 or later is required]))
+
 AC_CHECK_LIB([m], [sin])
 
 AC_SEARCH_LIBS([NeAACDecDecode], [faad], [], [

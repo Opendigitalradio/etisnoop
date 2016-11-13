@@ -48,7 +48,7 @@ bool fig0_19_is_complete(int clusters_id)
 
 // FIG 0/19 Announcement switching
 // ETSI EN 300 401 8.1.6.2
-bool fig0_19(fig0_common_t& fig0, int indent)
+bool fig0_19(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t Asw_flags;
     uint8_t i = 1, j, Cluster_Id, SubChId, Rfa, RegionId_LP;
@@ -89,12 +89,12 @@ bool fig0_19(fig0_common_t& fig0, int indent)
                 fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, fig0.ext(), fig0.figlen);
             }
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         // decode announcement switching types
         for(j = 0; j < 16; j++) {
             if (Asw_flags & (1 << j)) {
                 sprintf(desc, "Announcement switching=%s", get_announcement_type(j));
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
         i += (4 + Region_flag);

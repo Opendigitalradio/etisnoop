@@ -73,7 +73,7 @@ std::string get_fig_0_13_userapp(int user_app_type)
 
 // FIG 0/13 User application information
 // ETSI EN 300 401 8.1.20
-bool fig0_13(fig0_common_t& fig0, int indent)
+bool fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t SId;
     uint8_t  SCIdS;
@@ -111,7 +111,7 @@ bool fig0_13(fig0_common_t& fig0, int indent)
 
     sprintf(desc, "FIG %d/%d: SId=0x%X SCIdS=%u No=%u",
             figtype, fig0.ext(), SId, SCIdS, No);
-    printbuf(desc, indent+1, NULL, 0);
+    printbuf(desc, disp+1, NULL, 0);
 
     for (int numapp = 0; numapp < No; numapp++) {
         uint16_t user_app_type = ((f[k] << 8) |
@@ -123,7 +123,7 @@ bool fig0_13(fig0_common_t& fig0, int indent)
                 user_app_type,
                 get_fig_0_13_userapp(user_app_type).c_str(),
                 user_app_len);
-        printbuf(desc, indent+2, NULL, 0);
+        printbuf(desc, disp+2, NULL, 0);
     }
 
     return complete;

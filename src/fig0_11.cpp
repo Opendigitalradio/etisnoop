@@ -49,7 +49,7 @@ bool fig0_11_is_complete(int region_id)
 
 // FIG 0/11 Region definition
 // ETSI EN 300 401 8.1.16.1
-bool fig0_11(fig0_common_t& fig0, int indent)
+bool fig0_11(fig0_common_t& fig0, const display_settings_t &disp)
 {
     Lat_Lng gps_pos = {0, 0};
     int16_t Latitude_coarse, Longitude_coarse;
@@ -88,7 +88,7 @@ bool fig0_11(fig0_common_t& fig0, int indent)
                 if (Length_TII_list == 0) {
                     strcat(desc, ", CEI");
                 }
-                printbuf(desc, indent+1, NULL, 0);
+                printbuf(desc, disp+1, NULL, 0);
                 i++;
 
                 for(j = 0;(i < (fig0.figlen - 1)) && (j < Length_TII_list); j++) {
@@ -125,7 +125,7 @@ bool fig0_11(fig0_common_t& fig0, int indent)
                     Length_SubId_list = f[i+1] & 0x1F;
                     sprintf(tmpbuf, ", Length of SubId=%d", Length_SubId_list);
                     strcat(desc, tmpbuf);
-                    printbuf(desc, indent+2, NULL, 0);
+                    printbuf(desc, disp+2, NULL, 0);
                     i += 2;
 
                     bit_pos = 3;
@@ -139,7 +139,7 @@ bool fig0_11(fig0_common_t& fig0, int indent)
                             if ((SubId == 0) || (SubId > 23)) {
                                 strcat(desc, " invalid value");
                             }
-                            printbuf(desc, indent+3, NULL, 0);
+                            printbuf(desc, disp+3, NULL, 0);
                             bit_pos -= 5;
                             SubId = 0;
                         }
@@ -155,13 +155,13 @@ bool fig0_11(fig0_common_t& fig0, int indent)
                     }
                     if (k < Length_SubId_list) {
                         sprintf(desc, "%d SubId missing, fig length too short !", (Length_SubId_list - k));
-                        printbuf(desc, indent+3, NULL, 0);
+                        printbuf(desc, disp+3, NULL, 0);
                         fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
                     }
                 }
                 if (j < Length_TII_list) {
                     sprintf(desc, "%d Transmitter group missing, fig length too short !", (Length_TII_list - j));
-                    printbuf(desc, indent+2, NULL, 0);
+                    printbuf(desc, disp+2, NULL, 0);
                     fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
                 }
             }
@@ -191,14 +191,14 @@ bool fig0_11(fig0_common_t& fig0, int indent)
                 strcat(desc, tmpbuf);
                 fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
             }
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
             i += 7;
         }
         else {
             // Rfu
             sprintf(desc, "GATy=%d reserved for future use of the geographical, G/E flag=%d %s coverage area, RegionId=0x%X, database key=0x%X, stop Region definition iteration %d/%d",
                     GATy, GE_flag, GE_flag?"Global":"Ensemble", Region_Id, key, i, fig0.figlen);
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
             // stop Region definition iteration
             i = fig0.figlen;
         }

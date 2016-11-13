@@ -31,7 +31,7 @@
 
 // FIG 0/10 Date and time
 // ETSI EN 300 401 8.1.3.1
-bool fig0_10(fig0_common_t& fig0, int indent)
+bool fig0_10(fig0_common_t& fig0, const display_settings_t &disp)
 {
     char desc[256];
     char dateStr[256];
@@ -61,12 +61,12 @@ bool fig0_10(fig0_common_t& fig0, int indent)
 
         sprintf(desc, "FIG 0/%d(long): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d:%02d.%d",
                 fig0.ext(), MJD, dateStr, LSI, ConfInd, hours, minutes, seconds, milliseconds);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
     else {
         sprintf(desc, "FIG 0/%d(short): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d",
                 fig0.ext(), MJD, dateStr, LSI, ConfInd, hours, minutes);
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
     }
 
     return true;

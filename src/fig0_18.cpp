@@ -49,7 +49,7 @@ bool fig0_18_is_complete(int services_id)
 
 // FIG 0/18 Announcement support
 // ETSI EN 300 401 8.1.6.1
-bool fig0_18(fig0_common_t& fig0, int indent)
+bool fig0_18(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t key;
     uint16_t SId, Asu_flags;
@@ -83,18 +83,18 @@ bool fig0_18(fig0_common_t& fig0, int indent)
             sprintf(tmpbuf, ", CEI");
             strcat(desc, tmpbuf);
         }
-        printbuf(desc, indent+1, NULL, 0);
+        printbuf(desc, disp+1, NULL, 0);
         i += 5;
 
         for(j = 0; (j < Number_clusters) && (i < fig0.figlen); j++) {
             // iterate over Cluster Id
             sprintf(desc, "Cluster Id=0x%X", f[i]);
-            printbuf(desc, indent+2, NULL, 0);
+            printbuf(desc, disp+2, NULL, 0);
             i++;
         }
         if (j < Number_clusters) {
             sprintf(desc, "missing Cluster Id, fig length too short !");
-            printbuf(desc, indent+1, NULL, 0);
+            printbuf(desc, disp+1, NULL, 0);
             fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, fig0.ext(), fig0.figlen);
         }
 
@@ -102,7 +102,7 @@ bool fig0_18(fig0_common_t& fig0, int indent)
         for(j = 0; j < 16; j++) {
             if (Asu_flags & (1 << j)) {
                 sprintf(desc, "Announcement support=%s", get_announcement_type(j));
-                printbuf(desc, indent+2, NULL, 0);
+                printbuf(desc, disp+2, NULL, 0);
             }
         }
     }
