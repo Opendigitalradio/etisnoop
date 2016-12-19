@@ -1,4 +1,4 @@
-language: c
+language: c++
 sudo: required
 dist: trusty
 
@@ -11,21 +11,12 @@ addons: &addons
     packages: &packages
       - libzmq3-dev
       - libzmq3
+      - libboost1.55-all-dev
       - libfaad-dev
       - libfaad2
       - automake
 
 script:
-  - |
-    pushd /tmp
-    git clone https://github.com/Opendigitalradio/ka9q-fec.git
-    cd ka9q-fec
-    mkdir build
-    cd build
-    cmake ..
-    make
-    sudo make install
-    popd
   - |
     ./bootstrap.sh
     CC=clang CXX=clang++ ./configure
