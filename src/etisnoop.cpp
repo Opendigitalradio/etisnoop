@@ -260,6 +260,8 @@ int eti_analyse(eti_analyse_config_t &config)
     char sdesc[256];
     uint32_t frame_nb = 0, frame_sec = 0, frame_ms = 0, frame_h, frame_m, frame_s;
 
+    static int last_fct = -1;
+
     bool running = true;
 
     int stream_type = ETI_STREAM_TYPE_NONE;
@@ -368,6 +370,12 @@ int eti_analyse(eti_analyse_config_t &config)
         sprintf(fct_str, "%d", p[4]);
         int fct = p[4];
         printbuf("FCT  - Frame Count", 2, p+4, 1, fct_str);
+        if (last_fct != -1) {
+            if (last_fct + 1 % 250 != fct) {
+                printf("FCT not contiguous\n");
+            }
+        }
+        last_fct = fct;
         // LIDATA - FC - FICF
         ficf = (p[5] & 0x80) >> 7;
 
