@@ -371,7 +371,7 @@ int eti_analyse(eti_analyse_config_t &config)
         int fct = p[4];
         printbuf("FCT  - Frame Count", 2, p+4, 1, fct_str);
         if (last_fct != -1) {
-            if (last_fct + 1 % 250 != fct) {
+            if ((last_fct + 1) % 250 != fct) {
                 printf("FCT not contiguous\n");
             }
         }
