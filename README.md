@@ -13,6 +13,8 @@ Build
 etisnoop is using autotools. If you do not have a release containing a ./configure script,
 run ./bootstrap.sh
 
+Install prerequisites: A C++11 compiler, boost 1.48 or later.
+
 Then do
 
     ./configure
