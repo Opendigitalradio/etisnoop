@@ -43,7 +43,9 @@ extern "C" {
 #define DPS_INDENT "\t\t"
 #define DPS_PREFIX "DAB+ decode:"
 
-#define DPS_DEBUG 0
+#ifndef DPS_DEBUG
+#  define DPS_DEBUG 0
+#endif
 
 using namespace std;
 
@@ -54,13 +56,10 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
     m_data.resize(original_size + streamsize);
     memcpy(&m_data[original_size], streamdata, streamsize);
 
-    if (seek_valid_firecode()) {
-        // m_data now points to a valid header
-
-        if (decode()) {
-            // We have been able to decode the AUs, now flush vector
-            m_data.clear();
-        }
+    const size_t sf_len = m_subchannel_index * 120;
+    while (seek_valid_firecode() and decode()) {
+        // We have been able to decode the AUs, now flush vector
+        m_data.erase(m_data.begin(), m_data.begin() + sf_len);;
     }
 }
 

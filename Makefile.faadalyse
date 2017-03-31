@@ -1,0 +1,42 @@
+CC=gcc
+CXX=g++
+CFLAGS   = -Wall -g
+CXXFLAGS = -Wall -g --std=c++11 -DDPS_DEBUG=1
+SOURCES  = src/dabplussnoop.cpp \
+		   src/faadalyse.cpp \
+		   src/faad_decoder.cpp \
+		   src/rsdecoder.cpp
+
+CSOURCES = src/firecode.c \
+		   src/lib_crc.c \
+		   src/wavfile.c \
+		   src/fec/decode_rs_char.c \
+		   src/fec/encode_rs_char.c \
+		   src/fec/init_rs_char.c
+
+HEADERS =  src/dabplussnoop.hpp \
+		   src/faad_decoder.hpp \
+		   src/firecode.h \
+		   src/lib_crc.h \
+		   src/rsdecoder.hpp \
+		   src/wavfile.h \
+		   src/fec/char.h \
+		   src/fec/decode_rs.h \
+		   src/fec/encode_rs.h \
+		   src/fec/fec.h \
+		   src/fec/init_rs.h \
+		   src/fec/rs-common.h
+
+
+all: faadalyse
+
+faadalyse: libfaad $(SOURCES) $(CSOURCES) $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(SOURCES) -Ifaad2-2.7/include -c
+	$(CC) $(CFLAGS) $(CSOURCES) -c
+	$(CXX) *.o faad2-2.7/libfaad/.libs/libfaad.a -o faadalyse
+
+libfaad:
+	make -C ./faad2-2.7
+
+clean:
+	rm -f faadalyse *.o
