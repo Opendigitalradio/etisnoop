@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -49,31 +49,35 @@ bool fig0_26_is_complete(int cluster_id)
 
 // FIG 0/26 fig0.oe() Announcement switching
 // ETSI EN 300 401 8.1.10.5.2
-bool fig0_26(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_26(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t Asw_flags, EId_Other_Ensemble;
     uint8_t i = 1, j, Rfa, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
     uint8_t Cluster_Id_Other_Ensemble, Region_Id_Other_Ensemble;
     bool New_flag, Region_flag;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
     while (i < (fig0.figlen - 6)) {
         // iterate over other ensembles announcement switching
         Cluster_Id_Current_Ensemble = f[i];
-        complete = fig0_26_is_complete(Cluster_Id_Current_Ensemble);
+        r.complete = fig0_26_is_complete(Cluster_Id_Current_Ensemble);
         Asw_flags = ((uint16_t)f[i+1] << 8) | (uint16_t)f[i+2];
         New_flag = f[i+3] >> 7;
         Region_flag = (f[i+3] >> 6) & 0x01;
         Region_Id_Current_Ensemble = f[i+3] & 0x3F;
         EId_Other_Ensemble = ((uint16_t)f[i+4] << 8) | (uint16_t)f[i+5];
         Cluster_Id_Other_Ensemble = f[i+6];
-        sprintf(desc, "Cluster Id Current Ensemble=0x%X, Asw flags=0x%X, New flag=%d %s announcement, Region flag=%d last byte %s, Region Id Current Ensemble=0x%X, EId Other Ensemble=0x%X, Cluster Id Other Ensemble=0x%X",
-                Cluster_Id_Current_Ensemble, Asw_flags, New_flag, New_flag?"newly introduced":"repeated",
-                Region_flag, Region_flag?"present":"absent. The announcement concerns the whole service area",
-                Region_Id_Current_Ensemble, EId_Other_Ensemble, Cluster_Id_Other_Ensemble);
+
+        r.msgs.push_back(strprintf("Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble));
+        r.msgs.emplace_back(1, strprintf("Asw flags=0x%X", Asw_flags));
+        r.msgs.emplace_back(1, strprintf("New flag=%d %s announcement", New_flag, New_flag?"newly introduced":"repeated"));
+        r.msgs.emplace_back(1, strprintf("Region flag=%d last byte %s",
+                    Region_flag, Region_flag?"present":"absent. The announcement concerns the whole service area"));
+        r.msgs.emplace_back(1, strprintf("Region Id Current Ensemble=0x%X", Region_Id_Current_Ensemble));
+        r.msgs.emplace_back(1, strprintf("EId Other Ensemble=0x%X", EId_Other_Ensemble));
+        r.msgs.emplace_back(1, strprintf("Cluster Id Other Ensemble=0x%X", Cluster_Id_Other_Ensemble));
+
         i += 7;
         if (Region_flag != 0) {
             if (i < fig0.figlen) {
@@ -81,29 +85,23 @@ bool fig0_26(fig0_common_t& fig0, const display_settings_t &disp)
                 Rfa = (f[i] >> 6);
                 Region_Id_Other_Ensemble = f[i] & 0x3F;
                 if (Rfa != 0) {
-                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-                    strcat(desc, tmpbuf);
+                    r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
                 }
-                sprintf(tmpbuf, ", Region Id Other Ensemble=0x%X", Region_Id_Other_Ensemble);
-                strcat(desc, tmpbuf);
+                r.msgs.emplace_back(1, strprintf("Region Id Other Ensemble=0x%X", Region_Id_Other_Ensemble));
             }
             else {
-                sprintf(tmpbuf, "missing Region Id Other Ensemble, fig length too short !");
-                strcat(desc, tmpbuf);
-                fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
+                r.errors.push_back("missing Region Id Other Ensemble, fig length too short !");
             }
             i++;
         }
-        printbuf(desc, disp+1, NULL, 0);
         // decode announcement switching types
-        for(j = 0; j < 16; j++) {
+        for (j = 0; j < 16; j++) {
             if (Asw_flags & (1 << j)) {
-                sprintf(desc, "Announcement switching=%s", get_announcement_type(j));
-                printbuf(desc, disp+2, NULL, 0);
+                r.msgs.emplace_back(2, strprintf("Announcement switching=%s", get_announcement_type(j)));
             }
         }
     }
 
-    return complete;
+    return r;
 }
 

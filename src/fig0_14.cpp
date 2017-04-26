@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -58,24 +58,23 @@ const char *FEC_schemes_str[4] =  {
 
 // FIG 0/14 FEC sub-channel organization
 // ETSI EN 300 401 6.2.2
-bool fig0_14(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_14(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint8_t i = 1, SubChId, FEC_scheme;
     uint8_t* f = fig0.f;
-    char desc[256];
-    bool complete = false;
+    fig_result_t r;
 
     while (i < fig0.figlen) {
         // iterate over Sub-channel
         SubChId = f[i] >> 2;
-        complete |= fig0_14_is_complete(SubChId);
+        r.complete |= fig0_14_is_complete(SubChId);
         FEC_scheme = f[i] & 0x3;
-        sprintf(desc, "SubChId=0x%X, FEC scheme=%d %s",
-                SubChId, FEC_scheme, FEC_schemes_str[FEC_scheme]);
-        printbuf(desc, disp+1, NULL, 0);
+        r.msgs.push_back(strprintf("SubChId=0x%X", SubChId));
+        r.msgs.emplace_back(1, strprintf("FEC scheme=%d %s",
+                FEC_scheme, FEC_schemes_str[FEC_scheme]));
         i++;
     }
 
-    return complete;
+    return r;
 }
 

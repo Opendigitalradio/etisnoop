@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -27,9 +27,27 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
+#include <string>
+#include <memory>
 #include "utils.hpp"
 #include "tables.hpp"
 #include "watermarkdecoder.hpp"
+
+struct fig_result_t {
+    struct msg_info_t {
+        msg_info_t(int level_, const std::string& msg_) :
+            level(level_), msg(msg_) {}
+        msg_info_t(const std::string& msg_) :
+            level(0), msg(msg_) {}
+        int level = 0;
+        std::string msg;
+    };
+
+    std::vector<msg_info_t> msgs;
+    std::vector<std::string> errors;
+    bool complete = false;
+};
 
 void figs_cleardb(void);
 
@@ -80,34 +98,34 @@ void   set_international_table(size_t intl_table);
 void set_mode_identity(uint8_t mid);
 uint8_t get_mode_identity();
 
-bool fig0_select(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_select(fig0_common_t& fig0, const display_settings_t &disp);
 
-bool fig0_0(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_1(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_2(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_3(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_5(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_0(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_3(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_5(fig0_common_t& fig0, const display_settings_t &disp);
 void fig0_6_cleardb();
-bool fig0_6(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_8(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_9(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_10(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_11(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_13(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_14(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_16(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_17(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_18(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_19(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_6(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_10(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_11(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_14(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_16(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_17(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_18(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_19(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp);
 void fig0_22_cleardb();
-bool fig0_22(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_24(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_25(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_26(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_27(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_28(fig0_common_t& fig0, const display_settings_t &disp);
-bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_22(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_24(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_25(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_26(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_27(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_28(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp);
 
 bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp);
 

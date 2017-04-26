@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -49,64 +49,59 @@ bool fig0_25_is_complete(int services_id)
 
 // FIG 0/25 fig0.oe() Announcement support
 // ETSI EN 300 401 8.1.10.5.1
-bool fig0_25(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_25(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t key;
     uint16_t SId, Asu_flags, EId;
     uint8_t i = 1, j, Rfu, Number_EIds;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
-    while (i < (fig0.figlen - 4)) {
+    while (i < fig0.figlen - 4) {
         // iterate over other ensembles announcement support
         // SId, Asu flags, Rfu, Number of EIds
         SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
-        complete |= fig0_25_is_complete(SId);
+        r.complete |= fig0_25_is_complete(SId);
         Asu_flags = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
         Rfu = (f[i+4] >> 4);
         Number_EIds = (f[i+4] & 0x0F);
-        sprintf(desc, "SId=0x%X, Asu flags=0x%X", SId, Asu_flags);
+        r.msgs.push_back(strprintf("SId=0x%X", SId));
+        r.msgs.emplace_back(1, strprintf("Asu flags=0x%X", Asu_flags));
+        r.msgs.emplace_back(1, strprintf("Number of EIds=%d", Number_EIds));
+
         if (Rfu != 0) {
-            sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
         }
-        sprintf(tmpbuf, ", Number of EIds=%d", Number_EIds);
-        strcat(desc, tmpbuf);
+
         key = ((uint32_t)fig0.oe() << 17) | ((uint32_t)fig0.pd() << 16) | (uint32_t)SId;
-        sprintf(tmpbuf, ", database key=0x%05x", key);
-        strcat(desc, tmpbuf);
+        r.msgs.emplace_back(1, strprintf("database key=0x%05x", key));
+
         // CEI Change Event Indication
         if (Number_EIds == 0) {
-            sprintf(tmpbuf, ", CEI");
-            strcat(desc, tmpbuf);
+            r.msgs.emplace_back(1, "CEI");
         }
-        printbuf(desc, disp+1, NULL, 0);
         i += 5;
 
-        for(j = 0; (j < Number_EIds) && (i < (fig0.figlen - 1)); j++) {
+        for (j = 0; j < Number_EIds && i < fig0.figlen - 1; j++) {
             // iterate over EIds
             EId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
-            sprintf(desc, "EId=0x%X", EId);
-            printbuf(desc, disp+2, NULL, 0);
+            r.msgs.emplace_back(2, strprintf("EId=0x%X", EId));
             i += 2;
         }
+
         if (j < Number_EIds) {
-            sprintf(desc, "missing EId, fig length too short !");
-            printbuf(desc, disp+1, NULL, 0);
-            fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
+            r.errors.push_back("missing EId, fig length too short !");
         }
 
         // decode fig0.oe() announcement support types
-        for(j = 0; j < 16; j++) {
+        for (j = 0; j < 16; j++) {
             if (Asu_flags & (1 << j)) {
-                sprintf(desc, "fig0.oe() Announcement support=%s", get_announcement_type(j));
-                printbuf(desc, disp+2, NULL, 0);
+                r.msgs.emplace_back(2,
+                        strprintf("fig0.oe() Announcement support=%s", get_announcement_type(j)));
             }
         }
     }
 
-    return complete;
+    return r;
 }
 

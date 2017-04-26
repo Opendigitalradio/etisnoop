@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -57,16 +57,14 @@ bool fig0_8_is_complete(SId_t SId, SCIdS_t SCIdS)
 
 // FIG 0/8 Service component global definition
 // ETSI EN 300 401 6.3.5
-bool fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t SId;
     uint16_t SCId;
     uint8_t i = 1, Rfa, SCIdS, SubChId, FIDCId;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     bool Ext_flag, LS_flag, MSC_FIC_flag;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
     while (i < (fig0.figlen - (2 + (2 * fig0.pd())))) {
         // iterate over service component global definition
@@ -84,19 +82,19 @@ bool fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
         Ext_flag = f[i] >> 7;
         Rfa = (f[i] >> 4) & 0x7;
         SCIdS = f[i] & 0x0F;
-        complete |= fig0_8_is_complete(SId, SCIdS);
-        sprintf(desc, "SId=0x%X, Ext flag=%d 8-bit Rfa %s", SId, Ext_flag, (Ext_flag)?"present":"absent");
+        r.complete |= fig0_8_is_complete(SId, SCIdS);
+        r.msgs.push_back(strprintf("SId=0x%X", SId));
+        r.msgs.push_back(strprintf("Ext flag=%d 8-bit Rfa %s",
+                    Ext_flag, (Ext_flag)?"present":"absent"));
+
         if (Rfa != 0) {
-            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
-        sprintf(tmpbuf, ", SCIdS=0x%X", SCIdS);
-        strcat(desc, tmpbuf);
+        r.msgs.push_back(strprintf("SCIdS=0x%X", SCIdS));
         i++;
         if (i < fig0.figlen) {
             LS_flag = f[i] >> 7;
-            sprintf(tmpbuf, ", L/S flag=%d %s", LS_flag, (LS_flag)?"Long form":"Short form");
-            strcat(desc, tmpbuf);
+            r.msgs.push_back(strprintf("L/S flag=%d %s", LS_flag, (LS_flag)?"Long form":"Short form"));
             if (LS_flag == 0) {
                 // Short form
                 if (i < (fig0.figlen - Ext_flag)) {
@@ -104,21 +102,18 @@ bool fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
                     if (MSC_FIC_flag == 0) {
                         // MSC in stream mode and SubChId identifies the sub-channel
                         SubChId = f[i] & 0x3F;
-                        sprintf(tmpbuf, ", MSC/FIC flag=%d MSC, SubChId=0x%X", MSC_FIC_flag, SubChId);
-                        strcat(desc, tmpbuf);
+                        r.msgs.push_back(strprintf("MSC/FIC flag=%d MSC, SubChId=0x%X", MSC_FIC_flag, SubChId));
                     }
                     else {
                         // FIC and FIDCId identifies the component
                         FIDCId = f[i] & 0x3F;
-                        sprintf(tmpbuf, ", MSC/FIC flag=%d FIC, FIDCId=0x%X", MSC_FIC_flag, FIDCId);
-                        strcat(desc, tmpbuf);
+                        r.msgs.push_back(strprintf("MSC/FIC flag=%d FIC, FIDCId=0x%X", MSC_FIC_flag, FIDCId));
                     }
                     if (Ext_flag == 1) {
                         // Rfa field present
                         Rfa = f[i+1];
                         if (Rfa != 0) {
-                            sprintf(tmpbuf, ", Rfa=0x%X invalid value", Rfa);
-                            strcat(desc, tmpbuf);
+                            r.errors.push_back(strprintf("Rfa=0x%X invalid value", Rfa));
                         }
                     }
                 }
@@ -130,18 +125,15 @@ bool fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
                     Rfa = (f[i] >> 4) & 0x07;
                     SCId = (((uint16_t)f[i] & 0x0F) << 8) | (uint16_t)f[i+1];
                     if (Rfa != 0) {
-                        sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-                        strcat(desc, tmpbuf);
+                        r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
                     }
-                    sprintf(tmpbuf, ", SCId=0x%X", SCId);
-                    strcat(desc, tmpbuf);
+                    r.msgs.push_back(strprintf("SCId=0x%X", SCId));
                 }
                 i += 2;
             }
         }
-        printbuf(desc, disp+1, NULL, 0);
     }
 
-    return complete;
+    return r;
 }
 

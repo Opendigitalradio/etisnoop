@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -31,11 +31,11 @@
 
 // FIG 0/10 Date and time
 // ETSI EN 300 401 8.1.3.1
-bool fig0_10(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_10(fig0_common_t& fig0, const display_settings_t &disp)
 {
-    char desc[256];
     char dateStr[256];
     dateStr[0] = 0;
+    fig_result_t r;
     uint8_t* f = fig0.f;
 
     //bool RFU = f[1] >> 7;
@@ -59,16 +59,22 @@ bool fig0_10(fig0_common_t& fig0, const display_settings_t &disp)
         uint8_t seconds = f[5] >> 2;
         uint16_t milliseconds = ((uint16_t)(f[5] & 0x3) << 8) | f[6];
 
-        sprintf(desc, "FIG 0/%d(long): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d:%02d.%d",
-                fig0.ext(), MJD, dateStr, LSI, ConfInd, hours, minutes, seconds, milliseconds);
-        printbuf(desc, disp+1, NULL, 0);
+        r.msgs.emplace_back("long form");
+        r.msgs.push_back(strprintf("MJD=0x%X %s", MJD, dateStr));
+        r.msgs.push_back(strprintf("LSI %u", LSI));
+        r.msgs.push_back(strprintf("ConfInd %u", ConfInd));
+        r.msgs.push_back(strprintf("UTC Time: %02d:%02d:%02d.%d",
+                    hours, minutes, seconds, milliseconds));
     }
     else {
-        sprintf(desc, "FIG 0/%d(short): MJD=0x%X %s, LSI %u, ConfInd %u, UTC Time: %02d:%02d",
-                fig0.ext(), MJD, dateStr, LSI, ConfInd, hours, minutes);
-        printbuf(desc, disp+1, NULL, 0);
+        r.msgs.emplace_back("short form");
+        r.msgs.push_back(strprintf("MJD=0x%X %s", MJD, dateStr));
+        r.msgs.push_back(strprintf("LSI %u", LSI));
+        r.msgs.push_back(strprintf("ConfInd %u", ConfInd));
+        r.msgs.push_back(strprintf("UTC Time: %02d:%02d", hours, minutes));
     }
 
-    return true;
+    r.complete = true;
+    return r;
 }
 

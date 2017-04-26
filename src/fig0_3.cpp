@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -48,21 +48,19 @@ bool fig0_3_is_complete(int components_id)
 
 // FIG 0/3 Service component in packet mode with or without Conditional Access
 // ETSI EN 300 401 6.3.2
-bool fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SCId, Packet_address, CAOrg;
     uint8_t i = 1, Rfa, DSCTy, SubChId, CAMode, SharedFlag;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     bool CAOrg_flag, DG_flag, Rfu;
-    bool complete = false;
 
     uint8_t* f = fig0.f;
 
-    while (i < (fig0.figlen - 4)) {
+    while (i < fig0.figlen - 4) {
         // iterate over service component in packet mode
         SCId = ((uint16_t)f[i] << 4) | ((uint16_t)(f[i+1] >> 4) & 0x0F);
-        complete |= fig0_3_is_complete(SCId);
+        r.complete |= fig0_3_is_complete(SCId);
         Rfa = (f[i+1] >> 1) & 0x07;
         CAOrg_flag = f[i+1] & 0x01;
         DG_flag = (f[i+2] >> 7) & 0x01;
@@ -70,41 +68,38 @@ bool fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
         DSCTy = f[i+2] & 0x3F;
         SubChId = (f[i+3] >> 2);
         Packet_address = ((uint16_t)(f[i+3] & 0x03) << 8) | ((uint16_t)f[i+4]);
-        sprintf(desc,
-                "SCId=0x%X, CAOrg flag=%d CAOrg field %s, DG flag=%d"
-                " data groups are %sused to transport the service component,"
-                " DSCTy=%d %s, SubChId=0x%X, Packet address=0x%X",
-                SCId, CAOrg_flag, CAOrg_flag?"present":"absent", DG_flag,
-                DG_flag ? "not ": "",
-                DSCTy, get_dscty_type(DSCTy), SubChId,
-                Packet_address);
+        r.msgs.push_back(strprintf("SCId=0x%X", SCId));
+        r.msgs.push_back(strprintf("CAOrg flag=%d CAOrg field %s", CAOrg_flag, CAOrg_flag?"present":"absent"));
+        r.msgs.push_back(strprintf("DG flag=%d", DG_flag));
+        r.msgs.push_back(strprintf("data groups are %sused to transport the service component", DG_flag ? "not ": ""));
+        r.msgs.push_back(strprintf("DSCTy=%d %s", DSCTy, get_dscty_type(DSCTy)));
+        r.msgs.push_back(strprintf("SubChId=0x%X", SubChId));
+        r.msgs.push_back(strprintf("Packet address=0x%X", Packet_address));
+
         if (Rfa != 0) {
-            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
+
         if (Rfu != 0) {
-            sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
         }
+
         i += 5;
         if (CAOrg_flag) {
-            if (i < (fig0.figlen - 1)) {
+            if (i < fig0.figlen - 1) {
                 CAOrg = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
                 CAMode = (f[i] >> 5);
                 SharedFlag = f[i+1];
-                sprintf(tmpbuf, ", CAOrg=0x%X CAMode=%d \"%s\" SharedFlag=0x%X%s",
-                        CAOrg, CAMode, get_ca_mode(CAMode), SharedFlag, (SharedFlag == 0) ? " invalid" : "");
-                strcat(desc, tmpbuf);
+        r.msgs.push_back(strprintf("CAOrg=0x%X CAMode=%d \"%s\" SharedFlag=0x%X%s",
+                        CAOrg, CAMode, get_ca_mode(CAMode), SharedFlag, (SharedFlag == 0) ? " invalid" : ""));
             }
             else {
-                sprintf(tmpbuf, ", invalid figlen");
-                strcat(desc, tmpbuf);
+                r.errors.push_back("Invalid figlen");
             }
             i += 2;
         }
-        printbuf(desc, disp+1, NULL, 0);
     }
 
-    return complete;
+    return r;
 }
 

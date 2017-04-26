@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -46,6 +46,7 @@ struct display_settings_t {
     int indent;
 };
 
+std::string strprintf(const char* fmt, ...);
 
 void printbuf(std::string header,
         const display_settings_t &disp,
@@ -69,9 +70,9 @@ void printinfo(const std::string &header,
 // sprintfMJD: convert MJD (Modified Julian Date) into date string
 int sprintfMJD(char *dst, int mjd);
 
-// strcatPNum decode Programme_Number into string and append it to dest_str
+// Convert Programme Number to string
 // Programme_Number: this 16-bit field shall define the date and time at which
 // a programme begins or will be continued. This field is coded in the same way
 // as the RDS "Programme Item Number (PIN)" feature (EN 62106).
-char *strcatPNum(char *dest_str, uint16_t Programme_Number);
+std::string pnum_to_str(uint16_t Programme_Number);
 

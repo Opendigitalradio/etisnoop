@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -49,64 +49,54 @@ bool fig0_18_is_complete(int services_id)
 
 // FIG 0/18 Announcement support
 // ETSI EN 300 401 8.1.6.1
-bool fig0_18(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_18(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t key;
     uint16_t SId, Asu_flags;
     uint8_t i = 1, j, Rfa, Number_clusters;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
-    const int figtype = 0;
-    bool complete = false;
 
     while (i < (fig0.figlen - 4)) {
         // iterate over announcement support
         // SId, Asu flags, Rfa, Number of clusters
         SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
-        complete |= fig0_18_is_complete(SId);
+        r.complete |= fig0_18_is_complete(SId);
         Asu_flags = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
         Rfa = (f[i+4] >> 5);
         Number_clusters = (f[i+4] & 0x1F);
-        sprintf(desc, "SId=0x%X, Asu flags=0x%04x", SId, Asu_flags);
+        r.msgs.push_back(strprintf("SId=0x%X", SId));
+        r.msgs.push_back(strprintf("Asu flags=0x%04x", Asu_flags));
         if (Rfa != 0) {
-            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
-        sprintf(tmpbuf, ", Number of clusters=%d", Number_clusters);
-        strcat(desc, tmpbuf);
+        r.msgs.push_back(strprintf("Number of clusters=%d", Number_clusters));
+
         key = ((uint32_t)fig0.oe() << 17) | ((uint32_t)fig0.pd() << 16) | (uint32_t)SId;
-        sprintf(tmpbuf, ", database key=0x%05x", key);
-        strcat(desc, tmpbuf);
+        r.msgs.push_back(strprintf("database key=0x%05x", key));
         // CEI Change Event Indication
         if ((Number_clusters == 0) && (Asu_flags == 0)) {
-            sprintf(tmpbuf, ", CEI");
-            strcat(desc, tmpbuf);
+            r.msgs.emplace_back("CEI");
         }
-        printbuf(desc, disp+1, NULL, 0);
         i += 5;
 
         for(j = 0; (j < Number_clusters) && (i < fig0.figlen); j++) {
             // iterate over Cluster Id
-            sprintf(desc, "Cluster Id=0x%X", f[i]);
-            printbuf(desc, disp+2, NULL, 0);
+            r.msgs.emplace_back(1, strprintf("Cluster Id=0x%X", f[i]));
             i++;
         }
         if (j < Number_clusters) {
-            sprintf(desc, "missing Cluster Id, fig length too short !");
-            printbuf(desc, disp+1, NULL, 0);
-            fprintf(stderr, "WARNING: FIG %d/%d length %d too short !\n", figtype, fig0.ext(), fig0.figlen);
+            r.errors.push_back("missing Cluster Id, fig length too short !");
         }
 
         // decode announcement support types
-        for(j = 0; j < 16; j++) {
+        for (j = 0; j < 16; j++) {
             if (Asu_flags & (1 << j)) {
-                sprintf(desc, "Announcement support=%s", get_announcement_type(j));
-                printbuf(desc, disp+2, NULL, 0);
+                r.msgs.emplace_back(1, strprintf("Announcement support=%s", get_announcement_type(j)));
             }
         }
     }
 
-    return complete;
+    return r;
 }
 

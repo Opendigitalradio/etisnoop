@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -73,14 +73,13 @@ std::string get_fig_0_13_userapp(int user_app_type)
 
 // FIG 0/13 User application information
 // ETSI EN 300 401 8.1.20
-bool fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t SId;
     uint8_t  SCIdS;
     uint8_t  No;
     uint8_t* f = fig0.f;
-    const int figtype = 0;
-    char desc[256];
+    fig_result_t r;
     bool complete = false;
 
     int k = 1;
@@ -109,9 +108,9 @@ bool fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
 
     complete |= fig0_13_is_complete(SId, SCIdS);
 
-    sprintf(desc, "FIG %d/%d: SId=0x%X SCIdS=%u No=%u",
-            figtype, fig0.ext(), SId, SCIdS, No);
-    printbuf(desc, disp+1, NULL, 0);
+    r.msgs.push_back(strprintf("SId=0x%X", SId));
+    r.msgs.push_back(strprintf("SCIdS=%u", SCIdS));
+    r.msgs.push_back(strprintf("No=%u", No));
 
     for (int numapp = 0; numapp < No; numapp++) {
         uint16_t user_app_type = ((f[k] << 8) |
@@ -119,13 +118,13 @@ bool fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
         uint8_t  user_app_len  = f[k+1] & 0x1F;
         k+=2;
 
-        sprintf(desc, "User Application %d '%s'; length %u",
+        r.msgs.emplace_back(1, strprintf("User Application %d '%s'; length %u",
                 user_app_type,
                 get_fig_0_13_userapp(user_app_type).c_str(),
-                user_app_len);
-        printbuf(desc, disp+2, NULL, 0);
+                user_app_len));
     }
 
-    return complete;
+    r.complete = complete;
+    return r;
 }
 

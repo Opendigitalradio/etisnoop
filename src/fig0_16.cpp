@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -54,74 +54,62 @@ bool fig0_16_is_complete(SId_t SId, PNum_t PNum)
 
 // FIG 0/16 Programme Number & fig0.oe() Programme Number
 // ETSI EN 300 401 8.1.4 & 8.1.10.3
-bool fig0_16(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_16(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SId, PNum, New_SId, New_PNum;
     uint8_t i = 1, Rfa, Rfu;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     bool Continuation_flag, Update_flag;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
     while (i < (fig0.figlen - 4)) {
         // iterate over Programme Number
         SId = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
         PNum = ((uint16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
-        complete |= fig0_16_is_complete(SId, PNum);
+        r.complete |= fig0_16_is_complete(SId, PNum);
         Rfa = f[i+4] >> 6;
         Rfu = (f[i+4] >> 2) & 0x0F;
         Continuation_flag = (f[i+4] >> 1) & 0x01;
         Update_flag = f[i+4] & 0x01;
 
-        sprintf(desc, "SId=0x%X, PNum=0x%X ", SId, PNum);
-        // Append PNum decoded string
-        strcatPNum(desc, PNum);
+        r.msgs.push_back(strprintf("SId=0x%X", SId));
+        r.msgs.push_back(strprintf("PNum=0x%X ", PNum) + pnum_to_str(PNum));
 
         if (Rfa != 0) {
-            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
 
         if (Rfu != 0) {
-            sprintf(tmpbuf, ", Rfu=0x%X invalid value", Rfu);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf(", Rfu=0x%X invalid value", Rfu));
         }
 
-        sprintf(tmpbuf, ", Continuation flag=%d the programme will %s, Update flag=%d %sre-direction",
-                Continuation_flag, Continuation_flag?"be interrupted but continued later":"not be subject to a planned interruption",
-                Update_flag, Update_flag?"":"no ");
-        strcat(desc, tmpbuf);
+        r.msgs.push_back(strprintf("Continuation flag=%d: the programme will %s",
+                Continuation_flag,
+                Continuation_flag ? "be interrupted but continued later" : "not be subject to a planned interruption"));
+        r.msgs.push_back(strprintf("Update flag=%d %sre-direction",
+                Update_flag, Update_flag ? "" : "no "));
         i += 5;
 
         if (Update_flag != 0) {
             // In the case of a re-direction, the New SId and New PNum shall be appended
             if (i < (fig0.figlen - 1)) {
                 New_SId = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
-                sprintf(tmpbuf, ", New SId=0x%X", New_SId);
-                strcat(desc, tmpbuf);
+                r.msgs.push_back(strprintf("New SId=0x%X", New_SId));
                 if (i < (fig0.figlen - 3)) {
                     New_PNum = ((uint16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
-                    sprintf(tmpbuf, ", New PNum=0x%X ", New_PNum);
-                    strcat(desc, tmpbuf);
-                    // Append New_PNum decoded string
-                    strcatPNum(desc, New_PNum);
+                    r.msgs.push_back(strprintf("New PNum=0x%X ", New_PNum) + pnum_to_str(New_PNum));
                 }
                 else {
-                    sprintf(tmpbuf, ", missing New PNum !");
-                    strcat(desc, tmpbuf);
+                    r.errors.push_back("missing New PNum !");
                 }
             }
             else {
-                sprintf(tmpbuf, ", missing New SId and New PNum !");
-                strcat(desc, tmpbuf);
+                r.errors.push_back("missing New SId and New PNum !");
             }
             i += 4;
         }
-
-        printbuf(desc, disp+1, NULL, 0);
     }
 
-    return complete;
+    return r;
 }
 

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -48,67 +48,64 @@ bool fig0_5_is_complete(int components_id)
 
 // FIG 0/5 Service component language
 // ETSI EN 300 401 8.1.2
-bool fig0_5(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_5(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SCId;
     uint8_t i = 1, SubChId, FIDCId, Language, Rfa;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     bool LS_flag, MSC_FIC_flag;
-    bool complete = false;
 
     uint8_t* f = fig0.f;
 
-    while (i < (fig0.figlen - 1)) {
+    while (i < fig0.figlen - 1) {
         // iterate over service component language
         LS_flag = f[i] >> 7;
         if (LS_flag == 0) {
             // Short form (L/S = 0)
             MSC_FIC_flag = (f[i] >> 6) & 0x01;
             Language = f[i+1];
+            r.msgs.emplace_back("Short form");
+            r.msgs.push_back(strprintf("MSC/FIC flag=%d MSC", MSC_FIC_flag));
+
             if (MSC_FIC_flag == 0) {
                 // 0: MSC in Stream mode and SubChId identifies the sub-channel
                 SubChId = f[i] & 0x3F;
-                sprintf(desc, "L/S flag=%d short form, MSC/FIC flag=%d MSC, SubChId=0x%X, Language=0x%X %s",
-                        LS_flag, MSC_FIC_flag, SubChId, Language,
-                        get_language_name(Language));
+                r.msgs.push_back(strprintf("SubChId=0x%X", SubChId));
             }
             else {
                 // 1: FIC and FIDCId identifies the component
                 FIDCId = f[i] & 0x3F;
-                sprintf(desc, "L/S flag=%d short form, MSC/FIC flag=%d FIC, FIDCId=0x%X, Language=0x%X %s",
-                        LS_flag, MSC_FIC_flag, FIDCId, Language,
-                        get_language_name(Language));
+                r.msgs.push_back(strprintf("FIDCId=0x%X", FIDCId));
             }
+            r.msgs.push_back(strprintf("Language=0x%X %s",
+                        Language, get_language_name(Language)));
 
             int key = (MSC_FIC_flag << 7) | (f[i] % 0x3F);
-            complete |= fig0_5_is_complete(key);
-            printbuf(desc, disp+1, NULL, 0);
+            r.complete |= fig0_5_is_complete(key);
             i += 2;
         }
         else {
             // Long form (L/S = 1)
             if (i < (fig0.figlen - 2)) {
+                r.msgs.emplace_back("Long form");
                 Rfa = (f[i] >> 4) & 0x07;
+
                 SCId = (((uint16_t)f[i] & 0x0F) << 8) | (uint16_t)f[i+1];
                 int key = (LS_flag << 15) | SCId;
-                complete |= fig0_5_is_complete(key);
+                r.complete |= fig0_5_is_complete(key);
                 Language = f[i+2];
-                sprintf(desc, "L/S flag=%d long form", LS_flag);
                 if (Rfa != 0) {
-                    sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-                    strcat(desc, tmpbuf);
+                    r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
                 }
-                sprintf(tmpbuf, ", SCId=0x%X, Language=0x%X %s",
-                        SCId, Language,
-                        get_language_name(Language));
-                strcat(desc, tmpbuf);
-                printbuf(desc, disp+1, NULL, 0);
+
+                r.msgs.push_back(strprintf("SCId=0x%X", SCId));
+                r.msgs.push_back(strprintf("Language=0x%X %s",
+                            Language, get_language_name(Language)));
             }
             i += 3;
         }
     }
 
-    return complete;
+    return r;
 }
 

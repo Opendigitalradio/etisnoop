@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -701,8 +701,23 @@ void decodeFIG(
 
                 figs.push_back(figtype, fig0.ext(), figlen);
 
-                bool complete = fig0_select(fig0, disp);
-                rate_announce_fig(figtype, fig0.ext(), complete);
+                auto fig_result = fig0_select(fig0, disp);
+                for (const auto& msg : fig_result.msgs) {
+                    std::string s;
+                    for (int i = 0; i < msg.level; i++) {
+                        s += "    ";
+                    }
+                    s += msg.msg;
+                    printbuf(s.c_str(), disp.indent+1, nullptr, 0);
+                }
+                if (not fig_result.errors.empty()) {
+                    printf("ERRORS:\n");
+                    for (const auto& err : fig_result.errors) {
+                        printbuf(err.c_str(), disp.indent+1, nullptr, 0);
+                    }
+                }
+
+                rate_announce_fig(figtype, fig0.ext(), fig_result.complete);
             }
             break;
 

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -74,7 +74,7 @@ void figs_cleardb()
 }
 
 
-bool fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
 {
     switch (fig0.ext()) {
         case 0: return fig0_0(fig0, disp); break;
@@ -101,14 +101,11 @@ bool fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
         case 27: return fig0_27(fig0, disp); break;
         case 28: return fig0_28(fig0, disp); break;
         case 31: return fig0_31(fig0, disp); break;
-        default: {
-                     char desc[256];
-                     sprintf(desc, "FIG 0/%d: unknown", fig0.ext());
-                     printbuf(desc, disp, fig0.f+1, fig0.figlen-1);
-                     break;
-                 }
+        default: break;
     }
 
-    return false;
+    fig_result_t r;
+    r.errors.push_back("FIG 0/" + std::to_string(fig0.ext()) + " unknown");
+    return r;
 }
 

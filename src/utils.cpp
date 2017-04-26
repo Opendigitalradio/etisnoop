@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 
 #include "utils.hpp"
 #include <cstring>
+#include <stdarg.h>
 
 using namespace std;
 
@@ -47,6 +48,29 @@ int get_verbosity()
 display_settings_t display_settings_t::operator+(int indent_offset) const
 {
     return display_settings_t(print, indent+indent_offset);
+}
+
+std::string strprintf(const char* fmt, ...)
+{
+    int size = 512;
+    std::string str;
+    va_list ap;
+    while (1) {
+        str.resize(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.c_str(), size, fmt, ap);
+        va_end(ap);
+        if (n > -1 && n < size) {
+            str.resize(n);
+            break;
+        }
+        if (n > -1)
+            size = n + 1;
+        else
+            size *= 2;
+    }
+
+    return str;
 }
 
 void printbuf(std::string header,
@@ -143,34 +167,33 @@ int sprintfMJD(char *dst, int mjd) {
     return strftime(dst, 256, "%a %b %d %Y", &timeDate);
 }
 
-char *strcatPNum(char *dest_str, uint16_t Programme_Number) {
+std::string pnum_to_str(uint16_t Programme_Number)
+{
     uint8_t day, hour, minute;
-    char tempbuf[256];
 
     minute = (uint8_t)(Programme_Number & 0x003F);
     hour = (uint8_t)((Programme_Number >> 6) & 0x001F);
     day = (uint8_t)((Programme_Number >> 11) & 0x001F);
     if (day != 0) {
-        sprintf(tempbuf, "day of month=%d time=%02d:%02d", day, hour, minute);
+        return strprintf("day of month=%d time=%02d:%02d", day, hour, minute);
     }
     else {  // day == 0
         // Special codes are allowed when the date part of the PNum field
         // signals date = "0". In this case, the hours and minutes part of
         // the field shall contain a special code, as follows
         if ((hour == 0) && (minute == 0)) {
-            sprintf(tempbuf, "Status code: no meaningful PNum is currently provided");
+            return "Status code: no meaningful PNum is currently provided";
         }
         else if ((hour == 0) && (minute == 1)) {
-            sprintf(tempbuf, "Blank code: the current programme is not worth recording");
+            return "Blank code: the current programme is not worth recording";
         }
         else if ((hour == 0) && (minute == 2)) {
-            sprintf(tempbuf, "Interrupt code: the interrupt is unplanned (for example a traffic announcement)");
+            return "Interrupt code: the interrupt is unplanned "
+                "(for example a traffic announcement)";
         }
         else {
-            sprintf(tempbuf, "invalid value");
+            return "invalid value";
         }
     }
-    return strcat(dest_str, tempbuf);
 }
-
 

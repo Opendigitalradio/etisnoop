@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -48,13 +48,12 @@ bool fig0_31_is_complete(uint64_t figtype_flags)
 
 // FIG 0/31 FIC re-direction
 // ETSI EN 300 401 8.1.12
-bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint32_t FIG_type0_flag_field = 0, flag_field;
     uint8_t i = 1, j, FIG_type1_flag_field = 0, FIG_type2_flag_field = 0;
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
     if (i < (fig0.figlen - 5)) {
         // Read FIC re-direction
@@ -64,11 +63,11 @@ bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
         FIG_type2_flag_field = f[i+5];
 
         uint64_t key = ((uint64_t)FIG_type1_flag_field << 32) | ((uint64_t)FIG_type2_flag_field << 40) | FIG_type0_flag_field;
-        complete |= fig0_31_is_complete(key);
+        r.complete |= fig0_31_is_complete(key);
 
-        sprintf(desc, "FIG type 0 flag field=0x%X, FIG type 1 flag field=0x%X, FIG type 2 flag field=0x%X",
-                FIG_type0_flag_field, FIG_type1_flag_field, FIG_type2_flag_field);
-        printbuf(desc, disp+1, NULL, 0);
+        r.msgs.push_back(strprintf("FIG type 0 flag field=0x%X", FIG_type0_flag_field));
+        r.msgs.push_back(strprintf("FIG type 1 flag field=0x%X", FIG_type1_flag_field));
+        r.msgs.push_back(strprintf("FIG type 2 flag field=0x%X", FIG_type2_flag_field));
 
         for(j = 0; j < 32; j++) {
             // iterate over FIG type 0 re-direction
@@ -76,23 +75,19 @@ bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
             if ((flag_field != 0) && ((j <= 5) || (j == 8) ||
                         (j == 10) || (j == 13) || (j == 14) ||
                         (j == 19) || (j == 26) || (j == 28))) {
-                sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
-                        fig0.oe(), j);
-                printbuf(desc, disp+2, NULL, 0);
-                fprintf(stderr, "WARNING: FIG 0/%d FIG re-direction of fig0.oe()=%d FIG0/%d not allowed\n", fig0.ext(), fig0.oe(), j);
+                r.errors.push_back(strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
+                            fig0.oe(), j));
             }
             else if ((flag_field != 0) && ((j == 21) || (j == 24))) {
-                sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j);
-                printbuf(desc, disp+2, NULL, 0);
+                r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
             }
             else if (flag_field != 0) {
                 if (fig0.oe() == 0) {
-                    sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j);
+                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
                 }
                 else {  // fig0.oe() == 1
-                    sprintf(desc, "fig0.oe()=%d FIG 0/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j);
+                r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
                 }
-                printbuf(desc, disp+2, NULL, 0);
             }
         }
 
@@ -101,12 +96,11 @@ bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
             flag_field = FIG_type1_flag_field & ((uint32_t)1 << j);
             if (flag_field != 0) {
                 if (fig0.oe() == 0) {
-                    sprintf(desc, "fig0.oe()=%d FIG 1/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j);
+                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 1/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
                 }
                 else {  // fig0.oe() == 1
-                    sprintf(desc, "fig0.oe()=%d FIG 1/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j);
+                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 1/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
                 }
-                printbuf(desc, disp+2, NULL, 0);
             }
         }
 
@@ -115,19 +109,18 @@ bool fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
             flag_field = FIG_type2_flag_field & ((uint32_t)1 << j);
             if (flag_field != 0) {
                 if (fig0.oe() == 0) {
-                    sprintf(desc, "fig0.oe()=%d FIG 2/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j);
+                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 2/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
                 }
                 else {  // fig0.oe() == 1
-                    sprintf(desc, "fig0.oe()=%d FIG 2/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j);
+                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 2/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
                 }
-                printbuf(desc, disp+2, NULL, 0);
             }
         }
     }
     if (fig0.figlen != 7) {
-        fprintf(stderr, "WARNING: FIG 0/%d invalid length %d, expecting 7\n", fig0.ext(), fig0.figlen);
+        r.errors.push_back(strprintf("invalid length %d, expecting 7", fig0.figlen));
     }
 
-    return complete;
+    return r;
 }
 

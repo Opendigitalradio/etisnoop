@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -48,17 +48,15 @@ bool fig0_24_is_complete(int services_id)
 
 // FIG 0/24 fig0.oe() Services
 // ETSI EN 300 401 8.1.10.2
-bool fig0_24(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_24(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint64_t key;
     uint32_t SId;
     uint16_t EId;
     uint8_t i = 1, j, Number_of_EIds, CAId;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
     bool Rfa;
-    bool complete = false;
 
     while (i < (fig0.figlen - (((uint8_t)fig0.pd() + 1) * 2))) {
         // iterate over other ensembles services
@@ -71,39 +69,37 @@ bool fig0_24(fig0_common_t& fig0, const display_settings_t &disp)
                 ((uint32_t)f[i+2] << 8) | (uint32_t)f[i+3];
             i += 4;
         }
-        complete |= fig0_24_is_complete(SId);
+        r.complete |= fig0_24_is_complete(SId);
         Rfa  =  (f[i] >> 7);
         CAId  = (f[i] >> 4);
         Number_of_EIds  = (f[i] & 0x0f);
         key = ((uint64_t)fig0.oe() << 33) | ((uint64_t)fig0.pd() << 32) | \
               (uint64_t)SId;
-        if (fig0.pd() == 0) {
-            sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09" PRId64, SId, CAId, Number_of_EIds, key);
-        }
-        else {  // fig0.pd() == 1
-            sprintf(desc, "SId=0x%X, CAId=%d, Number of EId=%d, database key=%09" PRId64, SId, CAId, Number_of_EIds, key);
-        }
+
+        r.msgs.push_back(strprintf("PD=%d", fig0.pd()));
+        r.msgs.push_back(strprintf("SId=0x%X", SId));
+        r.msgs.push_back(strprintf("CAId=%d", CAId));
+        r.msgs.push_back(strprintf("Number of EId=%d", Number_of_EIds));
+        r.msgs.push_back(strprintf("database key=%09" PRId64, key));
+
         if (Rfa != 0) {
-            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
+
         // CEI Change Event Indication
         if (Number_of_EIds == 0) {
-            sprintf(tmpbuf, ", CEI");
-            strcat(desc, tmpbuf);
+            r.msgs.emplace_back("CEI");
         }
-        printbuf(desc, disp+1, NULL, 0);
         i++;
 
-        for(j = i; ((j < (i + (Number_of_EIds * 2))) && (j < fig0.figlen)); j += 2) {
+        for (j = i; ((j < (i + (Number_of_EIds * 2))) && (j < fig0.figlen)); j += 2) {
             // iterate over EIds
             EId = ((uint16_t)f[j] <<8) | (uint16_t)f[j+1];
-            sprintf(desc, "EId 0x%04x", EId);
-            printbuf(desc, disp+2, NULL, 0);
+            r.msgs.emplace_back(1, strprintf("EId 0x%04x", EId));
         }
         i += (Number_of_EIds * 2);
     }
 
-    return complete;
+    return r;
 }
 

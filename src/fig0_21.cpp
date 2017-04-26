@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ bool fig0_21_is_complete(int region_id)
 
 // FIG 0/21 Frequency Information
 // ETSI EN 300 401 8.1.8
-bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
 {
     float freq;
     uint32_t ifreq;
@@ -57,20 +57,18 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
     uint16_t RegionId, Id_field;
     uint8_t i = 1, j, k, Length_FI_list, RandM, Length_Freq_list, Control_field;
     uint8_t Control_field_trans_mode, Id_field2;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     bool Continuity_flag;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
     while (i < (fig0.figlen - 1)) {
         // iterate over frequency information
         // decode RegionId, Length of FI list
         RegionId  =  (f[i] << 3) | (f[i+1] >> 5);
-        complete |= fig0_21_is_complete(RegionId);
+        r.complete |= fig0_21_is_complete(RegionId);
         Length_FI_list  = (f[i+1] & 0x1F);
-        sprintf(desc, "RegionId=0x%03x", RegionId);
-        printbuf(desc, disp+1, NULL, 0);
+        r.msgs.push_back(strprintf("RegionId=0x%03x", RegionId));
+        r.msgs.push_back(strprintf("Len=%d", Length_FI_list));
         i += 2;
         if ((i + Length_FI_list) <= fig0.figlen) {
             j = i;
@@ -81,82 +79,85 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                 RandM = f[j+2] >> 4;
                 Continuity_flag = (f[j+2] >> 3) & 0x01;
                 Length_Freq_list = f[j+2] & 0x07;
-                sprintf(desc, "Id_field=");
+                std::string idfield;
                 switch (RandM) {
                     case 0x0:
                     case 0x1:
-                        strcat(desc, "EId");
+                        idfield += "EId";
                         break;
                     case 0x6:
-                        strcat(desc, "DRM Service Id");
+                        idfield += "DRM Service Id";
                         break;
                     case 0x8:
-                        strcat(desc, "RDS PI");
+                        idfield += "RDS PI";
                         break;
                     case 0x9:
                     case 0xa:
                     case 0xc:
-                        strcat(desc, "Dummy");
+                        idfield += "Dummy";
                         break;
                     case 0xe:
-                        strcat(desc, "AMSS Service Id");
+                        idfield += "AMSS Service Id";
                         break;
                     default:
-                        strcat(desc, "invalid");
+                        idfield += "invalid";
+                        r.errors.emplace_back("R&M invalid");
                         break;
                 }
-                sprintf(tmpbuf, "=0x%X, R&M=0x%1x", Id_field, RandM);
-                strcat(desc, tmpbuf);
+                r.msgs.emplace_back(1, strprintf("ID field=0x%X", Id_field) + idfield);
+
+                std::string rm_str;
                 switch (RandM) {
                     case 0x0:
-                        strcat(desc, "=DAB ensemble, no local windows");
+                        rm_str += " DAB ensemble, no local windows";
                         break;
                     case 0x6:
-                        strcat(desc, "=DRM");
+                        rm_str += " DRM";
                         break;
                     case 0x8:
-                        strcat(desc, "=FM with RDS");
+                        rm_str += " FM with RDS";
                         break;
                     case 0x9:
-                        strcat(desc, "=FM without RDS");
+                        rm_str += " FM without RDS";
                         break;
                     case 0xa:
-                        strcat(desc, "=AM (MW in 9 kHz steps & LW)");
+                        rm_str += " AM (MW in 9 kHz steps & LW)";
                         break;
                     case 0xc:
-                        strcat(desc, "=AM (MW in 5 kHz steps & SW)");
+                        rm_str += " AM (MW in 5 kHz steps & SW)";
                         break;
                     case 0xe:
-                        strcat(desc, "=AMSS");
+                        rm_str += " AMSS";
                         break;
                     default:
-                        strcat(desc, "=Rfu");
+                        rm_str += " Rfu";
+                        r.errors.emplace_back("R&M is Rfu");
                         break;
                 }
-                sprintf(tmpbuf, ", Continuity flag=%d", Continuity_flag);
-                strcat(desc, tmpbuf);
-                if ((fig0.oe() == 0) || ((fig0.oe() == 1) && (RandM != 0x6) && \
+                r.msgs.emplace_back(1, strprintf("R&M=0x%1x", RandM) + rm_str);
+                std::string continuity_str;
+                if ((fig0.oe() == 0) || ((fig0.oe() == 1) && (RandM != 0x6) &&
                             ((RandM < 0x8) || (RandM > 0xa)) && (RandM != 0xc) && (RandM != 0xe))) {
                     if (Continuity_flag == 0) {
                         switch (RandM) {
                             case 0x0:
                             case 0x1:
-                                strcat(desc, "=continuous output not expected");
+                                continuity_str += "=continuous output not expected";
                                 break;
                             case 0x6:
-                                strcat(desc, "=no compensating time delay on DRM audio signal");
+                                continuity_str += "=no compensating time delay on DRM audio signal";
                                 break;
                             case 0x8:
                             case 0x9:
-                                strcat(desc, "=no compensating time delay on FM audio signal");
+                                continuity_str += "=no compensating time delay on FM audio signal";
                                 break;
                             case 0xa:
                             case 0xc:
                             case 0xe:
-                                strcat(desc, "=no compensating time delay on AM audio signal");
+                                continuity_str += "=no compensating time delay on AM audio signal";
                                 break;
                             default:
-                                strcat(desc, "=Rfu");
+                                continuity_str += "=Rfu";
                                 break;
                         }
                     }
@@ -164,39 +165,42 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                         switch (RandM) {
                             case 0x0:
                             case 0x1:
-                                strcat(desc, "=continuous output possible");
+                                continuity_str += "=continuous output possible";
                                 break;
                             case 0x6:
-                                strcat(desc, "=compensating time delay on DRM audio signal");
+                                continuity_str += "=compensating time delay on DRM audio signal";
                                 break;
                             case 0x8:
                             case 0x9:
-                                strcat(desc, "=compensating time delay on FM audio signal");
+                                continuity_str += "=compensating time delay on FM audio signal";
                                 break;
                             case 0xa:
                             case 0xc:
                             case 0xe:
-                                strcat(desc, "=compensating time delay on AM audio signal");
+                                continuity_str += "=compensating time delay on AM audio signal";
                                 break;
                             default:
-                                strcat(desc, "=Rfu");
+                                continuity_str += "=Rfu";
+                                r.errors.emplace_back("continuity is Rfu");
                                 break;
                         }
                     }
                 }
                 else {  // fig0.oe() == 1
-                    strcat(desc, "=reserved for future addition");
+                    continuity_str = "=reserved for future addition";
+                    r.errors.emplace_back("Rfu");
                 }
+
+                r.msgs.emplace_back(1, strprintf("Continuity flag=%d ", Continuity_flag) + continuity_str);
+
                 key = ((uint64_t)fig0.oe() << 32) | ((uint64_t)fig0.pd() << 31) | \
                       ((uint64_t)RegionId << 20) | ((uint64_t)Id_field << 4) | \
                       (uint64_t)RandM;
-                sprintf(tmpbuf, ", database key=0x%09" PRId64, key);
+                r.msgs.emplace_back(1, strprintf("database key=0x%09" PRId64, key));
                 // CEI Change Event Indication
                 if (Length_Freq_list == 0) {
-                    strcat(tmpbuf, ", CEI");
+                    r.msgs.emplace_back(1, "CEI");
                 }
-                strcat(desc, tmpbuf);
-                printbuf(desc, disp+2, NULL, 0);
                 j += 3; // add header
 
                 k = j;
@@ -210,33 +214,30 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                                 Control_field = (f[k] >> 3);
                                 Control_field_trans_mode = (Control_field >> 1) & 0x07;
                                 if ((Control_field & 0x10) == 0) {
-                                    sprintf(desc, "%d KHz, ", ifreq);
+                                    r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
                                     if ((Control_field & 0x01) == 0) {
-                                        strcat(desc, "geographically adjacent area, ");
+                                        r.msgs.emplace_back(2, "geographically adjacent area");
                                     }
                                     else {  // (Control_field & 0x01) == 1
-                                        strcat(desc, "no geographically adjacent area, ");
+                                        r.msgs.emplace_back(2, "no geographically adjacent area");
                                     }
                                     if (Control_field_trans_mode == 0) {
-                                        strcat(desc, "no transmission mode signalled");
+                                        r.msgs.emplace_back(2, "no transmission mode signalled");
                                     }
                                     else if (Control_field_trans_mode <= 4) {
-                                        sprintf(tmpbuf, "transmission mode %d", Control_field_trans_mode);
-                                        strcat(desc, tmpbuf);
+                                        r.msgs.emplace_back(2, strprintf("transmission mode %d", Control_field_trans_mode));
                                     }
                                     else {  // Control_field_trans_mode > 4
-                                        sprintf(tmpbuf, "invalid transmission mode 0x%x", Control_field_trans_mode);
-                                        strcat(desc, tmpbuf);
+                                        r.msgs.emplace_back(2, strprintf("invalid transmission mode 0x%x", Control_field_trans_mode));
                                     }
                                 }
                                 else {  // (Control_field & 0x10) == 0x10
-                                    sprintf(desc, "%d KHz, invalid Control field b23 0x%x", ifreq, Control_field);
+                                    r.msgs.emplace_back(2, strprintf("%d KHz, invalid Control field b23 0x%x", ifreq, Control_field));
                                 }
                             }
                             else {
-                                sprintf(desc, "Frequency not to be used (0)");
+                                r.errors.emplace_back("Frequency not to be used (0)");
                             }
-                            printbuf(desc, disp+3, NULL, 0);
                             k += 3;
                         }
                         break;
@@ -253,17 +254,16 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                                     else {  // f[k] >= 16
                                         ifreq = (387 + ((uint32_t)f[k] * 9));
                                     }
-                                    sprintf(desc, "%d KHz", ifreq);
+                                    r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
                                 }
                                 else {  // RandM == 8 or 9
                                     freq = (87.5 + ((float)f[k] * 0.1));
-                                    sprintf(desc, "%.1f MHz", freq);
+                                    r.msgs.emplace_back(2, strprintf("%.1f MHz", freq));
                                 }
                             }
                             else {
-                                sprintf(desc, "Frequency not to be used (0)");
+                                r.errors.emplace_back("Frequency not to be used (0)");
                             }
-                            printbuf(desc, disp+3, NULL, 0);
                             k++;
                         }
                         break;
@@ -272,12 +272,11 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             // iteration over Freq list
                             ifreq = (((uint32_t)f[k] << 8) | (uint32_t)f[k+1]) * 5;
                             if (ifreq != 0) {
-                                sprintf(desc, "%d KHz", ifreq);
+                                r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
                             }
                             else {
-                                sprintf(desc, "Frequency not to be used (0)");
+                                r.errors.emplace_back("Frequency not to be used (0)");
                             }
-                            printbuf(desc, disp+3, NULL, 0);
                             k += 2;
                         }
                         break;
@@ -288,24 +287,20 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             Id_field2 = f[k];
                             ifreq = ((((uint32_t)f[k+1] & 0x7f) << 8) | (uint32_t)f[k+2]);
                             if (ifreq != 0) {
-                                sprintf(desc, "%d KHz", ifreq);
+                                r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
                             }
                             else {
-                                sprintf(desc, "Frequency not to be used (0)");
+                                r.errors.emplace_back("Frequency not to be used (0)");
                             }
                             if (RandM == 0x6) {
-                                sprintf(tmpbuf, ", DRM Service Id 0x%X", Id_field2);
-                                strcat(desc, tmpbuf);
+                                r.msgs.emplace_back(2, strprintf("DRM Service Id 0x%X", Id_field2));
                             }
                             else if (RandM == 0xe) {
-                                sprintf(tmpbuf, ", AMSS Service Id 0x%X", Id_field2);
-                                strcat(desc, tmpbuf);
+                                r.msgs.emplace_back(2, strprintf("AMSS Service Id 0x%X", Id_field2));
                             }
                             if ((f[k+1] & 0x80) == 0x80) {
-                                sprintf(tmpbuf, ", invalid Rfu b15 set to 1 instead of 0");
-                                strcat(desc, tmpbuf);
+                                r.msgs.emplace_back(2, strprintf("invalid Rfu b15 set to 1 instead of 0"));
                             }
-                            printbuf(desc, disp+3, NULL, 0);
                             k += 3;
                         }
                         break;
@@ -316,8 +311,12 @@ bool fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
             }
             i += Length_FI_list;
         }
+        else {
+            r.errors.push_back(strprintf("FIG0/21 FI Len error: expect %d + %d <= %d\n",
+                    i , Length_FI_list, fig0.figlen));
+        }
     }
 
-    return complete;
+    return r;
 }
 

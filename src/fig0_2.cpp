@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -48,16 +48,14 @@ bool fig0_2_is_complete(int services_id)
 
 // FIG 0/2 Basic service and service component definition
 // ETSI EN 300 401 6.3.1
-bool fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t sref, sid;
     uint8_t cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
     int k = 1;
     std::string psdesc;
     uint8_t* f = fig0.f;
-    char sctydesc[32];
-    char desc[256];
-    bool complete = false;
+    fig_result_t r;
 
     while (k < fig0.figlen) {
         if (fig0.pd() == 0) {
@@ -82,29 +80,34 @@ bool fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
             k += 4;
         }
 
-        complete |= fig0_2_is_complete(sid);
+        r.complete |= fig0_2_is_complete(sid);
 
         local = (f[k] & 0x80) >> 7;
         caid  = (f[k] & 0x70) >> 4;
         ncomp =  f[k] & 0x0F;
 
-        if (fig0.pd() == 0)
-            sprintf(desc,
-                    "Service ID=0x%X (Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
-                    sid, cid, sref, ncomp, local, caid);
-        else
-            sprintf(desc,
-                    "Service ID=0x%X (ECC=%d, Country id=%d, Service reference=%d), Number of components=%d, Local flag=%d, CAID=%d",
-                    sid, ecc, cid, sref, ncomp, local, caid);
-        printbuf(desc, disp+1, NULL, 0);
+        if (fig0.pd() == 0) {
+            r.msgs.push_back(strprintf("Service ID=0x%X (Country id=%d, Service reference=%d)",
+                        sid, cid, sref));
+            r.msgs.emplace_back(1, strprintf("Number of components=%d", ncomp));
+            r.msgs.emplace_back(1, strprintf("Local flag=%d", local));
+            r.msgs.emplace_back(1, strprintf("CAID=%d", caid));
+        }
+        else {
+            r.msgs.push_back(strprintf("Service ID=0x%X (ECC=%d, Country id=%d, Service reference=%d)",
+                        sid, ecc, cid, sref));
+            r.msgs.emplace_back(1, strprintf("Number of components=%d", ncomp));
+            r.msgs.emplace_back(1, strprintf("Local flag=%d", local));
+            r.msgs.emplace_back(1, strprintf("CAID=%d", caid));
+        }
 
         k++;
-        for (int i=0; i<ncomp; i++) {
+        for (int i = 0; i < ncomp; i++) {
             uint8_t scomp[2];
 
             memcpy(scomp, f+k, 2);
-            sprintf(desc, "Component[%d]", i);
-            printbuf(desc, disp+2, scomp, 2, "");
+            r.msgs.emplace_back(1, strprintf("Component[%d]", i));
+
             timd    = (scomp[0] & 0xC0) >> 6;
             ps      = (scomp[1] & 0x02) >> 1;
             ca      =  scomp[1] & 0x01;
@@ -128,41 +131,50 @@ bool fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 
             if (timd == 0) {
                 //MSC stream audio
-                if (scty == 0)
-                    sprintf(sctydesc, "MPEG Foreground sound (%d)", scty);
-                else if (scty == 1)
-                    sprintf(sctydesc, "MPEG Background sound (%d)", scty);
-                else if (scty == 2)
-                    sprintf(sctydesc, "Multi Channel sound (%d)", scty);
-                else if (scty == 63)
-                    sprintf(sctydesc, "AAC sound (%d)", scty);
-                else
-                    sprintf(sctydesc, "Unknown ASCTy (%d)", scty);
+                r.msgs.emplace_back(2, "Stream audio mode");
+                r.msgs.emplace_back(2, psdesc);
 
-                sprintf(desc, "Stream audio mode, %s, %s, SubChannel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
-                printbuf(desc, disp+3, NULL, 0);
+                if (scty == 0)
+                    r.msgs.emplace_back(2, strprintf("MPEG Foreground sound (%d)", scty));
+                else if (scty == 1)
+                    r.msgs.emplace_back(2, strprintf("MPEG Background sound (%d)", scty));
+                else if (scty == 2)
+                    r.msgs.emplace_back(2, strprintf("Multi Channel sound (%d)", scty));
+                else if (scty == 63)
+                    r.msgs.emplace_back(2, strprintf("AAC sound (%d)", scty));
+                else
+                    r.msgs.emplace_back(2, strprintf("Unknown ASCTy (%d)", scty));
+
+                r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
             }
             else if (timd == 1) {
                 // MSC stream data
-                sprintf(sctydesc, "DSCTy=%d %s", scty, get_dscty_type(scty));
-                sprintf(desc, "Stream data mode, %s, %s, SubChannel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
-                printbuf(desc, disp+3, NULL, 0);
+                r.msgs.emplace_back(2, "Stream data mode");
+                r.msgs.emplace_back(2, psdesc);
+                r.msgs.emplace_back(2, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
+                r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
             }
             else if (timd == 2) {
                 // FIDC
-                sprintf(sctydesc, "DSCTy=%d %s", scty, get_dscty_type(scty));
-                sprintf(desc, "FIDC mode, %s, %s, Fast Information Data Channel ID=%02X, CA=%d", psdesc.c_str(), sctydesc, subchid, ca);
-                printbuf(desc, disp+3, NULL, 0);
+                r.msgs.emplace_back(2, "FIDC mode");
+                r.msgs.emplace_back(2, psdesc);
+                r.msgs.emplace_back(2, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
+                r.msgs.emplace_back(2, strprintf("Fast Information Data Channel ID=%02X", subchid));
+                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
             }
             else if (timd == 3) {
                 // MSC Packet mode
-                sprintf(desc, "MSC Packet Mode, %s, Service Component ID=%02X, CA=%d", psdesc.c_str(), subchid, ca);
-                printbuf(desc, disp+3, NULL, 0);
+                r.msgs.emplace_back(2, "MSC Packet Mode");
+                r.msgs.emplace_back(2, psdesc);
+                r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
             }
             k += 2;
         }
     }
 
-    return complete;
+    return r;
 }
 

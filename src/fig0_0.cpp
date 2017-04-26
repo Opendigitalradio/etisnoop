@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -29,34 +29,39 @@
 
 // FIG 0/0 Ensemble information
 // ETSI EN 300 401 6.4
-bool fig0_0(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_0(fig0_common_t& fig0, const display_settings_t &disp)
 {
-    uint8_t cid, al, ch, hic, lowc, occ;
-    uint16_t eid, eref;
-    char desc[128];
+    uint8_t occ;
+    fig_result_t r;
     uint8_t* f = fig0.f;
 
-    eid  =  f[1]*256+f[2];
-    cid  = (f[1] & 0xF0) >> 4;
-    eref = (f[1] & 0x0F)*256 + \
-            f[2];
-    ch   = (f[3] & 0xC0) >> 6;
-    al   = (f[3] & 0x20) >> 5;
-    hic  =  f[3] & 0x1F;
-    lowc =  f[4];
+    const uint16_t eid  =  f[1]*256+f[2];
+    r.msgs.push_back(strprintf("Ensemble ID=0x%02x", eid));
+
+    const uint8_t cid  = (f[1] & 0xF0) >> 4;
+    r.msgs.emplace_back(1, strprintf("Country ID=%d", cid));
+
+    const uint16_t eref = (f[1] & 0x0F)*256 + \
+                           f[2];
+    r.msgs.emplace_back(1, strprintf("Ensemble reference=%d", eref));
+
+    const uint8_t ch = (f[3] & 0xC0) >> 6;
+    r.msgs.push_back(strprintf("Change flag=%d", ch));
+
+    const uint8_t al = (f[3] & 0x20) >> 5;
+    r.msgs.push_back(strprintf("Alarm flag=%d", al));
+
+    const uint8_t hic = f[3] & 0x1F;
+    const uint8_t lowc = f[4];
+    r.msgs.push_back(strprintf("CIF Count=%d/%d", hic, lowc));
+
     if (ch != 0) {
         occ = f[5];
-        sprintf(desc,
-                "Ensemble ID=0x%02x (Country id=%d, Ensemble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d, Occurance change=%d",
-                eid, cid, eref, ch, al, hic, lowc, occ);
+        r.msgs.push_back(strprintf("Occurrence change=%d", occ));
     }
-    else {
-        sprintf(desc,
-                "Ensemble ID=0x%02x (Country id=%d, Ensemble reference=%d), Change flag=%d, Alarm flag=%d, CIF Count=%d/%d",
-                eid, cid, eref, ch, al, hic, lowc);
-    }
-    printbuf(desc, disp+1, NULL, 0);
 
-    return true;
+    r.complete = true;
+
+    return r;
 }
 

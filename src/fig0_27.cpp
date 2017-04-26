@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -49,56 +49,47 @@ bool fig0_27_is_complete(int services_id)
 
 // FIG 0/27 FM Announcement support
 // ETSI EN 300 401 8.1.11.2.1
-bool fig0_27(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_27(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t SId, PI;
     uint8_t i = 1, j, Rfu, Number_PI_codes, key;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
     while (i < (fig0.figlen - 2)) {
         // iterate over FM announcement support
         SId = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
-        complete |= fig0_27_is_complete(SId);
+        r.complete |= fig0_27_is_complete(SId);
         Rfu = f[i+2] >> 4;
         Number_PI_codes = f[i+2] & 0x0F;
         key = (fig0.oe() << 5) | (fig0.pd() << 4) | Number_PI_codes;
-        sprintf(desc, "SId=0x%X", SId);
+        r.msgs.push_back(strprintf("SId=0x%X", SId));
         if (Rfu != 0) {
-            sprintf(tmpbuf, ", Rfu=%d invalid value", Rfu);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
         }
-        sprintf(tmpbuf, ", Number of PI codes=%d", Number_PI_codes);
-        strcat(desc, tmpbuf);
+        r.msgs.emplace_back(1, strprintf("Number of PI codes=%d", Number_PI_codes));
         if (Number_PI_codes > 12) {
-            strcat(desc, " above maximum value of 12");
-            fprintf(stderr, "WARNING: FIG 0/%d Number of PI codes=%d > 12 (maximum value)\n", fig0.ext(), Number_PI_codes);
+            r.errors.push_back(strprintf("Number of PI codes=%d > 12 (maximum value)", Number_PI_codes));
         }
-        sprintf(tmpbuf, ", database key=0x%02X", key);
-        strcat(desc, tmpbuf);
+        r.msgs.emplace_back(1, strprintf("database key=0x%02X", key));
         // CEI Change Event Indication
         if (Number_PI_codes == 0) {
             // The Change Event Indication (CEI) is signalled by the Number of PI codes field = 0
-            strcat(desc, ", CEI");
+            r.msgs.emplace_back(1, "CEI");
         }
-        printbuf(desc, disp+1, NULL, 0);
         i += 3;
-        for(j = 0; (j < Number_PI_codes) && (i < (fig0.figlen - 1)); j++) {
+
+        for (j = 0; j < Number_PI_codes && i < fig0.figlen - 1; j++) {
             // iterate over PI
             PI = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
-            sprintf(desc, "PI=0x%X", PI);
-            printbuf(desc, disp+2, NULL, 0);
+            r.msgs.emplace_back(2, strprintf("PI=0x%X", PI));
             i += 2;
         }
         if (j != Number_PI_codes) {
-            sprintf(desc, "fig length too short !");
-            printbuf(desc, disp+2, NULL, 0);
-            fprintf(stderr, "WARNING: FIG 0/%d length %d too short !\n", fig0.ext(), fig0.figlen);
+            r.errors.push_back("fig length too short !");
         }
     }
 
-    return complete;
+    return r;
 }
 

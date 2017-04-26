@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -46,17 +46,16 @@ bool fig0_1_is_complete(int subch_id)
 
 // FIG 0/1 Basic sub-channel organization
 // ETSI EN 300 401 6.2.1
-bool fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
 {
     int i = 1;
     uint8_t* f = fig0.f;
-    char desc[128];
-    bool complete = false;
+    fig_result_t r;
 
     while (i <= fig0.figlen-3) {
         // iterate over subchannels
         int subch_id = f[i] >> 2;
-        complete |= fig0_1_is_complete(subch_id);
+        r.complete |= fig0_1_is_complete(subch_id);
 
         int start_addr = ((f[i] & 0x03) << 8) |
             (f[i+1]);
@@ -70,43 +69,38 @@ bool fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
 
             i += 4;
 
+            r.msgs.push_back(strprintf("Subch 0x%x", subch_id));
+            r.msgs.push_back(strprintf("start_addr %d", start_addr));
+            r.msgs.emplace_back("long");
+
             if (option == 0x00) {
-                sprintf(desc,
-                        "Subch 0x%x, start_addr %d, long, EEP %d-A, subch size %d",
-                        subch_id, start_addr, protection_level, subchannel_size);
+                r.msgs.push_back(strprintf("EEP %d-A", protection_level));
             }
             else if (option == 0x01) {
-                sprintf(desc,
-                        "Subch 0x%x, start_addr %d, long, EEP %d-B, subch size %d",
-                        subch_id, start_addr, protection_level, subchannel_size);
+                r.msgs.push_back(strprintf("EEP %d-B", protection_level));
             }
             else {
-                sprintf(desc,
-                        "Subch 0x%x, start_addr %d, long, invalid option %d, protection %d, subch size %d",
-                        subch_id, start_addr, option, protection_level, subchannel_size);
+                r.errors.push_back(strprintf("Invalid option %d protection %d", option, protection_level));
             }
+
+            r.msgs.push_back(strprintf("subch size %d", subchannel_size));
         }
         else {
             int table_switch = (f[i+2] >> 6) & 0x01;
             uint32_t table_index  = (f[i+2] & 0x3F);
 
-
-            if (table_switch == 0) {
-                sprintf(desc,
-                        "Subch 0x%x, start_addr %d, short, table index %d",
-                        subch_id, start_addr, table_index);
+            r.msgs.push_back(strprintf("Subch 0x%x", subch_id));
+            r.msgs.push_back(strprintf("start_addr %d", start_addr));
+            r.msgs.emplace_back("short");
+            if (table_switch != 0) {
+                r.errors.push_back(strprintf("Invalid table_switch %d", table_switch));
             }
-            else {
-                sprintf(desc,
-                        "Subch 0x%x, start_addr %d, short, invalid table_switch(=1), table index %d",
-                        subch_id, start_addr, table_index);
-            }
+            r.msgs.push_back(strprintf("table index %d", table_index));
 
             i += 3;
         }
-        printbuf(desc, disp+1, NULL, 0);
     }
 
-    return complete;
+    return r;
 }
 

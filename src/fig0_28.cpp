@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -49,42 +49,40 @@ bool fig0_28_is_complete(int cluster_id)
 
 // FIG 0/28 FM Announcement switching
 // ETSI EN 300 401 8.1.11.2.2
-bool fig0_28(fig0_common_t& fig0, const display_settings_t &disp)
+fig_result_t fig0_28(fig0_common_t& fig0, const display_settings_t &disp)
 {
     uint16_t PI;
     uint8_t i = 1, Cluster_Id_Current_Ensemble, Region_Id_Current_Ensemble;
     bool New_flag, Rfa;
-    char tmpbuf[256];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig0.f;
-    bool complete = false;
 
-    while (i < (fig0.figlen - 3)) {
+    while (i < fig0.figlen - 3) {
         // iterate over FM announcement switching
         Cluster_Id_Current_Ensemble = f[i];
-        complete = fig0_28_is_complete(Cluster_Id_Current_Ensemble);
+        r.complete = fig0_28_is_complete(Cluster_Id_Current_Ensemble);
         New_flag = f[i+1] >> 7;
         Rfa = (f[i+1] >> 6) & 0x01;
         Region_Id_Current_Ensemble = f[i+1] & 0x3F;
         PI = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
-        sprintf(desc, "Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble);
+        r.msgs.push_back(strprintf("Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble));
+
         if (Cluster_Id_Current_Ensemble == 0) {
-            strcat(desc, " invalid value");
-            fprintf(stderr, "WARNING: FIG 0/%d Cluster Id Current Ensemble invalid value 0\n", fig0.ext());
+            r.errors.push_back("Cluster Id Current Ensemble invalid value 0");
         }
-        sprintf(tmpbuf, ", New flag=%d %s announcement",
-                New_flag, New_flag?"newly introduced":"repeated");
-        strcat(desc, tmpbuf);
+
+        r.msgs.emplace_back(1, strprintf("New flag=%d %s announcement",
+                    New_flag, New_flag?"newly introduced":"repeated"));
+
         if (Rfa != 0) {
-            sprintf(tmpbuf, ", Rfa=%d invalid value", Rfa);
-            strcat(desc, tmpbuf);
+            r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
-        sprintf(tmpbuf, ", Region Id Current Ensemble=0x%X, PI=0x%X", Region_Id_Current_Ensemble, PI);
-        strcat(desc, tmpbuf);
-        printbuf(desc, disp+1, NULL, 0);
+
+        r.msgs.emplace_back(1, strprintf("Region Id Current Ensemble=0x%X", Region_Id_Current_Ensemble));
+        r.msgs.emplace_back(1, strprintf("PI=0x%X", PI));
         i += 4;
     }
 
-    return complete;
+    return r;
 }
 
