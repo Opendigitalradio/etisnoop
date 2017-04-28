@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -32,23 +32,19 @@
 using namespace std;
 
 // SHORT LABELS
-bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
+fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 {
-    uint16_t ext,oe,charset;
+    uint16_t ext,charset;
     uint16_t flag;
     char label[17];
-    char desc[256];
+    fig_result_t r;
     uint8_t* f = fig1.f;
-    const int figtype = 1;
 
     charset = (f[0] & 0xF0) >> 4;
-    oe = (f[0] & 0x08) >> 3;
+    //oe = (f[0] & 0x08) >> 3;
     ext = f[0] & 0x07;
-    sprintf(desc,
-            "FIG %d/%d: OE=%d, Charset=%d",
-            figtype, ext, oe, charset);
+    r.msgs.push_back(strprintf("Charset=%d", charset));
 
-    printbuf(desc, disp, f+1, fig1.figlen-1);
     memcpy(label, f+fig1.figlen-18, 16);
     label[16] = 0x00;
     flag = f[fig1.figlen-2] * 256 + \
@@ -59,8 +55,9 @@ bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
             {   // ETSI EN 300 401 8.1.13
                 uint16_t eid;
                 eid = f[1] * 256 + f[2];
-                sprintf(desc, "Ensemble ID 0x%04X label: \"%s\", Short label mask: 0x%04X", eid, label, flag);
-                printinfo(desc, disp+1, 1);
+                r.msgs.push_back(strprintf("Ensemble ID: 0x%04X", eid));
+                r.msgs.push_back(strprintf("Label: \"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
             }
             break;
 
@@ -68,8 +65,9 @@ bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
             {   // ETSI EN 300 401 8.1.14.1
                 uint16_t sid;
                 sid = f[1] * 256 + f[2];
-                sprintf(desc, "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X", sid, label, flag);
-                printinfo(desc, disp+1, 1);
+                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
+                r.msgs.push_back(strprintf("Label: \"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
             }
             break;
 
@@ -89,10 +87,10 @@ bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                           f[4] * 256 + \
                           f[5];
                 }
-                sprintf(desc,
-                        "Service ID  0x%X , Service Component ID 0x%04X Short, label: \"%s\", label mask: 0x%04X",
-                        sid, SCIdS, label, flag);
-                printinfo(desc, disp+1, 1);
+                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
+                r.msgs.push_back(strprintf("Service Component ID: 0x%04X", SCIdS));
+                r.msgs.push_back(strprintf("Label: \"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
             }
             break;
 
@@ -104,10 +102,9 @@ bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                       f[3] * 256 + \
                       f[4];
 
-                sprintf(desc,
-                        "Service ID 0x%X label: \"%s\", Short label mask: 0x%04X",
-                        sid, label, flag);
-                printinfo(desc, disp+1, 1);
+                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
+                r.msgs.push_back(strprintf("Label: \"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
             }
             break;
 
@@ -144,14 +141,17 @@ bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 }
 
 
-                sprintf(desc,"Service ID  0x%X , Service Component ID 0x%04X Short, X-PAD App %02X (%s), label: \"%s\", label mask: 0x%04X",
-                        sid, SCIdS, xpadapp, xpadappdesc.c_str(), label, flag);
-                printbuf(desc,disp+1,NULL,0,"");
+                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
+                r.msgs.push_back(strprintf("Service Component ID: 0x%04X", SCIdS));
+                r.msgs.push_back(strprintf("X-PAD App %02X (", xpadapp) + xpadappdesc + ")");
+                r.msgs.push_back(strprintf("Label: \"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
             }
             break;
     }
 
     // FIG1s always contain a complete set of information
-    return true;
+    r.complete = true;
+    return r;
 }
 

@@ -54,6 +54,12 @@ void printbuf(std::string header,
         size_t size,
         std::string desc="");
 
+void printfig(std::string header,
+        const display_settings_t &disp,
+        uint8_t* buffer,
+        size_t size,
+        std::string desc="");
+
 void printbuf(std::string header,
         int indent,
         uint8_t* buffer,

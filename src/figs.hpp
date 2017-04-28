@@ -44,6 +44,9 @@ struct fig_result_t {
         std::string msg;
     };
 
+    int figtype = -1;
+    int figext = 0;
+
     std::vector<msg_info_t> msgs;
     std::vector<std::string> errors;
     bool complete = false;
@@ -127,5 +130,5 @@ fig_result_t fig0_27(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_28(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp);
 
-bool fig1_select(fig1_common_t& fig1, const display_settings_t &disp);
+fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp);
 

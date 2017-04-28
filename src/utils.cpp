@@ -83,6 +83,38 @@ void printbuf(std::string header,
     printbuf(header, disp, buffer, size, desc);
 }
 
+void printfig(string header,
+        const display_settings_t &disp,
+        uint8_t* buffer,
+        size_t size,
+        string desc)
+{
+    if (disp.print) {
+        for (int i = 0; i < disp.indent; i++) {
+            printf("\t");
+        }
+
+        printf("%s", header.c_str());
+
+        if (verbosity > 1) {
+            if (size != 0) {
+                printf(": ");
+            }
+
+            for (size_t i = 0; i < size; i++) {
+                printf("%02x ", buffer[i]);
+            }
+        }
+
+        if (desc != "") {
+            printf(" [%s] ", desc.c_str());
+        }
+
+        printf("\n");
+    }
+}
+
+
 void printbuf(string header,
         const display_settings_t &disp,
         uint8_t* buffer,

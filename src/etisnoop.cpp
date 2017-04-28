@@ -117,6 +117,32 @@ int eti_analyse(eti_analyse_config_t &config);
 const char *get_programme_type_str(size_t int_table_Id, size_t pty);
 int sprintfMJD(char *dst, int mjd);
 
+static void print_fig_result(const fig_result_t& fig_result, const display_settings_t& disp)
+{
+    if (disp.print) {
+        for (const auto& msg : fig_result.msgs) {
+            std::string s;
+            for (int i = 0; i < msg.level; i++) {
+                s += "    ";
+            }
+            s += msg.msg;
+            for (int i = 0; i < disp.indent; i++) {
+                printf("\t");
+            }
+            printf("%s\n", s.c_str());
+        }
+        if (not fig_result.errors.empty()) {
+            printf("ERRORS:\n");
+            for (const auto& err : fig_result.errors) {
+                for (int i = 0; i < disp.indent; i++) {
+                    printf("\t");
+                }
+                printf("%s\n", err.c_str());
+            }
+        }
+    }
+}
+
 #define no_argument 0
 #define required_argument 1
 #define optional_argument 2
@@ -603,7 +629,7 @@ int eti_analyse(eti_analyse_config_t &config)
             else {
                 sprintf(sdesc, "id %d, len %d, not selected for decoding", i, stl[i]*8);
             }
-            if (get_verbosity() > 1) {
+            if (get_verbosity() > 2) {
                 printbuf("Stream Data", 1, streamdata, stl[i]*8, sdesc);
             }
             else {
@@ -696,26 +722,15 @@ void decodeFIG(
                 if (disp.print) {
                     sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d",
                             figtype, fig0.ext(), fig0.cn(), fig0.oe(), fig0.pd());
-                    printbuf(desc, disp.indent, f+1, figlen-1);
+                    printfig(desc, disp, f+1, figlen-1);
                 }
 
                 figs.push_back(figtype, fig0.ext(), figlen);
 
                 auto fig_result = fig0_select(fig0, disp);
-                for (const auto& msg : fig_result.msgs) {
-                    std::string s;
-                    for (int i = 0; i < msg.level; i++) {
-                        s += "    ";
-                    }
-                    s += msg.msg;
-                    printbuf(s.c_str(), disp.indent+1, nullptr, 0);
-                }
-                if (not fig_result.errors.empty()) {
-                    printf("ERRORS:\n");
-                    for (const auto& err : fig_result.errors) {
-                        printbuf(err.c_str(), disp.indent+1, nullptr, 0);
-                    }
-                }
+                fig_result.figtype = figtype;
+                fig_result.figext = fig0.ext();
+                print_fig_result(fig_result, disp+1);
 
                 rate_announce_fig(figtype, fig0.ext(), fig_result.complete);
             }
@@ -726,11 +741,19 @@ void decodeFIG(
                 fig1_common_t fig1(f, figlen);
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig1.ext()), indent);
+                if (disp.print) {
+                    sprintf(desc, "FIG %d/%d: OE=%d",
+                            figtype, fig1.ext(), fig1.oe());
+                    printfig(desc, disp, f+1, figlen-1);
+                }
 
                 figs.push_back(figtype, fig1.ext(), figlen);
 
-                bool complete = fig1_select(fig1, disp);
-                rate_announce_fig(figtype, fig1.ext(), complete);
+                auto fig_result = fig1_select(fig1, disp);
+                fig_result.figtype = figtype;
+                fig_result.figext = fig1.ext();
+                print_fig_result(fig_result, disp+1);
+                rate_announce_fig(figtype, fig1.ext(), fig_result.complete);
             }
             break;
         case 2:
