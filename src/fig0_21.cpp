@@ -58,13 +58,14 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
     while (i < fig0.figlen) {
         const uint16_t RegionId = (f[i] << 3) | (f[i+1] >> 5);
         r.complete |= fig0_21_is_complete(RegionId);
-        const uint8_t Length_FI_list = f[i+1] & 0x1F;
+        const uint8_t Length_FI_list = f[i+1] & 0x1F; // in bytes
         r.msgs.push_back(strprintf("RegionId=0x%03x", RegionId));
-        r.msgs.push_back(strprintf("Len=%d", Length_FI_list));
+        r.msgs.push_back(strprintf("Len=%d Bytes", Length_FI_list));
         i += 2;
+        const int FI_start_ix = i;
 
-        for (int FI_ix = 0; FI_ix < Length_FI_list; FI_ix++) {
-            if (i + 2 >= fig0.figlen) {
+        for (size_t FI_ix = 0; i < FI_start_ix + Length_FI_list; FI_ix++) {
+            if (i + 3 > fig0.figlen) {
                 r.errors.push_back("FIG0/21 too small!");
                 break;
             }
@@ -73,7 +74,9 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
             const uint8_t RandM = f[i+2] >> 4;
             const bool Continuity_flag = (f[i+2] >> 3) & 0x01;
             const uint8_t Length_Freq_list = f[i+2] & 0x07; // in bytes
-            i += 2;
+            r.msgs.emplace_back(1,
+                    strprintf("Length Freq list=%d", Length_Freq_list));
+            i += 3;
 
             std::string idfield;
             switch (RandM) {
@@ -186,130 +189,147 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
             switch (RandM) {
                 case 0x0:
                 case 0x1:
-                    for (int freq_ix = 0;
-                            freq_ix < Length_Freq_list;
-                            freq_ix++) {
-                        if (i + 3 >= fig0.figlen) {
-                            r.errors.push_back(strprintf(
-                                        "FIG 0/21 too small for"
-                                        " FI %d, freq %d",
-                                        FI_ix, freq_ix));
-                            break;
+                    {
+                        // Each entry is 24 bits (5 control + 19 freq)
+                        const size_t bytes_per_entry = 3;
+                        const int num_freqs = Length_Freq_list / bytes_per_entry;
+
+                        if (Length_Freq_list % bytes_per_entry != 0) {
+                            r.errors.push_back("Length of freq list incorrect size");
                         }
 
-                        // Each entry is 24 bits (5 control + 19 freq)
-                        const uint8_t Control_field = (f[i] >> 3);
-                        const uint32_t freq = 16 *
-                            (((uint32_t)(f[i] & 0x07) << 16) |
-                             ((uint32_t)f[i+1] << 8) |
-                             (uint32_t)f[i+2]);
-                        i += 3;
-                        if (freq == 0) {
-                            r.errors.emplace_back(strprintf(
-                                        "Frequency not to be used (0) in"
-                                        " FI %d, freq %d",
-                                        FI_ix, freq_ix));
-                            continue;
-                        }
-                        const uint8_t Control_field_trans_mode = (Control_field >> 1) & 0x07;
-                        if ((Control_field & 0x10) == 0) {
-                            r.msgs.emplace_back(2,
-                                    strprintf("%d KHz", freq));
-                            if ((Control_field & 0x01) == 0) {
-                                r.msgs.emplace_back(2,
-                                        "geographically adjacent area");
+                        for (int freq_ix = 0; freq_ix < num_freqs; freq_ix++) {
+                            if (i + bytes_per_entry > fig0.figlen) {
+                                r.errors.push_back(strprintf(
+                                            "FIG 0/21 too small for"
+                                            " FI %d, freq %d",
+                                            FI_ix, freq_ix));
+                                break;
                             }
-                            else {  // (Control_field & 0x01) == 1
-                                r.msgs.emplace_back(2,
-                                        "no geographically adjacent area");
+
+                            const uint8_t Control_field = (f[i] >> 3);
+                            const uint32_t freq = 16 *
+                                (((uint32_t)(f[i] & 0x07) << 16) |
+                                 ((uint32_t)f[i+1] << 8) |
+                                 (uint32_t)f[i+2]);
+                            i += bytes_per_entry;
+                            if (freq == 0) {
+                                r.errors.emplace_back(strprintf(
+                                            "Frequency not to be used (0) in"
+                                            " FI %d, freq %d",
+                                            FI_ix, freq_ix));
+                                continue;
                             }
-                            if (Control_field_trans_mode == 0) {
+                            const uint8_t Control_field_trans_mode = (Control_field >> 1) & 0x07;
+                            if ((Control_field & 0x10) == 0) {
                                 r.msgs.emplace_back(2,
-                                        "no transmission mode signalled");
+                                        strprintf("%d KHz", freq));
+                                if ((Control_field & 0x01) == 0) {
+                                    r.msgs.emplace_back(2,
+                                            "geographically adjacent area");
+                                }
+                                else {  // (Control_field & 0x01) == 1
+                                    r.msgs.emplace_back(2,
+                                            "no geographically adjacent area");
+                                }
+                                if (Control_field_trans_mode == 0) {
+                                    r.msgs.emplace_back(2,
+                                            "no transmission mode signalled");
+                                }
+                                else if (Control_field_trans_mode <= 4) {
+                                    r.msgs.emplace_back(2,
+                                            strprintf("transmission mode %d",
+                                                Control_field_trans_mode));
+                                }
+                                else {  // Control_field_trans_mode > 4
+                                    r.msgs.emplace_back(2,
+                                            strprintf("invalid transmission mode 0x%x",
+                                                Control_field_trans_mode));
+                                }
                             }
-                            else if (Control_field_trans_mode <= 4) {
+                            else {  // (Control_field & 0x10) == 0x10
                                 r.msgs.emplace_back(2,
-                                        strprintf("transmission mode %d",
-                                            Control_field_trans_mode));
+                                        strprintf("%d KHz,"
+                                            "invalid Control field b23 0x%x",
+                                            freq, Control_field));
                             }
-                            else {  // Control_field_trans_mode > 4
-                                r.msgs.emplace_back(2,
-                                        strprintf("invalid transmission mode 0x%x",
-                                            Control_field_trans_mode));
-                            }
-                        }
-                        else {  // (Control_field & 0x10) == 0x10
-                            r.msgs.emplace_back(2,
-                                    strprintf("%d KHz,"
-                                        "invalid Control field b23 0x%x",
-                                        freq, Control_field));
                         }
                     }
                     break;
                 case 0x8:
                 case 0x9:
                 case 0xA:
-                    for (int freq_ix = 0;
-                            freq_ix < Length_Freq_list;
-                            freq_ix++) {
-                        if (i + 1 >= fig0.figlen) {
-                            r.errors.push_back(strprintf(
-                                        "FIG 0/21 too small for"
-                                        " FI %d, freq %d",
-                                        FI_ix, freq_ix));
-                        }
-
+                    {
                         // entries are 8-bit freq
-                        const uint8_t freq = f[i];
-                        i++;
-                        if (freq == 0) {
-                            r.errors.emplace_back(
-                                    "Frequency not to be used (0)");
-                            continue;
-                        }
+                        const size_t bytes_per_entry = 1;
+                        const int num_freqs = Length_Freq_list / bytes_per_entry;
 
-                        if (RandM == 0xA) {
-                            if (freq < 16) {
-                                r.msgs.emplace_back(2,
-                                        strprintf("%d KHz",
-                                            144 + ((uint32_t)freq * 9)));
+                        for (int freq_ix = 0; freq_ix < num_freqs; freq_ix++) {
+                            if (i + bytes_per_entry > fig0.figlen) {
+                                r.errors.push_back(strprintf(
+                                            "FIG 0/21 too small for"
+                                            " FI %d, freq %d",
+                                            FI_ix, freq_ix));
                             }
-                            else {  // f[k] >= 16
-                                r.msgs.emplace_back(2,
-                                        strprintf("%d KHz",
-                                            387 + ((uint32_t)freq * 9)));
+
+                            const uint8_t freq = f[i];
+                            i++;
+                            if (freq == 0) {
+                                r.errors.emplace_back(
+                                        "Frequency not to be used (0)");
+                                continue;
                             }
-                        }
-                        else {  // RandM == 8 or 9
-                            r.msgs.emplace_back(2,
-                                    strprintf("%.1f MHz",
-                                        87.5 + ((float)freq * 0.1)));
+
+                            if (RandM == 0xA) {
+                                if (freq < 16) {
+                                    r.msgs.emplace_back(2,
+                                            strprintf("%d KHz",
+                                                144 + ((uint32_t)freq * 9)));
+                                }
+                                else {  // f[k] >= 16
+                                    r.msgs.emplace_back(2,
+                                            strprintf("%d KHz",
+                                                387 + ((uint32_t)freq * 9)));
+                                }
+                            }
+                            else {  // RandM == 8 or 9
+                                r.msgs.emplace_back(2,
+                                        strprintf("%.1f MHz",
+                                            87.5 + ((float)freq * 0.1)));
+                            }
                         }
                     }
                     break;
                 case 0xC:
-                    for (int freq_ix = 0;
-                            freq_ix < Length_Freq_list;
-                            freq_ix++) {
-                        if (i + 2 >= fig0.figlen) {
-                            r.errors.push_back(strprintf(
-                                        "FIG 0/21 too small for"
-                                        " FI %d, freq %d",
-                                        FI_ix, freq_ix));
-                        }
-
+                    {
                         // freqs are 16-bit
-                        const uint16_t freq = 5 *
-                            (((uint16_t)f[i] << 8) |
-                             (uint32_t)f[i+1]);
-                        i += 2;
-                        if (freq != 0) {
-                            r.msgs.emplace_back(2,
-                                    strprintf("%d KHz", freq));
+                        const size_t bytes_per_entry = 2;
+                        const int num_freqs = Length_Freq_list / bytes_per_entry;
+
+                        if (Length_Freq_list % bytes_per_entry != 0) {
+                            r.errors.push_back("Length of freq list incorrect size");
                         }
-                        else {
-                            r.errors.emplace_back(
-                                    "Frequency not to be used (0)");
+                        for (int freq_ix = 0; freq_ix < num_freqs; freq_ix++) {
+                            if (i + bytes_per_entry > fig0.figlen) {
+                                r.errors.push_back(strprintf(
+                                            "FIG 0/21 too small for"
+                                            " FI %d, freq %d",
+                                            FI_ix, freq_ix));
+                            }
+
+                            // freqs are 16-bit
+                            const uint16_t freq = 5 *
+                                (((uint16_t)f[i] << 8) |
+                                 (uint32_t)f[i+1]);
+                            i += bytes_per_entry;
+                            if (freq != 0) {
+                                r.msgs.emplace_back(2,
+                                        strprintf("%d KHz", freq));
+                            }
+                            else {
+                                r.errors.emplace_back(
+                                        "Frequency not to be used (0)");
+                            }
                         }
                     }
                     break;
@@ -318,20 +338,25 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                     {
                         // There is a first 8-bit entry, and the
                         // list contains 16-bit freqs
-                        if (i + 1 >= fig0.figlen) {
+                        if (i + 1 > fig0.figlen) {
                             r.errors.push_back(strprintf(
                                         "FIG 0/21 too small for"
                                         " control of"
                                         " FI %d",
                                         FI_ix));
                         }
+
+                        const size_t bytes_per_entry = 2;
+                        const int num_freqs = (Length_Freq_list-1) / bytes_per_entry;
+
+                        if ((Length_Freq_list-1) % bytes_per_entry != 0) {
+                            r.errors.push_back("Length of freq list incorrect size");
+                        }
                         const uint32_t Id_field2 = f[i];
                         i++;
 
-                        for (int freq_ix = 0;
-                                freq_ix < Length_Freq_list;
-                                freq_ix++) {
-                            if (i + 2 >= fig0.figlen) {
+                        for (int freq_ix = 0; freq_ix < num_freqs; freq_ix++) {
+                            if (i + bytes_per_entry > fig0.figlen) {
                                 r.errors.push_back(strprintf(
                                             "FIG 0/21 too small for"
                                             " FI %d, freq %d",
@@ -341,7 +366,7 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             const uint16_t freq =
                                 ((((uint16_t)f[i+1] & 0x7f) << 8) |
                                  (uint16_t)f[i+2]);
-                            i += 2;
+                            i += bytes_per_entry;
 
                             if (freq == 0) {
                                 r.msgs.emplace_back(2,
