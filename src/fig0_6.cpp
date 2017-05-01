@@ -107,7 +107,7 @@ fig_result_t fig0_6(fig0_common_t& fig0, const display_settings_t &disp)
                     Shd   = (f[i] >> 4) & 0x01;
                     r.msgs.push_back(strprintf("IdLQ=%d", IdLQ));
                     r.msgs.push_back(strprintf("Shd=%d %s", Shd, (Shd)?"b11-8 in 4-F are different services":"single service"));
-                    r.msgs.push_back(strprintf("Number of Ids=%d%s", Number_of_Ids));
+                    r.msgs.push_back(strprintf("Number of Ids=%d", Number_of_Ids));
 
                     if (ILS == 0) {
                         // read Id list
