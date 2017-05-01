@@ -364,11 +364,11 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             }
                             // entries are 16bit freq
                             const uint16_t freq =
-                                ((((uint16_t)f[i+1] & 0x7f) << 8) |
-                                 (uint16_t)f[i+2]);
+                                ((((uint16_t)f[i] & 0x7f) << 8) |
+                                 (uint16_t)f[i+1]);
                             i += bytes_per_entry;
 
-                            if (freq == 0) {
+                            if (freq != 0) {
                                 r.msgs.emplace_back(2,
                                         strprintf("%d KHz", freq));
                             }
