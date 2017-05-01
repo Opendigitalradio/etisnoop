@@ -757,7 +757,7 @@ void decodeFIG(
             }
             break;
         case 2:
-            {// LONG LABELS
+            {// EXTENDED LABELS
                 uint16_t ext,oe;
 
                 uint8_t toggle_flag = (f[0] & 0x80) >> 7;
@@ -771,12 +771,12 @@ void decodeFIG(
                             "FIG %d/%d: Toggle flag=%d, Segment_index=%d, OE=%d",
                             figtype, ext, toggle_flag, segment_index, oe);
 
-                    printbuf(desc, disp.indent, f+1, figlen-1);
+                    printfig(desc, disp, f+1, figlen-1);
                 }
 
                 figs.push_back(figtype, ext, figlen);
 
-                bool complete = true; // TODO verify
+                bool complete = true;
                 rate_announce_fig(figtype, ext, complete);
             }
             break;
@@ -794,10 +794,7 @@ void decodeFIG(
                 sprintf(desc,
                         "FIG %d/%d: D1=%d, D2=%d, TCId=%d",
                         figtype, ext, d1, d2, tcid);
-
-                if (disp.print) {
-                    printbuf(desc, disp.indent, f+1, figlen-1);
-                }
+                printfig(desc, disp, f+1, figlen-1);
 
                 figs.push_back(figtype, ext, figlen);
 
@@ -817,5 +814,4 @@ void decodeFIG(
             break;
     }
 }
-
 
