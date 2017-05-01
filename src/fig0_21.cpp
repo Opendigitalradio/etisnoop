@@ -51,269 +51,323 @@ bool fig0_21_is_complete(int region_id)
 // ETSI EN 300 401 8.1.8
 fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
 {
-    float freq;
-    uint32_t ifreq;
-    uint64_t key;
-    uint16_t RegionId, Id_field;
-    uint8_t i = 1, j, k, Length_FI_list, RandM, Length_Freq_list, Control_field;
-    uint8_t Control_field_trans_mode, Id_field2;
-    fig_result_t r;
-    bool Continuity_flag;
     uint8_t* f = fig0.f;
+    fig_result_t r;
 
-    while (i < (fig0.figlen - 1)) {
-        // iterate over frequency information
-        // decode RegionId, Length of FI list
-        RegionId  =  (f[i] << 3) | (f[i+1] >> 5);
+    int i = 1;
+    while (i < fig0.figlen) {
+        const uint16_t RegionId = (f[i] << 3) | (f[i+1] >> 5);
         r.complete |= fig0_21_is_complete(RegionId);
-        Length_FI_list  = (f[i+1] & 0x1F);
+        const uint8_t Length_FI_list = f[i+1] & 0x1F;
         r.msgs.push_back(strprintf("RegionId=0x%03x", RegionId));
         r.msgs.push_back(strprintf("Len=%d", Length_FI_list));
         i += 2;
-        if ((i + Length_FI_list) <= fig0.figlen) {
-            j = i;
-            while ((j + 2) < (i + Length_FI_list)) {
-                // iterate over FI list x
-                // decode Id field, R&M, Continuity flag, Length of Freq list
-                Id_field = (f[j] << 8) | f[j+1];
-                RandM = f[j+2] >> 4;
-                Continuity_flag = (f[j+2] >> 3) & 0x01;
-                Length_Freq_list = f[j+2] & 0x07;
-                std::string idfield;
-                switch (RandM) {
-                    case 0x0:
-                    case 0x1:
-                        idfield += "EId";
-                        break;
-                    case 0x6:
-                        idfield += "DRM Service Id";
-                        break;
-                    case 0x8:
-                        idfield += "RDS PI";
-                        break;
-                    case 0x9:
-                    case 0xa:
-                    case 0xc:
-                        idfield += "Dummy";
-                        break;
-                    case 0xe:
-                        idfield += "AMSS Service Id";
-                        break;
-                    default:
-                        idfield += "invalid";
-                        r.errors.emplace_back("R&M invalid");
-                        break;
-                }
-                r.msgs.emplace_back(1, strprintf("ID field=0x%X", Id_field) + idfield);
 
-                std::string rm_str;
-                switch (RandM) {
-                    case 0x0:
-                        rm_str += " DAB ensemble, no local windows";
-                        break;
-                    case 0x6:
-                        rm_str += " DRM";
-                        break;
-                    case 0x8:
-                        rm_str += " FM with RDS";
-                        break;
-                    case 0x9:
-                        rm_str += " FM without RDS";
-                        break;
-                    case 0xa:
-                        rm_str += " AM (MW in 9 kHz steps & LW)";
-                        break;
-                    case 0xc:
-                        rm_str += " AM (MW in 5 kHz steps & SW)";
-                        break;
-                    case 0xe:
-                        rm_str += " AMSS";
-                        break;
-                    default:
-                        rm_str += " Rfu";
-                        r.errors.emplace_back("R&M is Rfu");
-                        break;
-                }
-                r.msgs.emplace_back(1, strprintf("R&M=0x%1x", RandM) + rm_str);
-                std::string continuity_str;
-                if ((fig0.oe() == 0) || ((fig0.oe() == 1) && (RandM != 0x6) &&
-                            ((RandM < 0x8) || (RandM > 0xa)) && (RandM != 0xc) && (RandM != 0xe))) {
-                    if (Continuity_flag == 0) {
-                        switch (RandM) {
-                            case 0x0:
-                            case 0x1:
-                                continuity_str += "=continuous output not expected";
-                                break;
-                            case 0x6:
-                                continuity_str += "=no compensating time delay on DRM audio signal";
-                                break;
-                            case 0x8:
-                            case 0x9:
-                                continuity_str += "=no compensating time delay on FM audio signal";
-                                break;
-                            case 0xa:
-                            case 0xc:
-                            case 0xe:
-                                continuity_str += "=no compensating time delay on AM audio signal";
-                                break;
-                            default:
-                                continuity_str += "=Rfu";
-                                break;
-                        }
-                    }
-                    else {  // Continuity_flag == 1
-                        switch (RandM) {
-                            case 0x0:
-                            case 0x1:
-                                continuity_str += "=continuous output possible";
-                                break;
-                            case 0x6:
-                                continuity_str += "=compensating time delay on DRM audio signal";
-                                break;
-                            case 0x8:
-                            case 0x9:
-                                continuity_str += "=compensating time delay on FM audio signal";
-                                break;
-                            case 0xa:
-                            case 0xc:
-                            case 0xe:
-                                continuity_str += "=compensating time delay on AM audio signal";
-                                break;
-                            default:
-                                continuity_str += "=Rfu";
-                                r.errors.emplace_back("continuity is Rfu");
-                                break;
-                        }
-                    }
-                }
-                else {  // fig0.oe() == 1
-                    continuity_str = "=reserved for future addition";
-                    r.errors.emplace_back("Rfu");
-                }
-
-                r.msgs.emplace_back(1, strprintf("Continuity flag=%d ", Continuity_flag) + continuity_str);
-
-                key = ((uint64_t)fig0.oe() << 32) | ((uint64_t)fig0.pd() << 31) | \
-                      ((uint64_t)RegionId << 20) | ((uint64_t)Id_field << 4) | \
-                      (uint64_t)RandM;
-                r.msgs.emplace_back(1, strprintf("database key=0x%09" PRId64, key));
-                // CEI Change Event Indication
-                if (Length_Freq_list == 0) {
-                    r.msgs.emplace_back(1, "CEI");
-                }
-                j += 3; // add header
-
-                k = j;
-                switch (RandM) {
-                    case 0x0:
-                    case 0x1:
-                        while((k + 2) < (j + Length_Freq_list)) {
-                            // iteration over Freq list
-                            ifreq = (((uint32_t)(f[k] & 0x07) << 16) | ((uint32_t)f[k+1] << 8) | (uint32_t)f[k+2]) * 16;
-                            if (ifreq != 0) {
-                                Control_field = (f[k] >> 3);
-                                Control_field_trans_mode = (Control_field >> 1) & 0x07;
-                                if ((Control_field & 0x10) == 0) {
-                                    r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
-                                    if ((Control_field & 0x01) == 0) {
-                                        r.msgs.emplace_back(2, "geographically adjacent area");
-                                    }
-                                    else {  // (Control_field & 0x01) == 1
-                                        r.msgs.emplace_back(2, "no geographically adjacent area");
-                                    }
-                                    if (Control_field_trans_mode == 0) {
-                                        r.msgs.emplace_back(2, "no transmission mode signalled");
-                                    }
-                                    else if (Control_field_trans_mode <= 4) {
-                                        r.msgs.emplace_back(2, strprintf("transmission mode %d", Control_field_trans_mode));
-                                    }
-                                    else {  // Control_field_trans_mode > 4
-                                        r.msgs.emplace_back(2, strprintf("invalid transmission mode 0x%x", Control_field_trans_mode));
-                                    }
-                                }
-                                else {  // (Control_field & 0x10) == 0x10
-                                    r.msgs.emplace_back(2, strprintf("%d KHz, invalid Control field b23 0x%x", ifreq, Control_field));
-                                }
-                            }
-                            else {
-                                r.errors.emplace_back("Frequency not to be used (0)");
-                            }
-                            k += 3;
-                        }
-                        break;
-                    case 0x8:
-                    case 0x9:
-                    case 0xa:
-                        while(k < (j + Length_Freq_list)) {
-                            // iteration over Freq list
-                            if (f[k] != 0) {    // freq != 0
-                                if (RandM == 0xa) {
-                                    if (f[k] < 16) {
-                                        ifreq = (144 + ((uint32_t)f[k] * 9));
-                                    }
-                                    else {  // f[k] >= 16
-                                        ifreq = (387 + ((uint32_t)f[k] * 9));
-                                    }
-                                    r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
-                                }
-                                else {  // RandM == 8 or 9
-                                    freq = (87.5 + ((float)f[k] * 0.1));
-                                    r.msgs.emplace_back(2, strprintf("%.1f MHz", freq));
-                                }
-                            }
-                            else {
-                                r.errors.emplace_back("Frequency not to be used (0)");
-                            }
-                            k++;
-                        }
-                        break;
-                    case 0xc:
-                        while((k + 1) < (j + Length_Freq_list)) {
-                            // iteration over Freq list
-                            ifreq = (((uint32_t)f[k] << 8) | (uint32_t)f[k+1]) * 5;
-                            if (ifreq != 0) {
-                                r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
-                            }
-                            else {
-                                r.errors.emplace_back("Frequency not to be used (0)");
-                            }
-                            k += 2;
-                        }
-                        break;
-                    case 0x6:
-                    case 0xe:
-                        while((k + 2) < (j + Length_Freq_list)) {
-                            // iteration over Freq list
-                            Id_field2 = f[k];
-                            ifreq = ((((uint32_t)f[k+1] & 0x7f) << 8) | (uint32_t)f[k+2]);
-                            if (ifreq != 0) {
-                                r.msgs.emplace_back(2, strprintf("%d KHz", ifreq));
-                            }
-                            else {
-                                r.errors.emplace_back("Frequency not to be used (0)");
-                            }
-                            if (RandM == 0x6) {
-                                r.msgs.emplace_back(2, strprintf("DRM Service Id 0x%X", Id_field2));
-                            }
-                            else if (RandM == 0xe) {
-                                r.msgs.emplace_back(2, strprintf("AMSS Service Id 0x%X", Id_field2));
-                            }
-                            if ((f[k+1] & 0x80) == 0x80) {
-                                r.msgs.emplace_back(2, strprintf("invalid Rfu b15 set to 1 instead of 0"));
-                            }
-                            k += 3;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                j += Length_Freq_list;
+        for (int FI_ix = 0; FI_ix < Length_FI_list; FI_ix++) {
+            if (i + 2 >= fig0.figlen) {
+                r.errors.push_back("FIG0/21 too small!");
+                break;
             }
-            i += Length_FI_list;
-        }
-        else {
-            r.errors.push_back(strprintf("FIG0/21 FI Len error: expect %d + %d <= %d\n",
-                    i , Length_FI_list, fig0.figlen));
+
+            const uint16_t Id_field = (f[i] << 8) | f[i+1];
+            const uint8_t RandM = f[i+2] >> 4;
+            const bool Continuity_flag = (f[i+2] >> 3) & 0x01;
+            const uint8_t Length_Freq_list = f[i+2] & 0x07; // in bytes
+            i += 2;
+
+            std::string idfield;
+            switch (RandM) {
+                case 0x0:
+                case 0x1: idfield = "EId"; break;
+                case 0x6: idfield = "DRM Service Id"; break;
+                case 0x8: idfield = "RDS PI"; break;
+                case 0x9:
+                case 0xa:
+                case 0xc: idfield = "Dummy"; break;
+                case 0xe: idfield = "AMSS Service Id"; break;
+                default:
+                          idfield = "invalid";
+                          r.errors.emplace_back("R&M invalid");
+                          break;
+            }
+            r.msgs.emplace_back(1,
+                    strprintf("ID field=0x%X ", Id_field) + idfield);
+
+            std::string rm_str;
+            switch (RandM) {
+                case 0x0: rm_str = "DAB ensemble, no local windows"; break;
+                case 0x6: rm_str = "DRM"; break;
+                case 0x8: rm_str = "FM with RDS"; break;
+                case 0x9: rm_str = "FM without RDS"; break;
+                case 0xa: rm_str = "AM (MW in 9 kHz steps & LW)"; break;
+                case 0xc: rm_str = "AM (MW in 5 kHz steps & SW)"; break;
+                case 0xe: rm_str = "AMSS"; break;
+                default:
+                          rm_str = "Rfu";
+                          r.errors.emplace_back("R&M is Rfu");
+                          break;
+            }
+            r.msgs.emplace_back(1,
+                    strprintf("R&M=0x%1x ", RandM) + rm_str);
+
+            std::string continuity_str;
+            if ((fig0.oe() == 0) || ((fig0.oe() == 1) && (RandM != 0x6) &&
+                        ((RandM < 0x8) || (RandM > 0xa)) && (RandM != 0xc) && (RandM != 0xe))) {
+                if (Continuity_flag == 0) {
+                    switch (RandM) {
+                        case 0x0:
+                        case 0x1:
+                            continuity_str = "=continuous output not expected";
+                            break;
+                        case 0x6:
+                            continuity_str = "=no compensating time delay on DRM audio signal";
+                            break;
+                        case 0x8:
+                        case 0x9:
+                            continuity_str = "=no compensating time delay on FM audio signal";
+                            break;
+                        case 0xa:
+                        case 0xc:
+                        case 0xe:
+                            continuity_str = "=no compensating time delay on AM audio signal";
+                            break;
+                        default:
+                            continuity_str = "=Rfu";
+                            break;
+                    }
+                }
+                else {  // Continuity_flag == 1
+                    switch (RandM) {
+                        case 0x0:
+                        case 0x1:
+                            continuity_str = "=continuous output possible";
+                            break;
+                        case 0x6:
+                            continuity_str = "=compensating time delay on DRM audio signal";
+                            break;
+                        case 0x8:
+                        case 0x9:
+                            continuity_str = "=compensating time delay on FM audio signal";
+                            break;
+                        case 0xa:
+                        case 0xc:
+                        case 0xe:
+                            continuity_str = "=compensating time delay on AM audio signal";
+                            break;
+                        default:
+                            continuity_str = "=Rfu";
+                            r.errors.emplace_back("continuity is Rfu");
+                            break;
+                    }
+                }
+            }
+            else {  // fig0.oe() == 1
+                continuity_str = "=reserved for future addition";
+                r.errors.emplace_back("Rfu");
+            }
+
+            r.msgs.emplace_back(1,
+                    strprintf("Continuity flag=%d ", Continuity_flag) +
+                    continuity_str);
+
+            const uint64_t key =
+                ((uint64_t)fig0.oe() << 32) | ((uint64_t)fig0.pd() << 31) |
+                ((uint64_t)RegionId << 20) | ((uint64_t)Id_field << 4) |
+                (uint64_t)RandM;
+            r.msgs.emplace_back(1,
+                    strprintf("database key=0x%09" PRId64, key));
+
+            // CEI Change Event Indication
+            if (Length_Freq_list == 0) {
+                r.msgs.emplace_back(1, "CEI");
+            }
+
+            // Iterate over the frequency infos
+            switch (RandM) {
+                case 0x0:
+                case 0x1:
+                    for (int freq_ix = 0;
+                            freq_ix < Length_Freq_list;
+                            freq_ix++) {
+                        if (i + 3 >= fig0.figlen) {
+                            r.errors.push_back(strprintf(
+                                        "FIG 0/21 too small for"
+                                        " FI %d, freq %d",
+                                        FI_ix, freq_ix));
+                            break;
+                        }
+
+                        // Each entry is 24 bits (5 control + 19 freq)
+                        const uint8_t Control_field = (f[i] >> 3);
+                        const uint32_t freq = 16 *
+                            (((uint32_t)(f[i] & 0x07) << 16) |
+                             ((uint32_t)f[i+1] << 8) |
+                             (uint32_t)f[i+2]);
+                        i += 3;
+                        if (freq == 0) {
+                            r.errors.emplace_back(strprintf(
+                                        "Frequency not to be used (0) in"
+                                        " FI %d, freq %d",
+                                        FI_ix, freq_ix));
+                            continue;
+                        }
+                        const uint8_t Control_field_trans_mode = (Control_field >> 1) & 0x07;
+                        if ((Control_field & 0x10) == 0) {
+                            r.msgs.emplace_back(2,
+                                    strprintf("%d KHz", freq));
+                            if ((Control_field & 0x01) == 0) {
+                                r.msgs.emplace_back(2,
+                                        "geographically adjacent area");
+                            }
+                            else {  // (Control_field & 0x01) == 1
+                                r.msgs.emplace_back(2,
+                                        "no geographically adjacent area");
+                            }
+                            if (Control_field_trans_mode == 0) {
+                                r.msgs.emplace_back(2,
+                                        "no transmission mode signalled");
+                            }
+                            else if (Control_field_trans_mode <= 4) {
+                                r.msgs.emplace_back(2,
+                                        strprintf("transmission mode %d",
+                                            Control_field_trans_mode));
+                            }
+                            else {  // Control_field_trans_mode > 4
+                                r.msgs.emplace_back(2,
+                                        strprintf("invalid transmission mode 0x%x",
+                                            Control_field_trans_mode));
+                            }
+                        }
+                        else {  // (Control_field & 0x10) == 0x10
+                            r.msgs.emplace_back(2,
+                                    strprintf("%d KHz,"
+                                        "invalid Control field b23 0x%x",
+                                        freq, Control_field));
+                        }
+                    }
+                    break;
+                case 0x8:
+                case 0x9:
+                case 0xA:
+                    for (int freq_ix = 0;
+                            freq_ix < Length_Freq_list;
+                            freq_ix++) {
+                        if (i + 1 >= fig0.figlen) {
+                            r.errors.push_back(strprintf(
+                                        "FIG 0/21 too small for"
+                                        " FI %d, freq %d",
+                                        FI_ix, freq_ix));
+                        }
+
+                        // entries are 8-bit freq
+                        const uint8_t freq = f[i];
+                        i++;
+                        if (freq == 0) {
+                            r.errors.emplace_back(
+                                    "Frequency not to be used (0)");
+                            continue;
+                        }
+
+                        if (RandM == 0xA) {
+                            if (freq < 16) {
+                                r.msgs.emplace_back(2,
+                                        strprintf("%d KHz",
+                                            144 + ((uint32_t)freq * 9)));
+                            }
+                            else {  // f[k] >= 16
+                                r.msgs.emplace_back(2,
+                                        strprintf("%d KHz",
+                                            387 + ((uint32_t)freq * 9)));
+                            }
+                        }
+                        else {  // RandM == 8 or 9
+                            r.msgs.emplace_back(2,
+                                    strprintf("%.1f MHz",
+                                        87.5 + ((float)freq * 0.1)));
+                        }
+                    }
+                    break;
+                case 0xC:
+                    for (int freq_ix = 0;
+                            freq_ix < Length_Freq_list;
+                            freq_ix++) {
+                        if (i + 2 >= fig0.figlen) {
+                            r.errors.push_back(strprintf(
+                                        "FIG 0/21 too small for"
+                                        " FI %d, freq %d",
+                                        FI_ix, freq_ix));
+                        }
+
+                        // freqs are 16-bit
+                        const uint16_t freq = 5 *
+                            (((uint16_t)f[i] << 8) |
+                             (uint32_t)f[i+1]);
+                        i += 2;
+                        if (freq != 0) {
+                            r.msgs.emplace_back(2,
+                                    strprintf("%d KHz", freq));
+                        }
+                        else {
+                            r.errors.emplace_back(
+                                    "Frequency not to be used (0)");
+                        }
+                    }
+                    break;
+                case 0x6:
+                case 0xE:
+                    {
+                        // There is a first 8-bit entry, and the
+                        // list contains 16-bit freqs
+                        if (i + 1 >= fig0.figlen) {
+                            r.errors.push_back(strprintf(
+                                        "FIG 0/21 too small for"
+                                        " control of"
+                                        " FI %d",
+                                        FI_ix));
+                        }
+                        const uint32_t Id_field2 = f[i];
+                        i++;
+
+                        for (int freq_ix = 0;
+                                freq_ix < Length_Freq_list;
+                                freq_ix++) {
+                            if (i + 2 >= fig0.figlen) {
+                                r.errors.push_back(strprintf(
+                                            "FIG 0/21 too small for"
+                                            " FI %d, freq %d",
+                                            FI_ix, freq_ix));
+                            }
+                            // entries are 16bit freq
+                            const uint16_t freq =
+                                ((((uint16_t)f[i+1] & 0x7f) << 8) |
+                                 (uint16_t)f[i+2]);
+                            i += 2;
+
+                            if (freq == 0) {
+                                r.msgs.emplace_back(2,
+                                        strprintf("%d KHz", freq));
+                            }
+                            else {
+                                r.errors.emplace_back(
+                                        "Frequency not to be used (0)");
+                            }
+
+                            const uint32_t srv_id = (Id_field2 << 16) | Id_field;
+                            if (RandM == 0x6) {
+                                r.msgs.emplace_back(2,
+                                        strprintf("DRM Service Id 0x%X", srv_id));
+                            }
+                            else if (RandM == 0xE) {
+                                r.msgs.emplace_back(2,
+                                        strprintf("AMSS Service Id 0x%X", srv_id));
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    r.errors.push_back(strprintf("Invalid R&M"));
+                    break;
+            }
         }
     }
 
