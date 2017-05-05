@@ -44,9 +44,11 @@
 #include <boost/regex.hpp>
 #include <vector>
 #include <map>
+#include <atomic>
 #include <list>
 #include <sstream>
 #include <time.h>
+#include <signal.h>
 extern "C" {
 #include "lib_crc.h"
 }
@@ -116,6 +118,14 @@ int eti_analyse(eti_analyse_config_t &config);
 
 const char *get_programme_type_str(size_t int_table_Id, size_t pty);
 int sprintfMJD(char *dst, int mjd);
+
+// Signal handler flag
+static std::atomic<bool> quit(false);
+
+static void handle_signal(int)
+{
+    quit.store(true);
+}
 
 static void print_fig_result(const fig_result_t& fig_result, const display_settings_t& disp)
 {
@@ -188,6 +198,12 @@ void usage(void)
 
 int main(int argc, char *argv[])
 {
+    struct sigaction sa;
+    memset( &sa, 0, sizeof(sa) );
+    sa.sa_handler = handle_signal;
+    sigfillset(&sa.sa_mask);
+    sigaction(SIGINT, &sa, NULL);
+
     int index;
     int ch = 0;
     string file_name("-");
@@ -200,8 +216,7 @@ int main(int argc, char *argv[])
             case 'd':
                 {
                 int subchix = atoi(optarg);
-                StreamSnoop snoop;
-                config.streams_to_decode[subchix] = snoop;
+                config.streams_to_decode.emplace(std::piecewise_construct, std::make_tuple(subchix), std::make_tuple());
                 }
                 break;
             case 'e':
@@ -680,10 +695,8 @@ int eti_analyse(eti_analyse_config_t &config)
         if (config.analyse_fig_rates and (fct % 250) == 0) {
             rate_display_analysis(false, config.analyse_fig_rates_per_second);
         }
-    }
 
-    for (auto& snoop : config.streams_to_decode) {
-        snoop.second.close();
+        if (quit.load()) running = false;
     }
 
     if (config.decode_watermark) {

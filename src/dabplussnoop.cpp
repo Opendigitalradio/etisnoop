@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -305,18 +305,16 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
     return m_faad_decoder.decode(aus);
 }
 
-void DabPlusSnoop::close()
+DabPlusSnoop::~DabPlusSnoop()
 {
     m_faad_decoder.close();
 }
 
-void StreamSnoop::close()
+StreamSnoop::~StreamSnoop()
 {
     if (m_raw_data_stream_fd) {
         fclose(m_raw_data_stream_fd);
     }
-
-    dps.close();
 }
 
 void StreamSnoop::push(uint8_t* streamdata, size_t streamsize)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ using namespace std;
 
 FaadDecoder::FaadDecoder() :
     m_data_len(0),
-    m_fd(NULL),
+    m_fd(nullptr),
     m_initialised(false)
 {
 }
@@ -105,7 +105,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
         }
 
         outBuffer = (int16_t *)NeAACDecDecode(m_faad_handle.decoder, &hInfo, &au[0], au.size());
-        assert(outBuffer != NULL);
+        assert(outBuffer != nullptr);
 
         m_sample_rate = hInfo.samplerate;
         m_channels    = hInfo.channels;
@@ -125,7 +125,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
             return false;
         }
 
-        if (m_fd == NULL) {
+        if (m_fd == nullptr) {
             stringstream ss;
             ss << m_filename << ".wav";
             m_fd = wavfile_open(ss.str().c_str(), m_sample_rate);
@@ -155,7 +155,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
 
 void FaadDecoder::close()
 {
-    if (m_initialised) {
+    if (m_fd) {
         wavfile_close(m_fd);
     }
 }

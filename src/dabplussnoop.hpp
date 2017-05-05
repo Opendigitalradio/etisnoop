@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -89,6 +89,9 @@ class DabPlusSnoop
             m_index(0),
             m_subchannel_index(0),
             m_data(0) {}
+        ~DabPlusSnoop();
+        DabPlusSnoop(const DabPlusSnoop& other) = delete;
+        DabPlusSnoop& operator=(const DabPlusSnoop& other) = delete;
 
         void set_subchannel_index(unsigned subchannel_index)
         {
@@ -101,8 +104,6 @@ class DabPlusSnoop
         }
 
         void push(uint8_t* streamdata, size_t streamsize);
-
-        void close(void);
 
     private:
         /* Data needed for FAAD */
@@ -135,6 +136,9 @@ class StreamSnoop
             dps(),
             m_index(-1),
             m_raw_data_stream_fd(NULL) {}
+        ~StreamSnoop();
+        StreamSnoop(const StreamSnoop& other) = delete;
+        StreamSnoop& operator=(const StreamSnoop& other) = delete;
 
         void set_subchannel_index(unsigned subchannel_index)
         {
@@ -148,8 +152,6 @@ class StreamSnoop
         }
 
         void push(uint8_t* streamdata, size_t streamsize);
-
-        void close(void);
 
     private:
         DabPlusSnoop dps;
