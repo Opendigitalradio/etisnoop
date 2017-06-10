@@ -4,10 +4,11 @@ dist: trusty
 
 compiler:
   - gcc
-  - clang
 
 addons: &addons
   apt:
+    sources: &sources
+      - ubuntu-toolchain-r-test
     packages: &packages
       - libzmq3-dev
       - libzmq3
@@ -15,11 +16,12 @@ addons: &addons
       - libfaad-dev
       - libfaad2
       - automake
+      - g++-6
 
 script:
   - |
     ./bootstrap.sh
-    CC=clang CXX=clang++ ./configure
+    CC=gcc-6 CXX=g++-6 ./configure
     make
   - |
     ./bootstrap.sh
