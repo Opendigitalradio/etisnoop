@@ -16,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    etisnoop.cpp
-          Parse ETI NI G.703 file
-
     Authors:
          Sergio Sagliocco <sergio.sagliocco@csp.it>
          Matthias P. Braendli <matthias@mpb.li>
@@ -43,6 +40,7 @@
 #include "watermarkdecoder.hpp"
 #include "repetitionrate.hpp"
 #include "figalyser.hpp"
+#include "ensembledatabase.hpp"
 
 extern std::atomic<bool> quit;
 
@@ -54,7 +52,8 @@ struct eti_analyse_config_t {
         analyse_fic_carousel(false),
         analyse_fig_rates(false),
         analyse_fig_rates_per_second(false),
-        decode_watermark(false) {}
+        decode_watermark(false),
+        statistics(false) {}
 
     FILE* etifd;
     bool ignore_error;
@@ -64,19 +63,30 @@ struct eti_analyse_config_t {
     bool analyse_fig_rates;
     bool analyse_fig_rates_per_second;
     bool decode_watermark;
+    bool statistics;
 
     bool is_fig_to_be_printed(int type, int extension) const;
 };
 
+class ETI_Analyser {
+    public:
+        ETI_Analyser(eti_analyse_config_t &config) :
+            config(config) {}
 
-int eti_analyse(eti_analyse_config_t &config);
+        void eti_analyse(void);
 
-void decodeFIG(
-        const eti_analyse_config_t &config,
-        FIGalyser &figs,
-        WatermarkDecoder &wm_decoder,
-        uint8_t* f,
-        uint8_t figlen,
-        uint16_t figtype,
-        int indent);
+    private:
+        void decodeFIG(
+                const eti_analyse_config_t &config,
+                FIGalyser &figs,
+                uint8_t* f,
+                uint8_t figlen,
+                uint16_t figtype,
+                int indent);
+
+        eti_analyse_config_t &config;
+
+        ensemble_t ensemble;
+        WatermarkDecoder wm_decoder;
+};
 

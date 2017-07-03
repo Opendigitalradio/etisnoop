@@ -61,23 +61,38 @@ class FaadHandle
         NeAACDecHandle decoder;
 };
 
+struct audio_statistics_t {
+    int16_t average_level_left;
+    int16_t average_level_right;
+
+    int16_t peak_level_left;
+    int16_t peak_level_right;
+};
+
 class FaadDecoder
 {
     public:
         FaadDecoder();
+        ~FaadDecoder();
+        FaadDecoder& operator=(FaadDecoder&& other);
+        FaadDecoder(FaadDecoder&& other);
+        FaadDecoder(const FaadDecoder&) = delete;
+        FaadDecoder& operator=(const FaadDecoder&) = delete;
 
         void open(std::string filename, bool ps_flag, bool aac_channel_mode,
                 bool dac_rate, bool sbr_flag, int mpeg_surround_config);
-
-        void close(void);
 
         bool decode(std::vector<std::vector<uint8_t> > aus);
 
         bool is_initialised(void) { return m_initialised; }
 
+        audio_statistics_t get_audio_statistics(void) const;
+
     private:
         int get_aac_channel_configuration();
         size_t m_data_len;
+
+        audio_statistics_t m_stats;
 
         std::string m_filename;
         FILE* m_fd;

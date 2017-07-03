@@ -82,3 +82,6 @@ int sprintfMJD(char *dst, int mjd);
 // as the RDS "Programme Item Number (PIN)" feature (EN 62106).
 std::string pnum_to_str(uint16_t Programme_Number);
 
+// Convert and absolute 16-bit int value to dB. If value is zero, returns
+// -90dB
+int absolute_to_dB(int16_t value);

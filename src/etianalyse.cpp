@@ -16,9 +16,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    etisnoop.cpp
-          Parse ETI NI G.703 file
-
     Authors:
          Sergio Sagliocco <sergio.sagliocco@csp.it>
          Matthias P. Braendli <matthias@mpb.li>
@@ -46,13 +43,6 @@ using namespace std;
 
 // Signal handler flag
 std::atomic<bool> quit(false);
-
-struct FIG0_13_shortAppInfo
-{
-    uint16_t SId;
-    uint8_t No:4;
-    uint8_t SCIdS:4;
-} PACKED;
 
 bool
 eti_analyse_config_t::is_fig_to_be_printed(int type, int extension) const
@@ -94,7 +84,7 @@ static void print_fig_result(const fig_result_t& fig_result, const display_setti
 }
 
 
-int eti_analyse(eti_analyse_config_t &config)
+void ETI_Analyser::eti_analyse()
 {
     uint8_t p[ETINIPACKETSIZE];
     string desc;
@@ -128,8 +118,6 @@ int eti_analyse(eti_analyse_config_t &config)
         else
             printf("?\n");
     }
-
-    WatermarkDecoder wm_decoder;
 
     if (config.analyse_fig_rates) {
         rate_display_header(config.analyse_fig_rates_per_second);
@@ -346,9 +334,15 @@ int eti_analyse(eti_analyse_config_t &config)
             sprintf(sdesc, "%d => %d kbit/s", stl[i], stl[i]*8/3);
             printbuf("STL  - Sub-channel Stream Length", 3, NULL, 0, sdesc);
 
+            if (config.statistics and config.streams_to_decode.count(i) == 0) {
+                config.streams_to_decode.emplace(std::piecewise_construct,
+                        std::make_tuple(i),
+                        std::make_tuple(false)); // do not dump to file
+            }
+
             if (config.streams_to_decode.count(i) > 0) {
-                config.streams_to_decode[i].set_subchannel_index(stl[i]/3);
-                config.streams_to_decode[i].set_index(i);
+                config.streams_to_decode.at(i).set_subchannel_index(stl[i]/3);
+                config.streams_to_decode.at(i).set_index(i);
             }
         }
 
@@ -409,7 +403,7 @@ int eti_analyse(eti_analyse_config_t &config)
                         figlen = fig[0] & 0x1F;
                         sprintf(sdesc, "FIG %d [%d bytes]", figtype, figlen);
                         printbuf(sdesc, 3, fig+1, figlen);
-                        decodeFIG(config, figs, wm_decoder, fig+1, figlen, figtype, 4);
+                        decodeFIG(config, figs, fig+1, figlen, figtype, 4);
                         fig += figlen + 1;
                         figcount += figlen + 1;
                         if (figcount >= 29)
@@ -458,7 +452,7 @@ int eti_analyse(eti_analyse_config_t &config)
             }
 
             if (config.streams_to_decode.count(i) > 0) {
-                config.streams_to_decode[i].push(streamdata, stl[i]*8);
+                config.streams_to_decode.at(i).push(streamdata, stl[i]*8);
             }
 
         }
@@ -502,6 +496,18 @@ int eti_analyse(eti_analyse_config_t &config)
             rate_display_analysis(false, config.analyse_fig_rates_per_second);
         }
 
+        if (config.statistics) {
+            for (const auto& snoop : config.streams_to_decode) {
+                printf("Statistics for %d:\n", snoop.first);
+
+                const auto& stat = snoop.second.get_audio_statistics();
+                printf("    Avg L: %d dB\n", absolute_to_dB(stat.average_level_left));
+                printf("    Avg R: %d dB\n", absolute_to_dB(stat.average_level_right));
+                printf("   Peak L: %d dB\n", absolute_to_dB(stat.peak_level_left));
+                printf("   Peak R: %d dB\n", absolute_to_dB(stat.peak_level_right));
+            }
+        }
+
         if (quit.load()) running = false;
     }
 
@@ -515,15 +521,11 @@ int eti_analyse(eti_analyse_config_t &config)
     }
 
     figs_cleardb();
-
-
-    return 0;
 }
 
-void decodeFIG(
+void ETI_Analyser::decodeFIG(
         const eti_analyse_config_t &config,
         FIGalyser &figs,
-        WatermarkDecoder &wm_decoder,
         uint8_t* f,
         uint8_t figlen,
         uint16_t figtype,
@@ -534,7 +536,7 @@ void decodeFIG(
     switch (figtype) {
         case 0:
             {
-                fig0_common_t fig0(f, figlen, wm_decoder);
+                fig0_common_t fig0(f, figlen, ensemble, wm_decoder);
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig0.ext()), indent);
 

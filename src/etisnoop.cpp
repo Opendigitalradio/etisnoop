@@ -57,18 +57,6 @@
 
 using namespace std;
 
-// Function prototypes
-void decodeFIG(
-        const eti_analyse_config_t &config,
-        FIGalyser &figs,
-        WatermarkDecoder &wm_decoder,
-        uint8_t* figdata,
-        uint8_t figlen,
-        uint16_t figtype,
-        int indent);
-
-int eti_analyse(eti_analyse_config_t &config);
-
 const char *get_programme_type_str(size_t int_table_Id, size_t pty);
 int sprintfMJD(char *dst, int mjd);
 
@@ -85,6 +73,7 @@ const struct option longopts[] = {
     {"help",               no_argument,        0, 'h'},
     {"ignore-error",       no_argument,        0, 'e'},
     {"input-file",         no_argument,        0, 'i'},
+    {"statistics",         no_argument,        0, 's'},
     {"verbose",            no_argument,        0, 'v'},
     {"decode-stream",      required_argument,  0, 'd'},
     {"filter-fig",         required_argument,  0, 'F'},
@@ -100,10 +89,11 @@ void usage(void)
             "\n"
             "  http://www.opendigitalradio.org\n"
             "\n"
-            "Usage: etisnoop [-v] [-f] [-w] [-i filename] [-d stream_index]\n"
+            "Usage: etisnoop [options] [-i filename]\n"
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
             "   -d N    decode subchannel N into .msc file and if DAB+, decode to .wav file\n"
+            "   -s      statistic mode: decode all subchannels and measure audio level\n"
             "   -f      analyse FIC carousel\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
@@ -135,12 +125,14 @@ int main(int argc, char *argv[])
     eti_analyse_config_t config;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efF:hrRvwi:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efF:hrRsvwi:", longopts, &index);
         switch (ch) {
             case 'd':
                 {
                 int subchix = atoi(optarg);
-                config.streams_to_decode.emplace(std::piecewise_construct, std::make_tuple(subchix), std::make_tuple());
+                config.streams_to_decode.emplace(std::piecewise_construct,
+                        std::make_tuple(subchix),
+                        std::make_tuple(true)); // dump to file
                 }
                 break;
             case 'e':
@@ -180,6 +172,9 @@ int main(int argc, char *argv[])
                 config.analyse_fig_rates = true;
                 config.analyse_fig_rates_per_second = false;
                 break;
+            case 's':
+                config.statistics = true;
+                break;
             case 'v':
                 set_verbosity(get_verbosity() + 1);
                 break;
@@ -208,7 +203,8 @@ int main(int argc, char *argv[])
     }
     config.etifd = etifd;
 
-    eti_analyse(config);
+    ETI_Analyser eti_analyser(config);
+    eti_analyser.eti_analyse();
     fclose(etifd);
 }
 

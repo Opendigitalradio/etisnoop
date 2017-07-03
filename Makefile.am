@@ -16,6 +16,7 @@ etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/etianalyse.cpp src/etianalyse.hpp \
 					   src/etisnoop.cpp \
 					   src/faad_decoder.cpp src/faad_decoder.hpp \
+					   src/ensembledatabase.hpp \
 					   src/fig0_0.cpp \
 					   src/fig0_10.cpp \
 					   src/fig0_11.cpp \

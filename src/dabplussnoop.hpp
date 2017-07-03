@@ -78,21 +78,12 @@ he_aac_super_frame(subchannel_index)
 #include <vector>
 #include "faad_decoder.hpp"
 
-#ifndef __DABPLUSSNOOP_H_
-#define __DABPLUSSNOOP_H_
+#pragma once
 
 // DabPlusSnoop is responsible for decoding DAB+ audio
 class DabPlusSnoop
 {
     public:
-        DabPlusSnoop() :
-            m_index(0),
-            m_subchannel_index(0),
-            m_data(0) {}
-        ~DabPlusSnoop();
-        DabPlusSnoop(const DabPlusSnoop& other) = delete;
-        DabPlusSnoop& operator=(const DabPlusSnoop& other) = delete;
-
         void set_subchannel_index(unsigned subchannel_index)
         {
             m_subchannel_index = subchannel_index;
@@ -104,6 +95,8 @@ class DabPlusSnoop
         }
 
         void push(uint8_t* streamdata, size_t streamsize);
+
+        audio_statistics_t get_audio_statistics(void) const;
 
     private:
         /* Data needed for FAAD */
@@ -132,11 +125,14 @@ class DabPlusSnoop
 class StreamSnoop
 {
     public:
-        StreamSnoop() :
+        StreamSnoop(bool dump_to_file) :
             dps(),
             m_index(-1),
-            m_raw_data_stream_fd(NULL) {}
+            m_raw_data_stream_fd(nullptr),
+            m_dump_to_file(dump_to_file) {}
         ~StreamSnoop();
+        StreamSnoop(StreamSnoop&& other);
+
         StreamSnoop(const StreamSnoop& other) = delete;
         StreamSnoop& operator=(const StreamSnoop& other) = delete;
 
@@ -153,13 +149,12 @@ class StreamSnoop
 
         void push(uint8_t* streamdata, size_t streamsize);
 
+        audio_statistics_t get_audio_statistics(void) const;
+
     private:
         DabPlusSnoop dps;
         int m_index;
-
         FILE* m_raw_data_stream_fd;
+        bool m_dump_to_file;
 };
-
-
-#endif
 

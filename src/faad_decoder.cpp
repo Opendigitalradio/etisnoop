@@ -43,6 +43,34 @@ FaadDecoder::FaadDecoder() :
 {
 }
 
+FaadDecoder& FaadDecoder::operator=(FaadDecoder&& other)
+{
+    m_data_len = other.m_data_len;
+    m_fd = other.m_fd;
+    other.m_fd = nullptr;
+    m_initialised = other.m_initialised;
+    other.m_initialised = false;
+
+    return *this;
+}
+
+FaadDecoder::FaadDecoder(FaadDecoder&& other)
+{
+    m_data_len = other.m_data_len;
+    m_fd = other.m_fd;
+    other.m_fd = nullptr;
+    m_initialised = other.m_initialised;
+    other.m_initialised = false;
+}
+
+FaadDecoder::~FaadDecoder()
+{
+    if (m_fd) {
+        wavfile_close(m_fd);
+    }
+}
+
+
 void FaadDecoder::open(string filename, bool ps_flag, bool aac_channel_mode,
         bool dac_rate, bool sbr_flag, int mpeg_surround_config)
 {
@@ -125,27 +153,71 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
             return false;
         }
 
-        if (m_fd == nullptr) {
+        if (m_fd == nullptr and not m_filename.empty()) {
             stringstream ss;
             ss << m_filename << ".wav";
             m_fd = wavfile_open(ss.str().c_str(), m_sample_rate);
         }
 
         if (samples) {
+            if (m_channels != 1 and m_channels != 2) {
+                printf("Cannot handle %d channels\n", m_channels);
+            }
+
+            m_stats.peak_level_left = 0;
+            m_stats.peak_level_right = 0;
+
             if (m_channels == 1) {
-                int16_t *buffer = (int16_t *)alloca (2 * samples);
-                size_t i;
-                for (i = 0; i < samples; i ++) {
-                    buffer [2 * i]  = ((int16_t *)outBuffer) [i];
-                    buffer [2 * i + 1] = buffer [2 * i];
+                int32_t sum_ampl = 0;
+                for (size_t i = 0; i < samples; i ++) {
+                    const int16_t ampl = abs(outBuffer[i]);
+                    if (m_stats.peak_level_left < ampl) {
+                        m_stats.peak_level_left = ampl;
+                    }
+
+                    sum_ampl += ampl;
                 }
-                wavfile_write(m_fd, buffer, 2*samples);
+                m_stats.average_level_left = sum_ampl / samples;
             }
             else if (m_channels == 2) {
-                wavfile_write(m_fd, outBuffer, samples);
+                assert((samples % 2) == 0);
+
+                int32_t sum_left = 0;
+                int32_t sum_right = 0;
+
+                for (size_t i = 0; i < samples; i += 2) {
+                    const int16_t ampl_left = abs(outBuffer[i]);
+                    if (m_stats.peak_level_left < ampl_left) {
+                        m_stats.peak_level_left = ampl_left;
+                    }
+
+                    sum_left += ampl_left;
+
+                    const int16_t ampl_right = abs(outBuffer[i+1]);
+                    if (m_stats.peak_level_right < ampl_right) {
+                        m_stats.peak_level_right = ampl_right;
+                    }
+
+                    sum_right += ampl_right;
+                }
+
+                m_stats.average_level_left = sum_left / samples;
+                m_stats.average_level_right = sum_right / samples;
             }
-            else {
-                printf("Cannot handle %d channels\n", m_channels);
+
+            if (m_fd) {
+                if (m_channels == 1) {
+                    vector<int16_t> buffer(2*samples);
+                    for (size_t i = 0; i < samples; i ++) {
+                        buffer [2 * i]  = ((int16_t *)outBuffer) [i];
+                        buffer [2 * i + 1] = buffer [2 * i];
+                    }
+
+                    wavfile_write(m_fd, buffer.data(), 2*samples);
+                }
+                else if (m_channels == 2) {
+                    wavfile_write(m_fd, outBuffer, samples);
+                }
             }
         }
 
@@ -153,11 +225,9 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
     return true;
 }
 
-void FaadDecoder::close()
+audio_statistics_t FaadDecoder::get_audio_statistics(void) const
 {
-    if (m_fd) {
-        wavfile_close(m_fd);
-    }
+    return m_stats;
 }
 
 int FaadDecoder::get_aac_channel_configuration()

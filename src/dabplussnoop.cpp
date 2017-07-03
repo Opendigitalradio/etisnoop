@@ -63,6 +63,11 @@ void DabPlusSnoop::push(uint8_t* streamdata, size_t streamsize)
     }
 }
 
+audio_statistics_t DabPlusSnoop::get_audio_statistics(void) const
+{
+    return m_faad_decoder.get_audio_statistics();
+}
+
 // Idea and some code taken from Xpadxpert
 bool DabPlusSnoop::seek_valid_firecode()
 {
@@ -305,9 +310,14 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
     return m_faad_decoder.decode(aus);
 }
 
-DabPlusSnoop::~DabPlusSnoop()
+StreamSnoop::StreamSnoop(StreamSnoop&& other)
 {
-    m_faad_decoder.close();
+    dps = move(other.dps);
+    m_index = other.m_index;
+    m_raw_data_stream_fd = other.m_raw_data_stream_fd;
+    other.m_raw_data_stream_fd = nullptr;
+    m_dump_to_file = other.m_dump_to_file;
+    other.m_dump_to_file = false;
 }
 
 StreamSnoop::~StreamSnoop()
@@ -324,18 +334,25 @@ void StreamSnoop::push(uint8_t* streamdata, size_t streamsize)
     }
 
     // First dump to subchannel file (superframe+parity word)
-    if (m_raw_data_stream_fd == NULL) {
+    if (m_dump_to_file and m_raw_data_stream_fd == nullptr) {
         stringstream dump_filename;
         dump_filename << "stream-" << m_index << ".msc";
 
         m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
 
-        if (m_raw_data_stream_fd == NULL) {
+        if (m_raw_data_stream_fd == nullptr) {
             perror("File open failed");
         }
     }
 
-    fwrite(streamdata, streamsize, 1, m_raw_data_stream_fd);
+    if (m_raw_data_stream_fd) {
+        fwrite(streamdata, streamsize, 1, m_raw_data_stream_fd);
+    }
 
     dps.push(streamdata, streamsize);
+}
+
+audio_statistics_t StreamSnoop::get_audio_statistics(void) const
+{
+    return dps.get_audio_statistics();
 }

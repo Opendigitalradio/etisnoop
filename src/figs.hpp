@@ -33,6 +33,7 @@
 #include "utils.hpp"
 #include "tables.hpp"
 #include "watermarkdecoder.hpp"
+#include "ensembledatabase.hpp"
 
 struct fig_result_t {
     struct msg_info_t {
@@ -58,13 +59,16 @@ struct fig0_common_t {
     fig0_common_t(
             uint8_t* fig_data,
             uint16_t fig_len,
+            ensemble_t &ens,
             WatermarkDecoder &wm_dec) :
         f(fig_data),
         figlen(fig_len),
+        ensemble(ens),
         wm_decoder(wm_dec) { }
 
     uint8_t* f;
     uint16_t figlen;
+    ensemble_t& ensemble;
     WatermarkDecoder &wm_decoder;
 
     uint16_t cn(void) { return (f[0] & 0x80) >> 7; }

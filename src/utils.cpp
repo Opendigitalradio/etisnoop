@@ -29,6 +29,8 @@
 
 #include "utils.hpp"
 #include <cstring>
+#include <cmath>
+#include <limits>
 #include <stdarg.h>
 
 using namespace std;
@@ -227,5 +229,11 @@ std::string pnum_to_str(uint16_t Programme_Number)
             return "invalid value";
         }
     }
+}
+
+int absolute_to_dB(int16_t value)
+{
+    const int16_t int16_max = std::numeric_limits<int16_t>::max();
+    return value ? round(20*log10((double)value / int16_max)) : -90;
 }
 
