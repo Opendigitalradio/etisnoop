@@ -13,6 +13,7 @@ AM_CFLAGS = -Wall
 etisnoop_LDADD       = -lboost_regex
 etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/etiinput.cpp src/etiinput.hpp \
+					   src/etianalyse.cpp src/etianalyse.hpp \
 					   src/etisnoop.cpp \
 					   src/faad_decoder.cpp src/faad_decoder.hpp \
 					   src/fig0_0.cpp \
