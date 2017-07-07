@@ -299,7 +299,9 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
 {
     stringstream ss_filename;
 
-    ss_filename << "stream-" << m_index;
+    if (m_write_to_wav_file) {
+        ss_filename << "stream-" << m_index;
+    }
 
     if (!m_faad_decoder.is_initialised()) {
         m_faad_decoder.open(ss_filename.str(), m_ps_flag,

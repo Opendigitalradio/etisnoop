@@ -89,6 +89,10 @@ class DabPlusSnoop
             m_subchannel_index = subchannel_index;
         }
 
+        void enable_wav_file_output(bool enable) {
+            m_write_to_wav_file = enable;
+        }
+
         void set_index(int index)
         {
             m_index = index;
@@ -102,6 +106,7 @@ class DabPlusSnoop
         /* Data needed for FAAD */
         FaadDecoder m_faad_decoder;
         int  m_index;
+        bool m_write_to_wav_file;
 
         bool m_ps_flag;
         bool m_aac_channel_mode;
@@ -129,7 +134,9 @@ class StreamSnoop
             dps(),
             m_index(-1),
             m_raw_data_stream_fd(nullptr),
-            m_dump_to_file(dump_to_file) {}
+            m_dump_to_file(dump_to_file) {
+                dps.enable_wav_file_output(dump_to_file);
+            }
         ~StreamSnoop();
         StreamSnoop(StreamSnoop&& other);
 
