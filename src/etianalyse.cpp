@@ -29,6 +29,7 @@
 #endif
 
 #include <algorithm>
+#include <cassert>
 #include "etianalyse.hpp"
 #include "etiinput.hpp"
 #include "figs.hpp"
@@ -100,6 +101,7 @@ void ETI_Analyser::eti_analyse()
     static int last_fct = -1;
 
     bool running = true;
+    size_t num_frames = 0;
 
     int stream_type = ETI_STREAM_TYPE_NONE;
     if (identify_eti_format(config.etifd, &stream_type) == -1) {
@@ -121,6 +123,16 @@ void ETI_Analyser::eti_analyse()
 
     if (config.analyse_fig_rates) {
         rate_display_header(config.analyse_fig_rates_per_second);
+    }
+
+    FILE *stat_fd = nullptr;
+    if (not config.statistics_filename.empty()) {
+        stat_fd = fopen(config.statistics_filename.c_str(), "w");
+        if (stat_fd == nullptr) {
+            fprintf(stderr, "Could not open statistics file: %s\n",
+                    strerror(errno));
+            return;
+        }
     }
 
     while (running) {
@@ -500,34 +512,95 @@ void ETI_Analyser::eti_analyse()
             rate_display_analysis(false, config.analyse_fig_rates_per_second);
         }
 
-        if (config.statistics) {
-            for (const auto& snoop : config.streams_to_decode) {
-                printf("Statistics for %d:\n", snoop.first);
-
-                for (const auto& service : ensemble.services) {
-                    for (const auto& component : service.components) {
-                        if (component.subchId == snoop.first and
-                                component.primary) {
-                            printf("Label %s\n", service.label.c_str());
-                            if (not component.label.empty()) {
-                                printf("Component label %s\n", component.label.c_str());
-                            }
-                        }
-                    }
-                }
-
-                const auto& stat = snoop.second.get_audio_statistics();
-                printf(" Avg L/R: %d %d dB ",
-                        absolute_to_dB(stat.average_level_left),
-                        absolute_to_dB(stat.average_level_right));
-                printf(" Peak L/R: %d %d dB\n",
-                        absolute_to_dB(stat.peak_level_left),
-                        absolute_to_dB(stat.peak_level_right));
-            }
+        num_frames++;
+        if (config.num_frames_to_decode > 0 and
+                num_frames >= config.num_frames_to_decode) {
+            printf("Decoded %zu ETI frames\n", num_frames);
+            break;
         }
 
         if (quit.load()) running = false;
     }
+
+    if (config.statistics) {
+        assert(stat_fd != nullptr);
+
+        fprintf(stat_fd, "# Statistics from ETISnoop. This file should be valid YAML\n");
+        fprintf(stat_fd, "---\n");
+        fprintf(stat_fd, "ensemble:\n");
+        fprintf(stat_fd, "    id: 0x%x\n", ensemble.EId);
+        fprintf(stat_fd, "    label: %s\n", ensemble.label.c_str());
+        fprintf(stat_fd, "    shortlabel: %s\n",
+                flag_to_shortlabel(ensemble.label, ensemble.shortlabel_flag).c_str());
+        fprintf(stat_fd, "audio:\n");
+
+        for (const auto& snoop : config.streams_to_decode) {
+            bool corresponding_service_found = false;
+
+            for (const auto& service : ensemble.services) {
+                for (const auto& component : service.components) {
+                    if (component.subchId == snoop.second.subchid and
+                            component.primary) {
+                        corresponding_service_found = true;
+                        fprintf(stat_fd, "    - service_id: 0x%x\n", service.id);
+                        fprintf(stat_fd, "      subchannel_id: 0x%x\n", component.subchId);
+                        fprintf(stat_fd, "      label: %s\n", service.label.c_str());
+                        fprintf(stat_fd, "      shortlabel: %s\n",
+                                flag_to_shortlabel(service.label, service.shortlabel_flag).c_str());
+                        if (not component.label.empty()) {
+                            fprintf(stat_fd, "      component_label: %s\n", component.label.c_str());
+                        }
+
+                        try {
+                            const auto& subch = ensemble.get_subchannel(component.subchId);
+                            fprintf(stat_fd, "      subchannel:\n");
+                            fprintf(stat_fd, "          id: %d\n", subch.id);
+                            fprintf(stat_fd, "          SAd: %d\n", subch.start_addr);
+                            switch (subch.protection_type) {
+                                case ensemble_database::subchannel_t::protection_type_t::EEP:
+                                    if (subch.protection_option == 0) {
+                                        fprintf(stat_fd, "          protection: EEP %d-A\n", subch.protection_level);
+                                    }
+                                    else if (subch.protection_option == 0) {
+                                        fprintf(stat_fd, "          protection: EEP %d-B\n", subch.protection_level);
+                                    }
+                                    else {
+                                        fprintf(stat_fd, "          protection: unknown\n");
+                                    }
+
+                                    fprintf(stat_fd, "          size: %d\n", subch.size);
+                                    break;
+                                case ensemble_database::subchannel_t::protection_type_t::UEP:
+                                    fprintf(stat_fd, "          table_switch: %d\n", subch.table_switch);
+                                    fprintf(stat_fd, "          table_index: %d\n", subch.table_index);
+                                    break;
+                            }
+                        }
+                        catch (ensemble_database::not_found &e)
+                        {
+                            fprintf(stat_fd, "      subchannel: not found\n");
+                        }
+                    }
+                }
+            }
+
+            if (not corresponding_service_found) {
+                fprintf(stat_fd, "    - service_id: unknown\n");
+            }
+
+            const auto& stat = snoop.second.get_audio_statistics();
+            fprintf(stat_fd, "      audio:\n");
+            fprintf(stat_fd, "          average: %d %d\n",
+                    absolute_to_dB(stat.average_level_left),
+                    absolute_to_dB(stat.average_level_right));
+            fprintf(stat_fd, "          peak: %d %d\n",
+                    absolute_to_dB(stat.peak_level_left),
+                    absolute_to_dB(stat.peak_level_right));
+        }
+
+        fclose(stat_fd);
+    }
+
 
     if (config.decode_watermark) {
         std::string watermark(wm_decoder.calculate_watermark());

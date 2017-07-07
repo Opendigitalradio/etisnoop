@@ -45,25 +45,17 @@
 extern std::atomic<bool> quit;
 
 struct eti_analyse_config_t {
-    eti_analyse_config_t() :
-        etifd(nullptr),
-        ignore_error(false),
-        streams_to_decode(),
-        analyse_fic_carousel(false),
-        analyse_fig_rates(false),
-        analyse_fig_rates_per_second(false),
-        decode_watermark(false),
-        statistics(false) {}
-
-    FILE* etifd;
-    bool ignore_error;
+    FILE* etifd = nullptr;
+    bool ignore_error = false;
     std::map<int, StreamSnoop> streams_to_decode;
     std::list<std::pair<int, int> > figs_to_display;
-    bool analyse_fic_carousel;
-    bool analyse_fig_rates;
-    bool analyse_fig_rates_per_second;
-    bool decode_watermark;
-    bool statistics;
+    bool analyse_fic_carousel = false;
+    bool analyse_fig_rates = false;
+    bool analyse_fig_rates_per_second = false;
+    bool decode_watermark = false;
+    bool statistics = false;
+    std::string statistics_filename;
+    size_t num_frames_to_decode = 0; // 0 means forever
 
     bool is_fig_to_be_printed(int type, int extension) const;
 };

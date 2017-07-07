@@ -29,6 +29,7 @@
 
 #include "utils.hpp"
 #include <cstring>
+#include <sstream>
 #include <cmath>
 #include <limits>
 #include <stdarg.h>
@@ -235,5 +236,17 @@ int absolute_to_dB(int16_t value)
 {
     const int16_t int16_max = std::numeric_limits<int16_t>::max();
     return value ? round(20*log10((double)value / int16_max)) : -90;
+}
+
+std::string flag_to_shortlabel(const std::string& label, uint16_t flag)
+{
+    stringstream shortlabel;
+    for (size_t i = 0; i < label.size(); ++i) {
+        if (flag & 0x8000 >> i) {
+            shortlabel << label[i];
+        }
+    }
+
+    return shortlabel.str();
 }
 

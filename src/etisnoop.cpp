@@ -57,9 +57,6 @@
 
 using namespace std;
 
-const char *get_programme_type_str(size_t int_table_Id, size_t pty);
-int sprintfMJD(char *dst, int mjd);
-
 static void handle_signal(int)
 {
     quit.store(true);
@@ -70,14 +67,15 @@ static void handle_signal(int)
 #define optional_argument 2
 const struct option longopts[] = {
     {"analyse-figs",       no_argument,        0, 'f'},
-    {"help",               no_argument,        0, 'h'},
-    {"ignore-error",       no_argument,        0, 'e'},
-    {"input-file",         no_argument,        0, 'i'},
-    {"statistics",         no_argument,        0, 's'},
-    {"verbose",            no_argument,        0, 'v'},
     {"decode-stream",      required_argument,  0, 'd'},
     {"filter-fig",         required_argument,  0, 'F'},
-    {"input",              required_argument,  0, 'i'}
+    {"help",               no_argument,        0, 'h'},
+    {"ignore-error",       no_argument,        0, 'e'},
+    {"input",              required_argument,  0, 'i'},
+    {"input-file",         no_argument,        0, 'i'},
+    {"num-frames",         required_argument,  0, 'n'},
+    {"statistics",         required_argument,  0, 's'},
+    {"verbose",            no_argument,        0, 'v'},
 };
 
 void usage(void)
@@ -93,7 +91,9 @@ void usage(void)
             "\n"
             "   -v      increase verbosity (can be given more than once)\n"
             "   -d N    decode subchannel N into .msc file and if DAB+, decode to .wav file\n"
-            "   -s      statistic mode: decode all subchannels and measure audio level\n"
+            "   -s <filename.yaml>\n"
+            "           statistics mode: decode all subchannels and measure audio level, write statistics to file\n"
+            "   -n N    stop analysing after N ETI frames\n"
             "   -f      analyse FIC carousel\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     eti_analyse_config_t config;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efF:hrRsvwi:", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efF:hi:n:rRs:vw", longopts, &index);
         switch (ch) {
             case 'd':
                 {
@@ -137,9 +137,6 @@ int main(int argc, char *argv[])
                 break;
             case 'e':
                 config.ignore_error = true;
-                break;
-            case 'i':
-                file_name = optarg;
                 break;
             case 'f':
                 config.analyse_fic_carousel = true;
@@ -164,6 +161,12 @@ int main(int argc, char *argv[])
                 config.figs_to_display.emplace_back(type, extension);
                 }
                 break;
+            case 'i':
+                file_name = optarg;
+                break;
+            case 'n':
+                config.num_frames_to_decode = std::atoi(optarg);
+                break;
             case 'r':
                 config.analyse_fig_rates = true;
                 config.analyse_fig_rates_per_second = true;
@@ -174,6 +177,7 @@ int main(int argc, char *argv[])
                 break;
             case 's':
                 config.statistics = true;
+                config.statistics_filename = optarg;
                 break;
             case 'v':
                 set_verbosity(get_verbosity() + 1);
@@ -181,6 +185,9 @@ int main(int argc, char *argv[])
             case 'w':
                 config.decode_watermark = true;
                 break;
+            case -1:
+                break;
+            default:
             case 'h':
                 usage();
                 return 1;
