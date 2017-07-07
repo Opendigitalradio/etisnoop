@@ -517,10 +517,12 @@ void ETI_Analyser::eti_analyse()
                 }
 
                 const auto& stat = snoop.second.get_audio_statistics();
-                printf("    Avg L: %d dB\n", absolute_to_dB(stat.average_level_left));
-                printf("    Avg R: %d dB\n", absolute_to_dB(stat.average_level_right));
-                printf("   Peak L: %d dB\n", absolute_to_dB(stat.peak_level_left));
-                printf("   Peak R: %d dB\n", absolute_to_dB(stat.peak_level_right));
+                printf(" Avg L/R: %d %d dB ",
+                        absolute_to_dB(stat.average_level_left),
+                        absolute_to_dB(stat.average_level_right));
+                printf(" Peak L/R: %d %d dB\n",
+                        absolute_to_dB(stat.peak_level_left),
+                        absolute_to_dB(stat.peak_level_right));
             }
         }
 
