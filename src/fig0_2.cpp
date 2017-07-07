@@ -101,6 +101,12 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
             r.msgs.emplace_back(1, strprintf("CAID=%d", caid));
         }
 
+        if (fig0.fibcrccorrect) {
+            auto& service = fig0.ensemble.get_or_create_service(sid);
+            service.programme_not_data = (fig0.pd() == 0);
+        }
+
+
         k++;
         for (int i = 0; i < ncomp; i++) {
             uint8_t scomp[2];
@@ -128,6 +134,13 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
                 psdesc = "Primary service";
             }
 
+            if (fig0.fibcrccorrect) {
+                // TODO is subchid unique, or do we also need to take timd into the key for identifying
+                // our components?
+                auto& service = fig0.ensemble.get_service(sid);
+                auto& component = service.get_or_create_component(subchid);
+                component.primary = (ps != 0);
+            }
 
             if (timd == 0) {
                 //MSC stream audio
@@ -171,6 +184,7 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
                 r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
                 r.msgs.emplace_back(2, strprintf("CA=%d", ca));
             }
+
             k += 2;
         }
     }

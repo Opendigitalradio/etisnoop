@@ -71,7 +71,9 @@ struct eti_analyse_config_t {
 class ETI_Analyser {
     public:
         ETI_Analyser(eti_analyse_config_t &config) :
-            config(config) {}
+            config(config),
+            ensemble(),
+            wm_decoder() {}
 
         void eti_analyse(void);
 
@@ -82,11 +84,12 @@ class ETI_Analyser {
                 uint8_t* f,
                 uint8_t figlen,
                 uint16_t figtype,
-                int indent);
+                int indent,
+                bool fibcrccorrect);
 
         eti_analyse_config_t &config;
 
-        ensemble_t ensemble;
+        ensemble_database::ensemble_t ensemble;
         WatermarkDecoder wm_decoder;
 };
 

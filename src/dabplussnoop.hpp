@@ -151,6 +151,8 @@ class StreamSnoop
 
         audio_statistics_t get_audio_statistics(void) const;
 
+        uint32_t subchid;
+
     private:
         DabPlusSnoop dps;
         int m_index;

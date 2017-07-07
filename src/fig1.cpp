@@ -58,6 +58,12 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 r.msgs.push_back(strprintf("Ensemble ID: 0x%04X", eid));
                 r.msgs.push_back(strprintf("Label: \"%s\"", label));
                 r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+
+                if (fig1.fibcrccorrect) {
+                    fig1.ensemble.EId = eid;
+                    fig1.ensemble.label = label;
+                    fig1.ensemble.shortlabel_flag = flag;
+                }
             }
             break;
 
@@ -68,6 +74,17 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
                 r.msgs.push_back(strprintf("Label: \"%s\"", label));
                 r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+
+                if (fig1.fibcrccorrect) {
+                    try {
+                        auto& service = fig1.ensemble.get_service(sid);
+                        service.label = label;
+                        service.shortlabel_flag = flag;
+                    }
+                    catch (ensemble_database::not_found &e) {
+                        r.errors.push_back("Not yet in DB");
+                    }
+                }
             }
             break;
 

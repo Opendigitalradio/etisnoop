@@ -33,36 +33,84 @@
 #  include "config.h"
 #endif
 
+#include <stdexcept>
 #include <string>
 #include <list>
 
-struct service_t {
-    uint32_t id;
-    std::string label;
-    std::string shortlabel;
-    // TODO PTy language announcement
-};
+namespace ensemble_database {
 
 struct subchannel_t {
-    uint8_t address;
-    uint8_t num_cu;
-    // TODO type bitrate protection
+    uint8_t id;
+    uint8_t start_addr;
+
+    enum class protection_type_t { UEP, EEP };
+
+    protection_type_t protection_type;
+
+    // Long form FIG0/1, i.e. EEP
+    int protection_option;
+    int protection_level;
+    int size;
+
+    // Short form FIG0/1, i.e. UEP
+    int table_switch;
+    int table_index;
+
+    // TODO type bitrate
 };
 
 struct component_t {
     uint32_t service_id;
     uint8_t subchId;
+
+    bool primary;
+
+    std::string label;
+    uint16_t shortlabel_flag;
     /* TODO
     uint8_t type;
-    uint8_t SCIdS;
 
     uaType for audio
     */
 };
 
+struct service_t {
+    uint32_t id;
+    std::string label;
+    uint16_t shortlabel_flag;
+    bool programme_not_data;
+
+    std::list<component_t> components;
+
+    component_t& get_component(uint32_t subchannel_id);
+    component_t& get_or_create_component(uint32_t subchannel_id);
+
+    // TODO PTy language announcement
+};
+
+
+class not_found : public std::runtime_error
+{
+    public:
+        not_found(const std::string& msg) : std::runtime_error(msg) {}
+};
+
 struct ensemble_t {
+    uint16_t EId;
+    std::string label;
+    uint16_t shortlabel_flag;
+
     std::list<service_t> services;
     std::list<subchannel_t> subchannels;
-    std::list<component_t> components;
+
+    // TODO ecc
+
+    service_t& get_service(uint32_t service_id);
+    service_t& get_or_create_service(uint32_t service_id);
+
+    subchannel_t& get_subchannel(uint8_t subchannel_id);
+    subchannel_t& get_or_create_subchannel(uint8_t subchannel_id);
 };
+
+}
 

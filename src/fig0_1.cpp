@@ -61,6 +61,16 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
             (f[i+1]);
         int long_flag  = (f[i+2] >> 7);
 
+        if (fig0.fibcrccorrect) {
+            auto& subch = fig0.ensemble.get_or_create_subchannel(subch_id);
+
+            subch.id = subch_id;
+            subch.start_addr = start_addr;
+            subch.protection_type = long_flag ?
+                ensemble_database::subchannel_t::protection_type_t::EEP :
+                ensemble_database::subchannel_t::protection_type_t::UEP;
+        }
+
         if (long_flag) {
             int option = (f[i+2] >> 4) & 0x07;
             int protection_level = (f[i+2] >> 2) & 0x03;
@@ -84,6 +94,13 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
             }
 
             r.msgs.push_back(strprintf("subch size %d", subchannel_size));
+
+            if (fig0.fibcrccorrect) {
+                auto& subch = fig0.ensemble.get_subchannel(subch_id);
+                subch.protection_option = option;
+                subch.protection_level = protection_level;
+                subch.size = subchannel_size;
+            }
         }
         else {
             int table_switch = (f[i+2] >> 6) & 0x01;
@@ -96,6 +113,12 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
                 r.errors.push_back(strprintf("Invalid table_switch %d", table_switch));
             }
             r.msgs.push_back(strprintf("table index %d", table_index));
+
+            if (fig0.fibcrccorrect) {
+                auto& subch = fig0.ensemble.get_subchannel(subch_id);
+                subch.table_switch = table_switch;
+                subch.table_index = table_index;
+            }
 
             i += 3;
         }

@@ -37,6 +37,9 @@ fig_result_t fig0_0(fig0_common_t& fig0, const display_settings_t &disp)
 
     const uint16_t eid  =  f[1]*256+f[2];
     r.msgs.push_back(strprintf("Ensemble ID=0x%02x", eid));
+    if (fig0.fibcrccorrect) {
+        fig0.ensemble.EId = eid;
+    }
 
     const uint8_t cid  = (f[1] & 0xF0) >> 4;
     r.msgs.emplace_back(1, strprintf("Country ID=%d", cid));

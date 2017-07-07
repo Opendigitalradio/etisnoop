@@ -77,30 +77,31 @@ void figs_cleardb()
 fig_result_t fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
 {
     switch (fig0.ext()) {
-        case 0: return fig0_0(fig0, disp); break;
-        case 1: return fig0_1(fig0, disp); break;
-        case 2: return fig0_2(fig0, disp); break;
-        case 3: return fig0_3(fig0, disp); break;
-        case 5: return fig0_5(fig0, disp); break;
-        case 6: return fig0_6(fig0, disp); break;
-        case 8: return fig0_8(fig0, disp); break;
-        case 9: return fig0_9(fig0, disp); break;
-        case 10: return fig0_10(fig0, disp); break;
-        case 11: return fig0_11(fig0, disp); break;
-        case 13: return fig0_13(fig0, disp); break;
-        case 14: return fig0_14(fig0, disp); break;
-        case 16: return fig0_16(fig0, disp); break;
-        case 17: return fig0_17(fig0, disp); break;
-        case 18: return fig0_18(fig0, disp); break;
-        case 19: return fig0_19(fig0, disp); break;
-        case 21: return fig0_21(fig0, disp); break;
-        case 22: return fig0_22(fig0, disp); break;
-        case 24: return fig0_24(fig0, disp); break;
-        case 25: return fig0_25(fig0, disp); break;
-        case 26: return fig0_26(fig0, disp); break;
-        case 27: return fig0_27(fig0, disp); break;
-        case 28: return fig0_28(fig0, disp); break;
-        case 31: return fig0_31(fig0, disp); break;
+        case 0: return fig0_0(fig0, disp); break; // EId
+        case 1: return fig0_1(fig0, disp); break; // SubCh Id SAd protection size
+        case 2: return fig0_2(fig0, disp); break; // Service SId and components (SCId)
+        case 3: return fig0_3(fig0, disp); break; // Component in packet mode
+        //   4  not implemented                   // Component conditional access
+        case 5: return fig0_5(fig0, disp); break; // Component language
+        case 6: return fig0_6(fig0, disp); break; // Service linking
+        case 8: return fig0_8(fig0, disp); break; // More component stuff
+        case 9: return fig0_9(fig0, disp); break; // Country, LTO, ECC, subfield with per-service ECC and LTO
+        case 10: return fig0_10(fig0, disp); break; // Date and Time
+        case 11: return fig0_11(fig0, disp); break; // Region definition
+        case 13: return fig0_13(fig0, disp); break; // User application
+        case 14: return fig0_14(fig0, disp); break; // Subchannel FEC scheme
+        case 16: return fig0_16(fig0, disp); break; // Service Programme Number PNum
+        case 17: return fig0_17(fig0, disp); break; // Service PTy
+        case 18: return fig0_18(fig0, disp); break; // Service: Announcement cluster definition
+        case 19: return fig0_19(fig0, disp); break; // Cluster: Announcement switching
+        case 21: return fig0_21(fig0, disp); break; // Frequency Information
+        case 22: return fig0_22(fig0, disp); break; // TII database
+        case 24: return fig0_24(fig0, disp); break; // OE Services
+        case 25: return fig0_25(fig0, disp); break; // OE Announcement
+        case 26: return fig0_26(fig0, disp); break; // OE Announcement switching
+        case 27: return fig0_27(fig0, disp); break; // FM Announcement
+        case 28: return fig0_28(fig0, disp); break; // FM Announcement switching
+        case 31: return fig0_31(fig0, disp); break; // FIC Redirection
         default: break;
     }
 

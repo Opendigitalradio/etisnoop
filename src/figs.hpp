@@ -59,16 +59,19 @@ struct fig0_common_t {
     fig0_common_t(
             uint8_t* fig_data,
             uint16_t fig_len,
-            ensemble_t &ens,
+            ensemble_database::ensemble_t &ens,
             WatermarkDecoder &wm_dec) :
         f(fig_data),
         figlen(fig_len),
         ensemble(ens),
+        fibcrccorrect(true),
         wm_decoder(wm_dec) { }
 
     uint8_t* f;
     uint16_t figlen;
-    ensemble_t& ensemble;
+    ensemble_database::ensemble_t& ensemble;
+    // The ensemble only gets updated when the fib crc is ok
+    bool fibcrccorrect;
     WatermarkDecoder &wm_decoder;
 
     uint16_t cn(void) { return (f[0] & 0x80) >> 7; }
@@ -79,10 +82,17 @@ struct fig0_common_t {
 
 struct fig1_common_t {
     fig1_common_t(
+            ensemble_database::ensemble_t &ens,
             uint8_t* fig_data,
             uint16_t fig_len) :
+        fibcrccorrect(true),
+        ensemble(ens),
         f(fig_data),
         figlen(fig_len) {}
+
+    // The ensemble only gets updated when the fib crc is ok
+    bool fibcrccorrect;
+    ensemble_database::ensemble_t& ensemble;
 
     uint8_t* f;
     uint16_t figlen;

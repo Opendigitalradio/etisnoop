@@ -338,11 +338,13 @@ void ETI_Analyser::eti_analyse()
                 config.streams_to_decode.emplace(std::piecewise_construct,
                         std::make_tuple(i),
                         std::make_tuple(false)); // do not dump to file
+                config.streams_to_decode.at(i).subchid = scid;
             }
 
             if (config.streams_to_decode.count(i) > 0) {
                 config.streams_to_decode.at(i).set_subchannel_index(stl[i]/3);
                 config.streams_to_decode.at(i).set_index(i);
+                config.streams_to_decode.at(i).subchid = scid;
             }
         }
 
@@ -375,10 +377,7 @@ void ETI_Analyser::eti_analyse()
 
         // MST - FIC
         if (ficf == 1) {
-            int endmarker = 0;
-            int figcount = 0;
             uint8_t *fib, *fig;
-            uint16_t figcrc;
 
             FIGalyser figs;
 
@@ -388,14 +387,28 @@ void ETI_Analyser::eti_analyse()
             //printbuf(sdesc, 1, ficdata, ficl*4);
             printbuf(sdesc, 1, NULL, 0);
             fib = p + 12 + 4*nst;
-            for(int i = 0; i < ficl*4/32; i++) {
+            for (int i = 0; i < ficl*4/32; i++) {
                 sprintf(sdesc, "FIB %d", i);
                 printbuf(sdesc, 1, NULL, 0);
                 fig=fib;
                 figs.set_fib(i);
                 rate_new_fib(i);
-                endmarker=0;
-                figcount=0;
+
+                const uint16_t figcrc = fib[30]*256 + fib[31];
+                crc = 0xffff;
+                for (int j = 0; j < 30; j++) {
+                    crc = update_crc_ccitt(crc, fib[j]);
+                }
+                crc =~ crc;
+                const bool crccorrect = (crc == figcrc);
+                if (crccorrect)
+                    sprintf(sdesc, "FIB %d CRC OK", i);
+                else
+                    sprintf(sdesc, "FIB %d CRC Mismatch: %02x", i, crc);
+
+
+                bool endmarker = false;
+                int figcount = 0;
                 while (!endmarker) {
                     uint8_t figtype, figlen;
                     figtype = (fig[0] & 0xE0) >> 5;
@@ -403,28 +416,19 @@ void ETI_Analyser::eti_analyse()
                         figlen = fig[0] & 0x1F;
                         sprintf(sdesc, "FIG %d [%d bytes]", figtype, figlen);
                         printbuf(sdesc, 3, fig+1, figlen);
-                        decodeFIG(config, figs, fig+1, figlen, figtype, 4);
+                        decodeFIG(config, figs, fig+1, figlen, figtype, 4, crccorrect);
                         fig += figlen + 1;
                         figcount += figlen + 1;
                         if (figcount >= 29)
-                            endmarker = 1;
+                            endmarker = true;
                     }
                     else {
-                        endmarker = 1;
+                        endmarker = true;
                     }
                 }
-                figcrc = fib[30]*256 + fib[31];
-                crc = 0xffff;
-                for (int j = 0; j < 30; j++) {
-                    crc = update_crc_ccitt(crc, fib[j]);
-                }
-                crc =~ crc;
-                if (crc == figcrc)
-                    sprintf(sdesc, "FIB %d CRC OK", i);
-                else
-                    sprintf(sdesc, "FIB %d CRC Mismatch: %02x", i, crc);
 
                 printbuf(sdesc,3,fib+30,2);
+
                 fib += 32;
             }
 
@@ -500,6 +504,18 @@ void ETI_Analyser::eti_analyse()
             for (const auto& snoop : config.streams_to_decode) {
                 printf("Statistics for %d:\n", snoop.first);
 
+                for (const auto& service : ensemble.services) {
+                    for (const auto& component : service.components) {
+                        if (component.subchId == snoop.first and
+                                component.primary) {
+                            printf("Label %s\n", service.label.c_str());
+                            if (not component.label.empty()) {
+                                printf("Component label %s\n", component.label.c_str());
+                            }
+                        }
+                    }
+                }
+
                 const auto& stat = snoop.second.get_audio_statistics();
                 printf("    Avg L: %d dB\n", absolute_to_dB(stat.average_level_left));
                 printf("    Avg R: %d dB\n", absolute_to_dB(stat.average_level_right));
@@ -529,7 +545,8 @@ void ETI_Analyser::decodeFIG(
         uint8_t* f,
         uint8_t figlen,
         uint16_t figtype,
-        int indent)
+        int indent,
+        bool fibcrccorrect)
 {
     char desc[512];
 
@@ -537,6 +554,7 @@ void ETI_Analyser::decodeFIG(
         case 0:
             {
                 fig0_common_t fig0(f, figlen, ensemble, wm_decoder);
+                fig0.fibcrccorrect = fibcrccorrect;
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig0.ext()), indent);
 
@@ -559,7 +577,8 @@ void ETI_Analyser::decodeFIG(
 
         case 1:
             {// SHORT LABELS
-                fig1_common_t fig1(f, figlen);
+                fig1_common_t fig1(ensemble, f, figlen);
+                fig1.fibcrccorrect = fibcrccorrect;
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig1.ext()), indent);
                 if (disp.print) {
