@@ -559,10 +559,12 @@ void ETI_Analyser::eti_analyse()
                             switch (subch.protection_type) {
                                 case ensemble_database::subchannel_t::protection_type_t::EEP:
                                     if (subch.protection_option == 0) {
-                                        fprintf(stat_fd, "          protection: EEP %d-A\n", subch.protection_level);
+                                        fprintf(stat_fd, "          protection: EEP %d-A\n",
+                                                subch.protection_level + 1);
                                     }
                                     else if (subch.protection_option == 0) {
-                                        fprintf(stat_fd, "          protection: EEP %d-B\n", subch.protection_level);
+                                        fprintf(stat_fd, "          protection: EEP %d-B\n",
+                                                subch.protection_level + 1);
                                     }
                                     else {
                                         fprintf(stat_fd, "          protection: unknown\n");

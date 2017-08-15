@@ -75,8 +75,7 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
             int option = (f[i+2] >> 4) & 0x07;
             int protection_level = (f[i+2] >> 2) & 0x03;
             int subchannel_size  = ((f[i+2] & 0x03) << 8 ) |
-                f[i+3];
-
+                                     f[i+3];
             i += 4;
 
             r.msgs.push_back(strprintf("Subch 0x%x", subch_id));
