@@ -83,10 +83,10 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
             r.msgs.emplace_back("long");
 
             if (option == 0x00) {
-                r.msgs.push_back(strprintf("EEP %d-A", protection_level));
+                r.msgs.push_back(strprintf("EEP %d-A", protection_level+1));
             }
             else if (option == 0x01) {
-                r.msgs.push_back(strprintf("EEP %d-B", protection_level));
+                r.msgs.push_back(strprintf("EEP %d-B", protection_level+1));
             }
             else {
                 r.errors.push_back(strprintf("Invalid option %d protection %d", option, protection_level));
