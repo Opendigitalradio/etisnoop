@@ -27,4 +27,12 @@ script:
     ./bootstrap.sh
     ./configure
     make
+  - |
+    wget http://downloads.sourceforge.net/faac/faad2-2.7.tar.bz2
+    tar -f faad2-2.7.tar.bz2 -x
+    cd faad2-2.7
+    ./configure
+    make
+    cd ..
+    make -f Makefile.faadalyse
 
