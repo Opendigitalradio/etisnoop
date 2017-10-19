@@ -85,8 +85,6 @@ int main(int argc, char **argv)
         }
     }
 
-    snoop.close();
-
     cerr << "Write file stream-0.wav\n";
 
     return 0;
