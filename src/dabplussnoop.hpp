@@ -105,14 +105,14 @@ class DabPlusSnoop
     private:
         /* Data needed for FAAD */
         FaadDecoder m_faad_decoder;
-        int  m_index;
-        bool m_write_to_wav_file;
+        int  m_index = -1;
+        bool m_write_to_wav_file = false;
 
-        bool m_ps_flag;
-        bool m_aac_channel_mode;
-        bool m_dac_rate;
-        bool m_sbr_flag;
-        int  m_mpeg_surround_config;
+        bool m_ps_flag = false;
+        bool m_aac_channel_mode = false;
+        bool m_dac_rate = false;
+        bool m_sbr_flag = false;
+        int  m_mpeg_surround_config = false;
 
         /* Functions */
 
@@ -121,7 +121,7 @@ class DabPlusSnoop
         bool extract_au(std::vector<int> au_start);
         bool analyse_au(std::vector<std::vector<uint8_t> >& aus);
 
-        unsigned m_subchannel_index;
+        unsigned m_subchannel_index = 0;
         std::vector<uint8_t> m_data;
 };
 
