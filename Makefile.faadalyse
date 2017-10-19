@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CFLAGS   = -Wall -g
+CFLAGS   = -Wall -g --std=c99
 CXXFLAGS = -Wall -g --std=c++11 -DDPS_DEBUG=1
 SOURCES  = src/dabplussnoop.cpp \
 		   src/faadalyse.cpp \
