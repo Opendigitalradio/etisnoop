@@ -41,7 +41,7 @@
 #include <string.h>
 #include <cinttypes>
 #include <string>
-#include <boost/regex.hpp>
+#include <regex>
 #include <sstream>
 #include <time.h>
 #include <signal.h>
@@ -144,9 +144,9 @@ int main(int argc, char *argv[])
             case 'F':
                 {
                 const string type_ext(optarg);
-                const boost::regex regex("^([0-9]+)/([0-9]+)$");
-                boost::smatch match;
-                bool is_match = boost::regex_search(type_ext, match, regex);
+                const std::regex regex("^([0-9]+)/([0-9]+)$");
+                std::smatch match;
+                bool is_match = std::regex_search(type_ext, match, regex);
                 if (not is_match) {
                     fprintf(stderr, "Incorrect -F format\n");
                     return 1;
