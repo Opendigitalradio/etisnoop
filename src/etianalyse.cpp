@@ -445,7 +445,7 @@ void ETI_Analyser::eti_analyse()
             }
 
             if (config.analyse_fic_carousel) {
-                figs.analyse();
+                figs.analyse(get_mode_identity());
             }
         }
 

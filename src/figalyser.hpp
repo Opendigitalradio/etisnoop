@@ -32,11 +32,11 @@ class FIGalyser
             m_figs[m_fib].push_back(fig);
         }
 
-        void analyse()
+        void analyse(int mid)
         {
             printf("FIC ");
 
-            for (size_t fib = 0; fib < m_figs.size(); fib++) {
+            for (size_t fib = 0; fib < (mid==3?4:3); fib++) {
                 int consumed = 7;
                 int fic_size = 0;
                 printf("[%1zu ", fib);
@@ -80,7 +80,7 @@ class FIGalyser
         void clear()
         {
             m_figs.clear();
-            m_figs.resize(3);
+            m_figs.resize(4);
         }
 
     private:
