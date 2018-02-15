@@ -556,18 +556,19 @@ void ETI_Analyser::eti_analyse()
                             fprintf(stat_fd, "      subchannel:\n");
                             fprintf(stat_fd, "          id: %d\n", subch.id);
                             fprintf(stat_fd, "          SAd: %d\n", subch.start_addr);
+
+                            using ensemble_database::subchannel_t;
                             switch (subch.protection_type) {
-                                case ensemble_database::subchannel_t::protection_type_t::EEP:
-                                    if (subch.protection_option == 0) {
-                                        fprintf(stat_fd, "          protection: EEP %d-A\n",
-                                                subch.protection_level + 1);
-                                    }
-                                    else if (subch.protection_option == 0) {
-                                        fprintf(stat_fd, "          protection: EEP %d-B\n",
-                                                subch.protection_level + 1);
-                                    }
-                                    else {
-                                        fprintf(stat_fd, "          protection: unknown\n");
+                                case subchannel_t::protection_type_t::EEP:
+                                    switch (subch.protection_option) {
+                                        case subchannel_t::protection_eep_option_t::EEP_A:
+                                            fprintf(stat_fd, "          protection: EEP %d-A\n",
+                                                    subch.protection_level + 1);
+                                        case subchannel_t::protection_eep_option_t::EEP_B:
+                                            fprintf(stat_fd, "          protection: EEP %d-B\n",
+                                                    subch.protection_level + 1);
+                                        default:
+                                            fprintf(stat_fd, "          protection: unknown\n");
                                     }
 
                                     fprintf(stat_fd, "          size: %d\n", subch.size);

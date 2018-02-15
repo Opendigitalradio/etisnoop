@@ -89,14 +89,22 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
                 r.msgs.push_back(strprintf("EEP %d-B", protection_level+1));
             }
             else {
-                r.errors.push_back(strprintf("Invalid option %d protection %d", option, protection_level));
+                r.errors.push_back(strprintf("Invalid option %d protection %d",
+                            option, protection_level));
             }
 
             r.msgs.push_back(strprintf("subch size %d", subchannel_size));
 
             if (fig0.fibcrccorrect) {
                 auto& subch = fig0.ensemble.get_subchannel(subch_id);
-                subch.protection_option = option;
+                using ensemble_database::subchannel_t;
+                using eep_t = subchannel_t::protection_eep_option_t;
+                if (option == 0x00) {
+                    subch.protection_option = eep_t::EEP_A;
+                }
+                else {
+                    subch.protection_option = eep_t::EEP_B;
+                }
                 subch.protection_level = protection_level;
                 subch.size = subchannel_size;
             }

@@ -48,7 +48,8 @@ struct subchannel_t {
     protection_type_t protection_type;
 
     // Long form FIG0/1, i.e. EEP
-    int protection_option;
+    enum class protection_eep_option_t { EEP_A, EEP_B };
+    protection_eep_option_t protection_option;
     int protection_level;
     int size;
 
