@@ -439,8 +439,6 @@ void ETI_Analyser::eti_analyse()
                     }
                 }
 
-                printbuf(sdesc,3,fib+30,2);
-
                 fib += 32;
             }
 

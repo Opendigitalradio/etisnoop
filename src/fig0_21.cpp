@@ -159,7 +159,6 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             break;
                         default:
                             continuity_str = "=Rfu";
-                            r.errors.emplace_back("continuity is Rfu");
                             break;
                     }
                 }
