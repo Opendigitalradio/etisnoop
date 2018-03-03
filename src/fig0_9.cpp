@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -53,12 +53,13 @@ fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
             // negative Ensemble LTO
             Ensemble_LTO |= 0xC0;
         }
-        r.msgs.push_back(strprintf("Ext flag=%d extended field %s",
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("Ext flag=%d extended field %s",
                     Ext_flag, Ext_flag?"present":"absent"));
-        r.msgs.push_back(strprintf("LTO uniq=%d %s",
+        r.msgs.emplace_back(1, strprintf("LTO uniq=%d %s",
                     LTO_uniq,
                     LTO_uniq?"several time zones":"one time zone (time specified by Ensemble LTO)"));
-        r.msgs.push_back(strprintf("Ensemble LTO=0x%X %s%d:%02d",
+        r.msgs.emplace_back(1, strprintf("Ensemble LTO=0x%X %s%d:%02d",
                     (Ensemble_LTO & 0x3F), (Ensemble_LTO >= 0)?"":"-" , abs(Ensemble_LTO) >> 1, (Ensemble_LTO & 0x01) * 30));
 
         if (abs(Ensemble_LTO) > 24) {
@@ -68,13 +69,14 @@ fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
         Ensemble_ECC = f[i+1];
         uint8_t International_Table_Id = f[i+2];
         set_international_table(International_Table_Id);
-        r.msgs.push_back(strprintf("Ensemble ECC=0x%X", Ensemble_ECC));
-        r.msgs.push_back(strprintf("International Table Id=0x%X", International_Table_Id));
-        r.msgs.push_back(strprintf("database key=0x%x", key));
+        r.msgs.emplace_back(1, strprintf("Ensemble ECC=0x%X", Ensemble_ECC));
+        r.msgs.emplace_back(1, strprintf("International Table Id=0x%X", International_Table_Id));
+        r.msgs.emplace_back(1, strprintf("database key=0x%x", key));
 
         i += 3;
         if (Ext_flag == 1) {
             // extended field present
+            r.msgs.emplace_back(1, "Subfields:");
             while (i < fig0.figlen) {
                 // iterate over extended sub-field
                 Number_of_services = f[i] >> 6;
@@ -83,8 +85,9 @@ fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
                     // negative LTO
                     LTO |= 0xC0;
                 }
-                r.msgs.push_back(strprintf("Number of services=%d", Number_of_services));
-                r.msgs.push_back(strprintf("LTO=0x%X %s%d:%02d",
+                r.msgs.emplace_back(2, "-");
+                r.msgs.emplace_back(3, strprintf("Number of services=%d", Number_of_services));
+                r.msgs.emplace_back(3, strprintf("LTO=0x%X %s%d:%02d",
                         (LTO & 0x3F), (LTO >= 0)?"":"-" , abs(LTO) >> 1,  (LTO & 0x01) * 30));
                 if (abs(LTO) > 24) {
                     r.errors.push_back("LTO in extended field out of range -12 hours to +12 hours");
@@ -92,7 +95,7 @@ fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
 
                 // CEI Change Event Indication
                 if ((Number_of_services == 0) && (LTO == 0) /* && (Ext_flag == 1) */) {
-                    r.msgs.emplace_back("CEI");
+                    r.msgs.emplace_back(3, "CEI=true");
                 }
                 i++;
 
@@ -100,12 +103,12 @@ fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
                     // Programme services, 16 bit SId
                     if (i < fig0.figlen) {
                         ECC = f[i];
-                        r.msgs.emplace_back(1, strprintf("ECC=0x%X", ECC));
+                        r.msgs.emplace_back(3, strprintf("ECC=0x%X", ECC));
                         i++;
                         for(j = i; ((j < (i + (Number_of_services * 2))) && (j < fig0.figlen)); j += 2) {
                             // iterate over SId
                             SId = ((uint32_t)f[j] << 8) | (uint32_t)f[j+1];
-                            r.msgs.emplace_back(2, strprintf("SId 0x%X", SId));
+                            r.msgs.emplace_back(3, strprintf("SId=0x%X", SId));
                         }
                         i += (Number_of_services * 2);
                     }
@@ -116,7 +119,7 @@ fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp)
                         // iterate over SId
                         SId = ((uint32_t)f[j] << 24) | ((uint32_t)f[j+1] << 16) |
                             ((uint32_t)f[j+2] << 8) | (uint32_t)f[j+3];
-                        r.msgs.emplace_back(2, strprintf("SId 0x%X", SId));
+                        r.msgs.emplace_back(3, strprintf("SId=0x%X", SId));
                     }
                     i += (Number_of_services * 4);
                 }

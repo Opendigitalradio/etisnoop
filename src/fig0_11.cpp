@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -71,14 +71,15 @@ fig_result_t fig0_11(fig0_common_t& fig0, const display_settings_t &disp)
 
         key = ((uint16_t)fig0.oe() << 12) | ((uint16_t)fig0.pd() << 11) | Region_Id;
         i += 2;
+        r.msgs.emplace_back("-");
         if (GATy == 0) {
             // TII list
-            r.msgs.push_back(strprintf("GATy=%d", GATy));
-            r.msgs.emplace_back("Geographical area defined by a TII list");
-            r.msgs.push_back(strprintf("G/E flag=%d %s coverage area",
+            r.msgs.emplace_back(1, strprintf("GATy=%d", GATy));
+            r.msgs.emplace_back(1, "Geographical area=defined by TII list");
+            r.msgs.emplace_back(1, strprintf("G/E flag=%d %s coverage area",
                         GE_flag, GE_flag ? "Global" : "Ensemble"));
-            r.msgs.push_back(strprintf("RegionId=0x%X", Region_Id));
-            r.msgs.push_back(strprintf("database key=0x%X", key));
+            r.msgs.emplace_back(1, strprintf("RegionId=0x%X", Region_Id));
+            r.msgs.emplace_back(1, strprintf("database key=0x%X", key));
 
             if (i < fig0.figlen) {
                 Rfu = f[i] >> 5;
@@ -86,9 +87,9 @@ fig_result_t fig0_11(fig0_common_t& fig0, const display_settings_t &disp)
                     r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
                 }
                 Length_TII_list = f[i] & 0x1F;
-                r.msgs.push_back(strprintf(", Length of TII list=%d", Length_TII_list));
+                r.msgs.emplace_back(1, strprintf("Length of TII list=%d", Length_TII_list));
                 if (Length_TII_list == 0) {
-                    r.msgs.emplace_back("CEI");
+                    r.msgs.emplace_back("CEI=true");
                 }
                 i++;
 
@@ -158,27 +159,27 @@ fig_result_t fig0_11(fig0_common_t& fig0, const display_settings_t &disp)
         }
         else if (GATy == 1) {
             // Coordinates
-            r.msgs.push_back(strprintf("GATy=%d", GATy));
-            r.msgs.emplace_back("Geographical area defined as a spherical rectangle "
+            r.msgs.emplace_back(1, strprintf("GATy=%d", GATy));
+            r.msgs.emplace_back(1, "Geographical area=defined as a spherical rectangle "
                     "by the geographical co-ordinates of one corner and its latitude and "
                     "longitude extents");
-            r.msgs.push_back(strprintf("G/E flag=%d %s coverage area",
+            r.msgs.emplace_back(1, strprintf("G/E flag=%d %s coverage area",
                     GE_flag, GE_flag ? "Global" : "Ensemble"));
-            r.msgs.push_back(strprintf("RegionId=0x%X", Region_Id));
-            r.msgs.push_back(strprintf("database key=0x%X", key));
+            r.msgs.emplace_back(1, strprintf("RegionId=0x%X", Region_Id));
+            r.msgs.emplace_back(1, strprintf("database key=0x%X", key));
 
             if (i < (fig0.figlen - 6)) {
                 Latitude_coarse = ((int16_t)f[i] << 8) | ((uint16_t)f[i+1]);
                 Longitude_coarse = ((int16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
                 gps_pos.latitude = ((double)Latitude_coarse) * 90 / 32768;
                 gps_pos.longitude = ((double)Latitude_coarse) * 180 / 32768;
-                r.msgs.push_back(strprintf("Lat Lng coarse=0x%X 0x%X => %f, %f",
+                r.msgs.emplace_back(1, strprintf("Lat Lng coarse=0x%X 0x%X => %f, %f",
                         Latitude_coarse, Longitude_coarse, gps_pos.latitude, gps_pos.longitude));
                 Extent_Latitude = ((uint16_t)f[i+4] << 4) | ((uint16_t)(f[i+5] >> 4));
                 Extent_Longitude = ((uint16_t)(f[i+5] & 0x0F) << 8) | ((uint16_t)f[i+6]);
                 gps_pos.latitude += ((double)Extent_Latitude) * 90 / 32768;
                 gps_pos.longitude += ((double)Extent_Longitude) * 180 / 32768;
-                r.msgs.push_back(strprintf("Extent Lat Lng=0x%X 0x%X => %f, %f",
+                r.msgs.emplace_back(1, strprintf("Extent Lat Lng=0x%X 0x%X => %f, %f",
                         Extent_Latitude, Extent_Longitude, gps_pos.latitude, gps_pos.longitude));
             }
             else {
@@ -188,13 +189,13 @@ fig_result_t fig0_11(fig0_common_t& fig0, const display_settings_t &disp)
         }
         else {
             // Rfu
-            r.msgs.push_back(strprintf("GATy=%d", GATy));
-            r.msgs.emplace_back("reserved for future use of the geographical");
-            r.msgs.push_back(strprintf("G/E flag=%d %s coverage area",
+            r.msgs.emplace_back(1, strprintf("GATy=%d", GATy));
+            r.msgs.emplace_back(1, "Geographical area=reserved for future use");
+            r.msgs.emplace_back(1, strprintf("G/E flag=%d %s coverage area",
                         GE_flag, GE_flag ? "Global" : "Ensemble"));
-            r.msgs.push_back(strprintf("RegionId=0x%X", Region_Id));
-            r.msgs.push_back(strprintf("database key=0x%X", key));
-            r.msgs.push_back(strprintf("stop Region definition iteration %d/%d",
+            r.msgs.emplace_back(1, strprintf("RegionId=0x%X", Region_Id));
+            r.msgs.emplace_back(1, strprintf("database key=0x%X", key));
+            r.msgs.emplace_back(1, strprintf("stop Region definition iteration %d/%d",
                      i, fig0.figlen));
             // stop Region definition iteration
             i = fig0.figlen;

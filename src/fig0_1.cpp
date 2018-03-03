@@ -71,6 +71,8 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
                 ensemble_database::subchannel_t::protection_type_t::UEP;
         }
 
+        r.msgs.emplace_back("-");
+
         if (long_flag) {
             int option = (f[i+2] >> 4) & 0x07;
             int protection_level = (f[i+2] >> 2) & 0x03;
@@ -78,22 +80,22 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
                                      f[i+3];
             i += 4;
 
-            r.msgs.push_back(strprintf("Subch 0x%x", subch_id));
-            r.msgs.push_back(strprintf("start_addr %d", start_addr));
-            r.msgs.emplace_back("long");
+            r.msgs.emplace_back(1, strprintf("Subch=0x%x", subch_id));
+            r.msgs.emplace_back(1, strprintf("start_addr=%d", start_addr));
+            r.msgs.emplace_back(1, "form=long");
 
             if (option == 0x00) {
-                r.msgs.push_back(strprintf("EEP %d-A", protection_level+1));
+                r.msgs.emplace_back(1, strprintf("EEP=%d-A", protection_level+1));
             }
             else if (option == 0x01) {
-                r.msgs.push_back(strprintf("EEP %d-B", protection_level+1));
+                r.msgs.emplace_back(1, strprintf("EEP=%d-B", protection_level+1));
             }
             else {
-                r.errors.push_back(strprintf("Invalid option %d protection %d",
+                r.errors.emplace_back(strprintf("Invalid option %d protection %d",
                             option, protection_level));
             }
 
-            r.msgs.push_back(strprintf("subch size %d", subchannel_size));
+            r.msgs.emplace_back(1, strprintf("subch size=%d", subchannel_size));
 
             if (fig0.fibcrccorrect) {
                 auto& subch = fig0.ensemble.get_subchannel(subch_id);
@@ -113,13 +115,13 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
             int table_switch = (f[i+2] >> 6) & 0x01;
             uint32_t table_index  = (f[i+2] & 0x3F);
 
-            r.msgs.push_back(strprintf("Subch 0x%x", subch_id));
-            r.msgs.push_back(strprintf("start_addr %d", start_addr));
-            r.msgs.emplace_back("short");
+            r.msgs.emplace_back(1, strprintf("Subch=0x%x", subch_id));
+            r.msgs.emplace_back(1, strprintf("start_addr=%d", start_addr));
+            r.msgs.emplace_back(1, "form=short");
             if (table_switch != 0) {
-                r.errors.push_back(strprintf("Invalid table_switch %d", table_switch));
+                r.errors.emplace_back(strprintf("Invalid table_switch %d", table_switch));
             }
-            r.msgs.push_back(strprintf("table index %d", table_index));
+            r.msgs.emplace_back(1, strprintf("table index=%d", table_index));
 
             if (fig0.fibcrccorrect) {
                 auto& subch = fig0.ensemble.get_subchannel(subch_id);

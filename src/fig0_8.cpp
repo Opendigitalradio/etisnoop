@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -83,18 +83,19 @@ fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
         Rfa = (f[i] >> 4) & 0x7;
         SCIdS = f[i] & 0x0F;
         r.complete |= fig0_8_is_complete(SId, SCIdS);
-        r.msgs.push_back(strprintf("SId=0x%X", SId));
-        r.msgs.push_back(strprintf("Ext flag=%d 8-bit Rfa %s",
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("SId=0x%X", SId));
+        r.msgs.emplace_back(1, strprintf("Ext flag=%d 8-bit Rfa %s",
                     Ext_flag, (Ext_flag)?"present":"absent"));
 
         if (Rfa != 0) {
             r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
         }
-        r.msgs.push_back(strprintf("SCIdS=0x%X", SCIdS));
+        r.msgs.emplace_back(1, strprintf("SCIdS=0x%X", SCIdS));
         i++;
         if (i < fig0.figlen) {
             LS_flag = f[i] >> 7;
-            r.msgs.push_back(strprintf("L/S flag=%d %s", LS_flag, (LS_flag)?"Long form":"Short form"));
+            r.msgs.emplace_back(1, strprintf("L/S flag=%d %s", LS_flag, (LS_flag)?"Long form":"Short form"));
             if (LS_flag == 0) {
                 // Short form
                 if (i < (fig0.figlen - Ext_flag)) {
@@ -102,12 +103,12 @@ fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
                     if (MSC_FIC_flag == 0) {
                         // MSC in stream mode and SubChId identifies the sub-channel
                         SubChId = f[i] & 0x3F;
-                        r.msgs.push_back(strprintf("MSC/FIC flag=%d MSC, SubChId=0x%X", MSC_FIC_flag, SubChId));
+                        r.msgs.emplace_back(1, strprintf("MSC/FIC flag=%d MSC, SubChId=0x%X", MSC_FIC_flag, SubChId));
                     }
                     else {
                         // FIC and FIDCId identifies the component
                         FIDCId = f[i] & 0x3F;
-                        r.msgs.push_back(strprintf("MSC/FIC flag=%d FIC, FIDCId=0x%X", MSC_FIC_flag, FIDCId));
+                        r.msgs.emplace_back(1, strprintf("MSC/FIC flag=%d FIC, FIDCId=0x%X", MSC_FIC_flag, FIDCId));
                     }
                     if (Ext_flag == 1) {
                         // Rfa field present
@@ -127,7 +128,7 @@ fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
                     if (Rfa != 0) {
                         r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
                     }
-                    r.msgs.push_back(strprintf("SCId=0x%X", SCId));
+                    r.msgs.emplace_back(1, strprintf("SCId=0x%X", SCId));
                 }
                 i += 2;
             }

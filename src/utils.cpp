@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -76,77 +76,137 @@ std::string strprintf(const char* fmt, ...)
     return str;
 }
 
-void printbuf(std::string header,
+static void printyaml(const string& header,
+        const display_settings_t &disp,
+        uint8_t* buffer = nullptr,
+        size_t size = 0,
+        const std::string& desc = "",
+        const std::string& value = "")
+{
+    if (disp.print) {
+        stringstream ss;
+        for (int i = 0; i < disp.indent; i++) {
+            ss << " ";
+        }
+
+        ss << header;
+        ss << ":";
+
+        if (not value.empty() and desc.empty() and not buffer) {
+            ss << " " << value;
+        }
+        else {
+            if (not value.empty()) {
+                ss << "\n";
+                for (int i = 0; i < disp.indent + 1; i++) {
+                    ss << " ";
+                }
+                ss << strprintf("value: %s", value.c_str());
+            }
+
+            if (not desc.empty()) {
+                ss << "\n";
+                for (int i = 0; i < disp.indent + 1; i++) {
+                    ss << " ";
+                }
+                ss << strprintf("desc: %s", desc.c_str());
+            }
+
+            if (buffer and verbosity > 0) {
+                if (size != 0) {
+                    ss << "\n";
+                    for (int i = 0; i < disp.indent + 1; i++) {
+                        ss << " ";
+                    }
+                    ss << "data: [";
+
+                    size_t num_printed = 0;
+
+                    for (size_t i = 0; i < size; i++) {
+                        if (i > 0) {
+                            ss << ",";
+                            num_printed++;
+                        }
+
+                        if (num_printed + disp.indent + 1 + 7 > 60 ) {
+                            ss << "\n";
+                            for (int i = 0; i < disp.indent + 8; i++) {
+                                ss << " ";
+                            }
+                            num_printed = 2;
+                        }
+                        else if (i > 0) {
+                            ss << " ";
+                            num_printed++;
+                        }
+
+                        ss << strprintf("0x%02x", buffer[i]);
+                        num_printed += 3;
+                    }
+                    ss << "]";
+                }
+            }
+        }
+
+        ss << "\n";
+        printf("%s", ss.str().c_str());
+    }
+}
+
+void printbuf(const std::string& header,
         int indent,
         uint8_t* buffer,
         size_t size,
-        std::string desc)
+        const std::string& desc,
+        const std::string& value)
 {
     display_settings_t disp(true, indent);
-    printbuf(header, disp, buffer, size, desc);
+    printyaml(header, disp, buffer, size, desc, value);
 }
 
-void printfig(string header,
+void printbuf(const string& header,
         const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
-        string desc)
+        const std::string& desc,
+        const std::string& value)
 {
-    if (disp.print) {
-        for (int i = 0; i < disp.indent; i++) {
-            printf("\t");
-        }
-
-        printf("%s", header.c_str());
-
-        if (verbosity > 1) {
-            if (size != 0) {
-                printf(": ");
-            }
-
-            for (size_t i = 0; i < size; i++) {
-                printf("%02x ", buffer[i]);
-            }
-        }
-
-        if (desc != "") {
-            printf(" [%s] ", desc.c_str());
-        }
-
-        printf("\n");
-    }
+    display_settings_t d = disp;
+    d.print = (verbosity > 0);
+    printyaml(header, d, buffer, size, desc, value);
 }
 
+void printbuf(const std::string& header, int indent)
+{
+    display_settings_t disp(true, indent);
+    return printyaml(header, disp);
+}
 
-void printbuf(string header,
+void printfig(const string& header,
         const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
-        string desc)
+        const std::string& desc,
+        const std::string& value)
 {
-    if (verbosity > 0) {
-        for (int i = 0; i < disp.indent; i++) {
-            printf("\t");
-        }
+    printyaml(header, disp, buffer, size, desc, value);
+}
 
-        printf("%s", header.c_str());
+void printvalue(const std::string& header,
+        const display_settings_t &disp,
+        const std::string& desc,
+        const std::string& value)
+{
+    return printyaml(header, disp, nullptr, 0, desc, value);
+}
 
-        if (verbosity > 1) {
-            if (size != 0) {
-                printf(": ");
-            }
-
-            for (size_t i = 0; i < size; i++) {
-                printf("%02x ", buffer[i]);
-            }
-        }
-
-        if (desc != "") {
-            printf(" [%s] ", desc.c_str());
-        }
-
-        printf("\n");
-    }
+void printvalue(const std::string& header,
+        int indent,
+        const std::string& desc,
+        const std::string& value)
+{
+    display_settings_t disp(true, indent);
+    return printyaml(header, disp, nullptr, 0, desc, value);
 }
 
 void printinfo(const string &header,
@@ -155,17 +215,24 @@ void printinfo(const string &header,
 {
     if (verbosity >= min_verb) {
         for (int i = 0; i < disp.indent; i++) {
-            printf("\t");
+            printf(" ");
         }
-        printf("%s\n", header.c_str());
+        printf("info: %s\n", header.c_str());
     }
 }
 
-void printinfo(const std::string &header,
-        int min_verb)
+void printinfo(const std::string &header, int min_verb)
 {
     const display_settings_t disp(true, 0);
     printinfo(header, min_verb);
+}
+
+void printsequencestart(int indent)
+{
+    for (int i = 0; i < indent; i++) {
+        printf(" ");
+    }
+    printf("-\n");
 }
 
 int sprintfMJD(char *dst, int mjd) {

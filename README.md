@@ -1,8 +1,8 @@
 ETISnoop analyser
 =================
 
-The ETISnoop analyser decodes and prints out a RAW ETI file in a
-form that makes analysis easier.
+The ETISnoop analyser decodes a RAW ETI file and prints out
+its contents in YAML for easier analysis.
 
 It can show information about the signalling, details about the FIGs,
 and extract a DAB+ subchannel into a file.
@@ -24,7 +24,7 @@ Then do
 About
 -----
 
-This is a contribution by CSP.it, is now developed by opendigitalradio,
+This is a contribution from CSP.it, now developed by Opendigitalradio,
 and is published under the terms of the GNU GPL v3 or later.
 See LICENCE for more information.
 

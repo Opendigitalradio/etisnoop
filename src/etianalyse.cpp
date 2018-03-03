@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -58,27 +58,34 @@ eti_analyse_config_t::is_fig_to_be_printed(int type, int extension) const
             make_pair(type, extension)) != figs_to_display.end();
 }
 
+static
+string replace_first(const string& source, const string& from, const string& to)
+{
+    string s(source);
+    size_t i = s.find(from);
+    if (i != string::npos) {
+        s.replace(i, from.length(), to);
+    }
+    return s;
+}
+
 static void print_fig_result(const fig_result_t& fig_result, const display_settings_t& disp)
 {
     if (disp.print) {
         for (const auto& msg : fig_result.msgs) {
             std::string s;
             for (int i = 0; i < msg.level; i++) {
-                s += "    ";
+                s += " ";
             }
-            s += msg.msg;
+            s += replace_first(msg.msg, "=", ": ");
             for (int i = 0; i < disp.indent; i++) {
-                printf("\t");
+                printf(" ");
             }
             printf("%s\n", s.c_str());
         }
         if (not fig_result.errors.empty()) {
-            printf("ERRORS:\n");
             for (const auto& err : fig_result.errors) {
-                for (int i = 0; i < disp.indent; i++) {
-                    printf("\t");
-                }
-                printf("%s\n", err.c_str());
+                fprintf(stderr, "ERRORS: %s\n" , err.c_str());
             }
         }
     }
@@ -96,7 +103,7 @@ void ETI_Analyser::eti_analyse()
     uint8_t scid,tpl;
     uint16_t sad[64],stl[64];
     char sdesc[256];
-    uint32_t frame_nb = 0, frame_sec = 0, frame_ms = 0, frame_h, frame_m, frame_s;
+    uint32_t frame_nb = 0, frame_sec = 0, frame_ms = 0;
 
     static int last_fct = -1;
 
@@ -105,20 +112,20 @@ void ETI_Analyser::eti_analyse()
 
     int stream_type = ETI_STREAM_TYPE_NONE;
     if (identify_eti_format(config.etifd, &stream_type) == -1) {
-        printf("Could not identify stream type\n");
+        fprintf(stderr, "Could not identify stream type\n");
 
         running = false;
     }
     else {
-        printf("Identified ETI type ");
+        fprintf(stderr, "Identified ETI type ");
         if (stream_type == ETI_STREAM_TYPE_RAW)
-            printf("RAW\n");
+            fprintf(stderr, "RAW\n");
         else if (stream_type == ETI_STREAM_TYPE_STREAMED)
-            printf("STREAMED\n");
+            fprintf(stderr, "STREAMED\n");
         else if (stream_type == ETI_STREAM_TYPE_FRAMED)
-            printf("FRAMED\n");
+            fprintf(stderr, "FRAMED\n");
         else
-            printf("?\n");
+            fprintf(stderr, "?\n");
     }
 
     if (config.analyse_fig_rates) {
@@ -148,11 +155,12 @@ void ETI_Analyser::eti_analyse()
         }
 
         // Timestamp and Frame Number
-        frame_h = (frame_sec / 3600);
-        frame_m = (frame_sec - (frame_h * 3600)) / 60;
-        frame_s = (frame_sec - (frame_h * 3600) - (frame_m * 60));
-        sprintf(sdesc, "%02d:%02d:%02d.%03d frame %d", frame_h, frame_m, frame_s, frame_ms, frame_nb);
-        printbuf(sdesc, 0, NULL, 0);
+        uint32_t frame_h = (frame_sec / 3600);
+        uint32_t frame_m = (frame_sec - (frame_h * 3600)) / 60;
+        uint32_t frame_s = (frame_sec - (frame_h * 3600) - (frame_m * 60));
+        printf("---\n");
+        printf("Frame: %d\n", frame_nb);
+        printf("Time: %02d:%02d:%02d.%03d\n", frame_h, frame_m, frame_s, frame_ms);
         frame_ms += 24; // + 24 ms
         if (frame_ms >= 1000) {
             frame_ms -= 1000;
@@ -165,14 +173,12 @@ void ETI_Analyser::eti_analyse()
 
         // SYNC - ERR
         if (p[0] == 0xFF) {
-            desc = "No error";
-            printbuf("ERR", 1, p, 1, desc);
+            printbuf("ERR", 1, p, 1, "", "No Error");
         }
         else {
-            desc = "Error";
-            printbuf("ERR", 1, p, 1, desc);
+            printbuf("ERR", 1, p, 1, "", "Error");
             if (!config.ignore_error) {
-                printf("Aborting because of SYNC error\n");
+                fprintf(stderr, "Aborting because of SYNC error\n");
                 break;
             }
         }
@@ -186,10 +192,11 @@ void ETI_Analyser::eti_analyse()
                 memcpy(prevsync, p+1, 3);
             }
             else {
-                desc ="Wrong FSYNC";
+                desc = "Wrong FSYNC";
                 memcpy(prevsync, "\x00\x00\x00", 3);
             }
-        } else if (memcmp(prevsync, "\x07\x3a\xb6", 3) == 0) {
+        }
+        else if (memcmp(prevsync, "\x07\x3a\xb6", 3) == 0) {
             if (memcmp(p + 1, "\xf8\xc5\x49", 3) != 0) {
                 desc = "Wrong FSYNC";
                 memcpy(prevsync, "\x00\x00\x00", 3);
@@ -197,7 +204,8 @@ void ETI_Analyser::eti_analyse()
                 desc = "OK";
                 memcpy(prevsync, p + 1, 3);
             }
-        } else if (memcmp(prevsync, "\xf8\xc5\x49", 3) == 0) {
+        }
+        else if (memcmp(prevsync, "\xf8\xc5\x49", 3) == 0) {
             if (memcmp(p + 1, "\x07\x3a\xb6", 3) != 0) {
                 desc = "Wrong FSYNC";
                 memcpy(prevsync, "\x00\x00\x00", 3);
@@ -206,20 +214,18 @@ void ETI_Analyser::eti_analyse()
                 memcpy(prevsync, p + 1, 3);
             }
         }
-        printbuf("Sync FSYNC", 1, p + 1, 3, desc);
+        printbuf("FSYNC", 1, p + 1, 3, "", desc);
 
         // LIDATA
-        printbuf("LDATA", 0, NULL, 0);
+        printbuf("LIDATA");
         // LIDATA - FC
-        printbuf("FC - Frame Characterization field", 1, p+4, 4);
+        printbuf("FC", 1, p+4, 4, "Frame Characterization field");
         // LIDATA - FC - FCT
-        char fct_str[25];
-        sprintf(fct_str, "%d", p[4]);
         int fct = p[4];
-        printbuf("FCT  - Frame Count", 2, p+4, 1, fct_str);
+        printbuf("FCT", 2, p+4, 1, "Frame Count", to_string(fct));
         if (last_fct != -1) {
             if ((last_fct + 1) % 250 != fct) {
-                printf("FCT not contiguous\n");
+                printbuf("Error: FCT not contiguous", 2);
             }
         }
         last_fct = fct;
@@ -228,23 +234,20 @@ void ETI_Analyser::eti_analyse()
 
         {
             stringstream ss;
-            ss << (int)ficf;
             if (ficf == 1) {
-                ss << "- FIC Information are present";
+                ss << "FIC Information are present";
             }
             else {
-                ss << "- FIC Information are not present";
+                ss << "FIC Information are not present";
             }
 
-            printbuf("FICF - Fast Information Channel Flag", 2, NULL, 0, ss.str());
+            printbuf("FICF", 2, nullptr, 0, ss.str(), to_string(ficf));
         }
 
         // LIDATA - FC - NST
         nst = p[5] & 0x7F;
         {
-            stringstream ss;
-            ss << (int)nst;
-            printbuf("NST  - Number of streams", 2, NULL, 0, ss.str());
+            printbuf("NST", 2, nullptr, 0, "Number of streams", to_string(nst));
         }
 
         // LIDATA - FC - FP
@@ -252,30 +255,27 @@ void ETI_Analyser::eti_analyse()
         {
             stringstream ss;
             ss << (int)fp;
-            printbuf("FP   - Frame Phase", 2, &fp, 1, ss.str());
+            printbuf("FP", 2, &fp, 1, "Frame Phase", to_string(fp));
         }
 
         // LIDATA - FC - MID
         mid = (p[6] & 0x18) >> 3;
         {
-            stringstream ss;
-            ss << "Mode ";
+            string modestr;
             if (mid != 0) {
-                ss << (int)mid;
+                modestr = to_string(mid);
             }
             else {
-                ss << "4";
+                modestr = "4";
             }
-            printbuf("MID  - Mode Identity", 2, &mid, 1, ss.str());
+            printbuf("MID", 2, &mid, 1, "Mode Identity", modestr);
             set_mode_identity(mid);
         }
 
         // LIDATA - FC - FL
         fl = (p[6] & 0x07) * 256 + p[7];
         {
-            stringstream ss;
-            ss << fl << " words";
-            printbuf("FL   - Frame Length", 2, NULL, 0, ss.str());
+            printbuf("FL", 2, nullptr, 0, "Frame Length in words", to_string(fl));
         }
 
         if (ficf == 0) {
@@ -289,62 +289,96 @@ void ETI_Analyser::eti_analyse()
         }
 
         // STC
-        printbuf("STC - Stream Characterisation", 1, NULL, 0);
+        printvalue("STC", 1);
 
         for (int i=0; i < nst; i++) {
-            sprintf(sdesc, "Stream number %d", i);
-            printbuf("STC  - Stream Characterisation", 2, p + 8 + 4*i, 4, sdesc);
+            printsequencestart(2);
+            printbuf("Stream Number", 3, p + 8 + 4*i, 4, "", to_string(i));
             scid = (p[8 + 4*i] & 0xFC) >> 2;
-            sprintf(sdesc, "%d", scid);
-            printbuf("SCID - Sub-channel Identifier", 3, NULL, 0, sdesc);
+
+            printvalue("SCID", 3, "Sub-channel Identifier", to_string(scid));
             sad[i] = (p[8+4*i] & 0x03) * 256 + p[9+4*i];
-            sprintf(sdesc, "%d", sad[i]);
-            printbuf("SAD  - Sub-channel Start Address", 3, NULL, 0, sdesc);
+
+            printvalue("SAD", 3, "Sub-channel Start Address", to_string(sad[i]));
             tpl = (p[10+4*i] & 0xFC) >> 2;
 
             if ((tpl & 0x20) >> 5 == 1) {
                 uint8_t opt, plevel;
                 string plevelstr;
+                string rate;
+                int num_cu = 0;
                 opt = (tpl & 0x1c) >> 2;
                 plevel = (tpl & 0x03);
                 if (opt == 0x00) {
-                    if (plevel == 0)
-                        plevelstr = "1-A, 1/4, 16 CUs";
-                    else if (plevel == 1)
-                        plevelstr = "2-A, 3/8, 8 CUs";
-                    else if (plevel == 2)
-                        plevelstr = "3-A, 1/2, 6 CUs";
-                    else if (plevel == 3)
-                        plevelstr = "4-A, 3/4, 4 CUs";
+                    if (plevel == 0) {
+                        plevelstr = "1-A";
+                        rate = "1/4";
+                        num_cu = 16;
+                    }
+                    else if (plevel == 1) {
+                        plevelstr = "2-A";
+                        rate = "3/8";
+                        num_cu = 8;
+                    }
+                    else if (plevel == 2) {
+                        plevelstr = "3-A";
+                        rate = "1/2";
+                        num_cu = 6;
+                    }
+                    else if (plevel == 3) {
+                        plevelstr = "4-A";
+                        rate = "3/4";
+                        num_cu = 4;
+                    }
                 }
                 else if (opt == 0x01) {
-                    if (plevel == 0)
-                        plevelstr = "1-B, 4/9, 27 CUs";
-                    else if (plevel == 1)
-                        plevelstr = "2-B, 4/7, 21 CUs";
-                    else if (plevel == 2)
-                        plevelstr = "3-B, 4/6, 18 CUs";
-                    else if (plevel == 3)
-                        plevelstr = "4-B, 4/5, 15 CUs";
+                    if (plevel == 0) {
+                        plevelstr = "1-B";
+                        rate = "4/9";
+                        num_cu = 27;
+                    }
+                    else if (plevel == 1) {
+                        plevelstr = "2-B";
+                        rate = "4/7";
+                        num_cu = 21;
+                    }
+                    else if (plevel == 2) {
+                        plevelstr = "3-B";
+                        rate = "4/6";
+                        num_cu = 18;
+                    }
+                    else if (plevel == 3) {
+                        plevelstr = "4-B";
+                        rate = "4/5";
+                        num_cu = 15;
+                    }
                 }
                 else {
-                    stringstream ss;
-                    ss << "Unknown option " << opt;
-                    plevelstr = ss.str();
+                    plevelstr = "Unknown option " + to_string(opt);
                 }
-                sprintf(sdesc, "0x%02x - Equal Error Protection. %s", tpl, plevelstr.c_str());
+                printvalue("TPL", 3, "Sub-channel Type and Protection Level");
+                printvalue("EEP", 4, "Equal Error Protection", to_string(tpl));
+                printvalue("Level", 5, "", plevelstr);
+                if (not rate.empty()) {
+                    printvalue("Rate", 5, "", rate);
+                }
+                if (num_cu) {
+                    printvalue("CUs", 5, "", to_string(num_cu));
+                }
             }
             else {
                 uint8_t tsw, uepidx;
                 tsw = (tpl & 0x08);
                 uepidx = tpl & 0x07;
-                sprintf(sdesc, "0x%02x - Unequal Error Protection. Table switch %d,  UEP index %d", tpl, tsw, uepidx);
+                printvalue("TPL", 3, "Sub-channel Type and Protection Level");
+                printvalue("UEP", 4, "Unequal Error Protection", to_string(tpl));
+                printvalue("Table switch", 5, "", to_string(tsw));
+                printvalue("Index", 5, "", to_string(uepidx));
             }
-            printbuf("TPL  - Sub-channel Type and Protection Level", 3, NULL, 0, sdesc);
             stl[i] = (p[10+4*i] & 0x03) * 256 + \
                       p[11+4*i];
-            sprintf(sdesc, "%d => %d kbit/s", stl[i], stl[i]*8/3);
-            printbuf("STL  - Sub-channel Stream Length", 3, NULL, 0, sdesc);
+            printvalue("STL", 3, "Sub-channel Stream Length", to_string(stl[i]));
+            printvalue("bitrate", 3, "kbit/s", to_string(stl[i]*8/3));
 
             if (config.statistics and config.streams_to_decode.count(i) == 0) {
                 config.streams_to_decode.emplace(std::piecewise_construct,
@@ -361,31 +395,26 @@ void ETI_Analyser::eti_analyse()
         }
 
         // EOH
-        printbuf("EOH - End Of Header", 1, p + 8 + 4*nst, 4);
-        uint16_t mnsc = p[8 + 4*nst] * 256 + \
-                                  p[8 + 4*nst + 1];
-        {
-            stringstream ss;
-            ss << mnsc;
-            printbuf("MNSC - Multiplex Network Signalling Channel", 2, p+8+4*nst, 2, ss.str());
-        }
+        printbuf("EOH", 1, p + 8 + 4*nst, 4, "End Of Header");
+        uint16_t mnsc = p[8 + 4*nst] * 256 + p[8 + 4*nst + 1];
+        printbuf("MNSC", 2, p+8+4*nst, 2, "Multiplex Network Signalling Channel", strprintf("%04x", mnsc));
 
-        crch = p[8 + 4*nst + 2]*256 + \
-               p[8 + 4*nst + 3];
+        crch = p[8 + 4*nst + 2]*256 + p[8 + 4*nst + 3];
         crc  = 0xffff;
 
-        for (int i=4; i < 8 + 4*nst + 2; i++)
+        for (int i=4; i < 8 + 4*nst + 2; i++) {
             crc = update_crc_ccitt(crc, p[i]);
+        }
         crc =~ crc;
 
         if (crc == crch) {
-            sprintf(sdesc,"CRC OK");
+            sprintf(sdesc, "OK");
         }
         else {
-            sprintf(sdesc,"CRC Mismatch: %02x",crc);
+            sprintf(sdesc, "Mismatch: %02x",crc);
         }
 
-        printbuf("Header CRC", 2, p + 8 + 4*nst + 2, 2, sdesc);
+        printbuf("Header CRC", 2, p + 8 + 4*nst + 2, 2, "", sdesc);
 
         // MST - FIC
         if (ficf == 1) {
@@ -395,13 +424,12 @@ void ETI_Analyser::eti_analyse()
 
             uint8_t ficdata[32*4];
             memcpy(ficdata, p + 12 + 4*nst, ficl*4);
-            sprintf(sdesc, "FIC Data (%d bytes)", ficl*4);
-            //printbuf(sdesc, 1, ficdata, ficl*4);
-            printbuf(sdesc, 1, NULL, 0);
+            printvalue("FIG Length", 1, "FIC length in bytes", to_string(ficl*4));
+            printvalue("FIC", 1);
             fib = p + 12 + 4*nst;
             for (int i = 0; i < ficl*4/32; i++) {
-                sprintf(sdesc, "FIB %d", i);
-                printbuf(sdesc, 1, NULL, 0);
+                printsequencestart(2);
+                printvalue("FIB", 3, "", to_string(i));
                 fig=fib;
                 figs.set_fib(i);
                 rate_new_fib(i);
@@ -414,10 +442,12 @@ void ETI_Analyser::eti_analyse()
                 crc =~ crc;
                 const bool crccorrect = (crc == figcrc);
                 if (crccorrect)
-                    sprintf(sdesc, "FIB %d CRC OK", i);
-                else
-                    sprintf(sdesc, "FIB %d CRC Mismatch: %02x", i, crc);
+                    printvalue("CRC", 3, "", "OK");
+                else {
+                    printvalue("CRC", 3, "", strprintf("Mismatch: %02x", i, crc));
+                }
 
+                printvalue("FIGs", 3);
 
                 bool endmarker = false;
                 int figcount = 0;
@@ -426,9 +456,9 @@ void ETI_Analyser::eti_analyse()
                     figtype = (fig[0] & 0xE0) >> 5;
                     if (figtype != 7) {
                         figlen = fig[0] & 0x1F;
-                        sprintf(sdesc, "FIG %d [%d bytes]", figtype, figlen);
-                        printbuf(sdesc, 3, fig+1, figlen);
-                        decodeFIG(config, figs, fig+1, figlen, figtype, 4, crccorrect);
+
+                        printsequencestart(4);
+                        decodeFIG(config, figs, fig+1, figlen, figtype, 5, crccorrect);
                         fig += figlen + 1;
                         figcount += figlen + 1;
                         if (figcount >= 29)
@@ -447,47 +477,46 @@ void ETI_Analyser::eti_analyse()
             }
         }
 
+        printvalue("Stream Data", 1);
         int offset = 0;
         for (int i=0; i < nst; i++) {
             uint8_t streamdata[684*8];
             memcpy(streamdata, p + 12 + 4*nst + ficf*ficl*4 + offset, stl[i]*8);
             offset += stl[i] * 8;
-            if (config.streams_to_decode.count(i) > 0) {
-                sprintf(sdesc, "id %d, len %d, selected for decoding", i, stl[i]*8);
-            }
-            else {
-                sprintf(sdesc, "id %d, len %d, not selected for decoding", i, stl[i]*8);
-            }
-            if (get_verbosity() > 2) {
-                printbuf("Stream Data", 1, streamdata, stl[i]*8, sdesc);
-            }
-            else {
-                printbuf("Stream Data", 1, streamdata, 0, sdesc);
+            printsequencestart(2);
+            printvalue("Id", 3, "", to_string(i));
+            printvalue("Length", 3, "", to_string(stl[i]*8));
+            printvalue("Selected for decoding", 3, "",
+                    (config.streams_to_decode.count(i) > 0 ? "true" : "false"));
+
+            if (get_verbosity() > 1) {
+                printbuf("Data", 3, streamdata, stl[i]*8);
             }
 
             if (config.streams_to_decode.count(i) > 0) {
                 config.streams_to_decode.at(i).push(streamdata, stl[i]*8);
             }
-
         }
 
         //* EOF (4 Bytes)
+        printbuf("EOF", 1, p + 12 + 4*nst + ficf*ficl*4 + offset, 4);
+
         // CRC (2 Bytes)
         crch = p[12 + 4*nst + ficf*ficl*4 + offset] * 256 + \
                p[12 + 4*nst + ficf*ficl*4 + offset + 1];
 
         crc = 0xffff;
 
-        for (int i = 12 + 4*nst; i < 12 + 4*nst + ficf*ficl*4 + offset; i++)
+        for (int i = 12 + 4*nst; i < 12 + 4*nst + ficf*ficl*4 + offset; i++) {
             crc = update_crc_ccitt(crc, p[i]);
+        }
         crc =~ crc;
         if (crc == crch)
-            sprintf(sdesc, "CRC OK");
+            sprintf(sdesc, "OK");
         else
-            sprintf(sdesc, "CRC Mismatch: %02x", crc);
+            sprintf(sdesc, "Mismatch: %02x", crc);
 
-        printbuf("EOF", 1, p + 12 + 4*nst + ficf*ficl*4 + offset, 4);
-        printbuf("CRC", 2, p + 12 + 4*nst + ficf*ficl*4 + offset, 2, sdesc);
+        printbuf("CRC", 2, p + 12 + 4*nst + ficf*ficl*4 + offset, 2, "", sdesc);
 
         // RFU (2 Bytes)
         printbuf("RFU", 2, p + 12 + 4*nst + ficf*ficl*4 + offset + 2, 2);
@@ -499,12 +528,8 @@ void ETI_Analyser::eti_analyse()
                         (uint32_t)(p[tist_ix+2]) << 8 |
                         (uint32_t)(p[tist_ix+3]);
 
-        sprintf(sdesc, "%f ms", (TIST & 0xFFFFFF) / 16384.0);
-        printbuf("TIST - Time Stamp", 1, p + tist_ix, 4, sdesc);
-
-        if (get_verbosity()) {
-            printf("-------------------------------------------------------------------------------------------------------------\n");
-        }
+        sprintf(sdesc, "%f", (TIST & 0xFFFFFF) / 16384.0);
+        printbuf("TIST", 1, p + tist_ix, 4, "Time Stamp (ms)", sdesc);
 
         if (config.analyse_fig_rates and (fct % 250) == 0) {
             rate_display_analysis(false, config.analyse_fig_rates_per_second);
@@ -513,7 +538,7 @@ void ETI_Analyser::eti_analyse()
         num_frames++;
         if (config.num_frames_to_decode > 0 and
                 num_frames >= config.num_frames_to_decode) {
-            printf("Decoded %zu ETI frames\n", num_frames);
+            fprintf(stderr, "Decoded %zu ETI frames\n", num_frames);
             break;
         }
 
@@ -624,8 +649,6 @@ void ETI_Analyser::decodeFIG(
         int indent,
         bool fibcrccorrect)
 {
-    char desc[512];
-
     switch (figtype) {
         case 0:
             {
@@ -634,10 +657,16 @@ void ETI_Analyser::decodeFIG(
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig0.ext()), indent);
 
+                printvalue("FIG", disp, "", strprintf("0/%d", fig0.ext()));
+                if (get_verbosity() > 0) {
+                    printbuf("Data", disp, f, figlen);
+                }
+
                 if (disp.print) {
-                    sprintf(desc, "FIG %d/%d: C/N=%d OE=%d P/D=%d",
-                            figtype, fig0.ext(), fig0.cn(), fig0.oe(), fig0.pd());
-                    printfig(desc, disp, f+1, figlen-1);
+                    printvalue("Length", disp, "", to_string(figlen));
+                    printvalue("OE", disp, "", to_string(fig0.oe()));
+                    printvalue("C/N", disp, "", to_string(fig0.cn()));
+                    printvalue("P/D", disp, "", to_string(fig0.pd()));
                 }
 
                 figs.push_back(figtype, fig0.ext(), figlen);
@@ -645,6 +674,7 @@ void ETI_Analyser::decodeFIG(
                 auto fig_result = fig0_select(fig0, disp);
                 fig_result.figtype = figtype;
                 fig_result.figext = fig0.ext();
+                printvalue("Decoding", disp);
                 print_fig_result(fig_result, disp+1);
 
                 rate_announce_fig(figtype, fig0.ext(), fig_result.complete);
@@ -657,10 +687,15 @@ void ETI_Analyser::decodeFIG(
                 fig1.fibcrccorrect = fibcrccorrect;
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig1.ext()), indent);
+
+                printvalue("FIG", disp, "", strprintf("1/%d", fig1.ext()));
+                if (get_verbosity() > 0) {
+                    printbuf("Data", disp, f, figlen);
+                }
+
                 if (disp.print) {
-                    sprintf(desc, "FIG %d/%d: OE=%d",
-                            figtype, fig1.ext(), fig1.oe());
-                    printfig(desc, disp, f+1, figlen-1);
+                    printvalue("Length", disp, "", to_string(figlen));
+                    printvalue("OE", disp, "", to_string(fig1.oe()));
                 }
 
                 figs.push_back(figtype, fig1.ext(), figlen);
@@ -668,6 +703,7 @@ void ETI_Analyser::decodeFIG(
                 auto fig_result = fig1_select(fig1, disp);
                 fig_result.figtype = figtype;
                 fig_result.figext = fig1.ext();
+                printvalue("Decoding", disp);
                 print_fig_result(fig_result, disp+1);
                 rate_announce_fig(figtype, fig1.ext(), fig_result.complete);
             }
@@ -682,12 +718,18 @@ void ETI_Analyser::decodeFIG(
                 ext = f[0] & 0x07;
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, ext), indent);
-                if (disp.print) {
-                    sprintf(desc,
-                            "FIG %d/%d: Toggle flag=%d, Segment_index=%d, OE=%d",
-                            figtype, ext, toggle_flag, segment_index, oe);
 
-                    printfig(desc, disp, f+1, figlen-1);
+                printvalue("FIG", disp, "", strprintf("2/%d", ext));
+
+                if (get_verbosity() > 0) {
+                    printbuf("Data", disp, f, figlen);
+                }
+
+                if (disp.print) {
+                    printvalue("Length", disp, "", to_string(figlen));
+                    printvalue("OE", disp, "", to_string(oe));
+                    printvalue("Toggle flag", disp, "", to_string(toggle_flag));
+                    printvalue("Segment index", disp, "", to_string(segment_index));
                 }
 
                 figs.push_back(figtype, ext, figlen);
@@ -707,10 +749,18 @@ void ETI_Analyser::decodeFIG(
 
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, ext), indent);
 
-                sprintf(desc,
-                        "FIG %d/%d: D1=%d, D2=%d, TCId=%d",
-                        figtype, ext, d1, d2, tcid);
-                printfig(desc, disp, f+1, figlen-1);
+                printvalue("FIG", disp, "", strprintf("5/%d", ext));
+
+                if (get_verbosity() > 0) {
+                    printbuf("Data", disp, f, figlen);
+                }
+
+                if (disp.print) {
+                    printvalue("Length", disp, "", to_string(figlen));
+                    printvalue("D1", disp, "", to_string(d1));
+                    printvalue("D2", disp, "", to_string(d2));
+                    printvalue("TCId", disp, "", to_string(tcid));
+                }
 
                 figs.push_back(figtype, ext, figlen);
 
@@ -721,11 +771,13 @@ void ETI_Analyser::decodeFIG(
         case 6:
             {// Conditional access
                 fprintf(stderr, "ERROR: ETI contains unsupported FIG 6\n");
+                printvalue("FIG", indent, "", "6 - unsupported");
             }
             break;
         default:
             {
                 fprintf(stderr, "ERROR: ETI contains unknown FIG %d\n", figtype);
+                printvalue("FIG", indent, "", strprintf("%d - unsupported", figtype));
             }
             break;
     }

@@ -60,24 +60,25 @@ fig_result_t fig0_5(fig0_common_t& fig0, const display_settings_t &disp)
     while (i < fig0.figlen - 1) {
         // iterate over service component language
         LS_flag = f[i] >> 7;
+        r.msgs.emplace_back("-");
         if (LS_flag == 0) {
             // Short form (L/S = 0)
             MSC_FIC_flag = (f[i] >> 6) & 0x01;
             Language = f[i+1];
-            r.msgs.emplace_back("Short form");
-            r.msgs.push_back(strprintf("MSC/FIC flag=%d MSC", MSC_FIC_flag));
+            r.msgs.emplace_back(1, "form=short");
+            r.msgs.emplace_back(1, strprintf("MSC/FIC flag=%d MSC", MSC_FIC_flag));
 
             if (MSC_FIC_flag == 0) {
                 // 0: MSC in Stream mode and SubChId identifies the sub-channel
                 SubChId = f[i] & 0x3F;
-                r.msgs.push_back(strprintf("SubChId=0x%X", SubChId));
+                r.msgs.emplace_back(1, strprintf("SubChId=0x%X", SubChId));
             }
             else {
                 // 1: FIC and FIDCId identifies the component
                 FIDCId = f[i] & 0x3F;
-                r.msgs.push_back(strprintf("FIDCId=0x%X", FIDCId));
+                r.msgs.emplace_back(1, strprintf("FIDCId=0x%X", FIDCId));
             }
-            r.msgs.push_back(strprintf("Language=0x%X %s",
+            r.msgs.emplace_back(1, strprintf("Language=0x%X %s",
                         Language, get_language_name(Language)));
 
             int key = (MSC_FIC_flag << 7) | (f[i] % 0x3F);
@@ -87,7 +88,7 @@ fig_result_t fig0_5(fig0_common_t& fig0, const display_settings_t &disp)
         else {
             // Long form (L/S = 1)
             if (i < (fig0.figlen - 2)) {
-                r.msgs.emplace_back("Long form");
+                r.msgs.emplace_back(1, "form=long");
                 Rfa = (f[i] >> 4) & 0x07;
 
                 SCId = (((uint16_t)f[i] & 0x0F) << 8) | (uint16_t)f[i+1];
@@ -95,12 +96,15 @@ fig_result_t fig0_5(fig0_common_t& fig0, const display_settings_t &disp)
                 r.complete |= fig0_5_is_complete(key);
                 Language = f[i+2];
                 if (Rfa != 0) {
-                    r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
+                    r.errors.emplace_back(strprintf("Rfa=%d invalid value", Rfa));
                 }
 
-                r.msgs.push_back(strprintf("SCId=0x%X", SCId));
-                r.msgs.push_back(strprintf("Language=0x%X %s",
+                r.msgs.emplace_back(1, strprintf("SCId=0x%X", SCId));
+                r.msgs.emplace_back(1, strprintf("Language=0x%X %s",
                             Language, get_language_name(Language)));
+            }
+            else {
+                r.errors.emplace_back("Long form FIG is too short");
             }
             i += 3;
         }

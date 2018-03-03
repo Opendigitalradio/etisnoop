@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -55,9 +55,9 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
             {   // ETSI EN 300 401 8.1.13
                 uint16_t eid;
                 eid = f[1] * 256 + f[2];
-                r.msgs.push_back(strprintf("Ensemble ID: 0x%04X", eid));
-                r.msgs.push_back(strprintf("Label: \"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+                r.msgs.push_back(strprintf("Ensemble ID=0x%04X", eid));
+                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
 
                 if (fig1.fibcrccorrect) {
                     fig1.ensemble.EId = eid;
@@ -71,9 +71,9 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
             {   // ETSI EN 300 401 8.1.14.1
                 uint16_t sid;
                 sid = f[1] * 256 + f[2];
-                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
-                r.msgs.push_back(strprintf("Label: \"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+                r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
+                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
 
                 if (fig1.fibcrccorrect) {
                     try {
@@ -104,10 +104,10 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                           f[4] * 256 + \
                           f[5];
                 }
-                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
-                r.msgs.push_back(strprintf("Service Component ID: 0x%04X", SCIdS));
-                r.msgs.push_back(strprintf("Label: \"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+                r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
+                r.msgs.push_back(strprintf("Service Component ID=0x%04X", SCIdS));
+                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
             }
             break;
 
@@ -119,9 +119,9 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                       f[3] * 256 + \
                       f[4];
 
-                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
-                r.msgs.push_back(strprintf("Label: \"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+                r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
+                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
             }
             break;
 
@@ -158,11 +158,11 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 }
 
 
-                r.msgs.push_back(strprintf("Service ID: 0x%04X", sid));
-                r.msgs.push_back(strprintf("Service Component ID: 0x%04X", SCIdS));
-                r.msgs.push_back(strprintf("X-PAD App %02X (", xpadapp) + xpadappdesc + ")");
-                r.msgs.push_back(strprintf("Label: \"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask: 0x%04X", flag));
+                r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
+                r.msgs.push_back(strprintf("Service Component ID=0x%04X", SCIdS));
+                r.msgs.push_back(strprintf("X-PAD App=%02X (", xpadapp) + xpadappdesc + ")");
+                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
             }
             break;
     }

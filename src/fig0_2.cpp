@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -53,7 +53,6 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
     uint16_t sref, sid;
     uint8_t cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
     int k = 1;
-    std::string psdesc;
     uint8_t* f = fig0.f;
     fig_result_t r;
 
@@ -86,20 +85,16 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
         caid  = (f[k] & 0x70) >> 4;
         ncomp =  f[k] & 0x0F;
 
-        if (fig0.pd() == 0) {
-            r.msgs.push_back(strprintf("Service ID=0x%X (Country id=%d, Service reference=%d)",
-                        sid, cid, sref));
-            r.msgs.emplace_back(1, strprintf("Number of components=%d", ncomp));
-            r.msgs.emplace_back(1, strprintf("Local flag=%d", local));
-            r.msgs.emplace_back(1, strprintf("CAID=%d", caid));
+        r.msgs.emplace_back(0, "-");
+        r.msgs.emplace_back(1, strprintf("Service ID=0x%X", sid));
+        if (fig0.pd() != 0) {
+            r.msgs.emplace_back(1, strprintf("ECC=%d", ecc));
         }
-        else {
-            r.msgs.push_back(strprintf("Service ID=0x%X (ECC=%d, Country id=%d, Service reference=%d)",
-                        sid, ecc, cid, sref));
-            r.msgs.emplace_back(1, strprintf("Number of components=%d", ncomp));
-            r.msgs.emplace_back(1, strprintf("Local flag=%d", local));
-            r.msgs.emplace_back(1, strprintf("CAID=%d", caid));
-        }
+        r.msgs.emplace_back(1, strprintf("Country id=%d", cid));
+        r.msgs.emplace_back(1, strprintf("Service reference=%d", sref));
+        r.msgs.emplace_back(1, strprintf("Number of components=%d", ncomp));
+        r.msgs.emplace_back(1, strprintf("Local flag=%d", local));
+        r.msgs.emplace_back(1, strprintf("CAID=%d", caid));
 
         if (fig0.fibcrccorrect) {
             auto& service = fig0.ensemble.get_or_create_service(sid);
@@ -108,11 +103,13 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 
 
         k++;
+        r.msgs.emplace_back(1, "Components:");
         for (int i = 0; i < ncomp; i++) {
             uint8_t scomp[2];
 
             memcpy(scomp, f+k, 2);
-            r.msgs.emplace_back(1, strprintf("Component[%d]", i));
+            r.msgs.emplace_back(2, "-");
+            r.msgs.emplace_back(3, strprintf("ID=%d", i));
 
             timd    = (scomp[0] & 0xC0) >> 6;
             ps      = (scomp[1] & 0x02) >> 1;
@@ -128,10 +125,10 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
                */
 
             if (ps == 0) {
-                psdesc = "Secondary service";
+                r.msgs.emplace_back(3, "primary=true");
             }
             else {
-                psdesc = "Primary service";
+                r.msgs.emplace_back(3, "primary=false");
             }
 
             if (fig0.fibcrccorrect) {
@@ -144,45 +141,41 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 
             if (timd == 0) {
                 //MSC stream audio
-                r.msgs.emplace_back(2, "Stream audio mode");
-                r.msgs.emplace_back(2, psdesc);
+                r.msgs.emplace_back(3, "Mode=audio stream");
 
                 if (scty == 0)
-                    r.msgs.emplace_back(2, strprintf("MPEG Foreground sound (%d)", scty));
+                    r.msgs.emplace_back(3, strprintf("ASCTy=MPEG Foreground sound (%d)", scty));
                 else if (scty == 1)
-                    r.msgs.emplace_back(2, strprintf("MPEG Background sound (%d)", scty));
+                    r.msgs.emplace_back(3, strprintf("ASCTy=MPEG Background sound (%d)", scty));
                 else if (scty == 2)
-                    r.msgs.emplace_back(2, strprintf("Multi Channel sound (%d)", scty));
+                    r.msgs.emplace_back(3, strprintf("ASCTy=Multi Channel sound (%d)", scty));
                 else if (scty == 63)
-                    r.msgs.emplace_back(2, strprintf("AAC sound (%d)", scty));
+                    r.msgs.emplace_back(3, strprintf("ASCTy=AAC sound (%d)", scty));
                 else
-                    r.msgs.emplace_back(2, strprintf("Unknown ASCTy (%d)", scty));
+                    r.msgs.emplace_back(3, strprintf("ASCTy=Unknown ASCTy (%d)", scty));
 
-                r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
-                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
+                r.msgs.emplace_back(3, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
             else if (timd == 1) {
                 // MSC stream data
-                r.msgs.emplace_back(2, "Stream data mode");
-                r.msgs.emplace_back(2, psdesc);
-                r.msgs.emplace_back(2, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
-                r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
-                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
+                r.msgs.emplace_back(3, "Mode=data stream");
+                r.msgs.emplace_back(3, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
+                r.msgs.emplace_back(3, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
             else if (timd == 2) {
                 // FIDC
-                r.msgs.emplace_back(2, "FIDC mode");
-                r.msgs.emplace_back(2, psdesc);
-                r.msgs.emplace_back(2, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
-                r.msgs.emplace_back(2, strprintf("Fast Information Data Channel ID=%02X", subchid));
-                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
+                r.msgs.emplace_back(3, "Mode=FIDC");
+                r.msgs.emplace_back(3, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
+                r.msgs.emplace_back(3, strprintf("Fast Information Data Channel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
             else if (timd == 3) {
                 // MSC Packet mode
-                r.msgs.emplace_back(2, "MSC Packet Mode");
-                r.msgs.emplace_back(2, psdesc);
-                r.msgs.emplace_back(2, strprintf("SubChannel ID=%02X", subchid));
-                r.msgs.emplace_back(2, strprintf("CA=%d", ca));
+                r.msgs.emplace_back(3, "Mode=MSC Packet");
+                r.msgs.emplace_back(3, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
 
             k += 2;

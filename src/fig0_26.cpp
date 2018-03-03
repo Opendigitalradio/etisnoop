@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -69,7 +69,8 @@ fig_result_t fig0_26(fig0_common_t& fig0, const display_settings_t &disp)
         EId_Other_Ensemble = ((uint16_t)f[i+4] << 8) | (uint16_t)f[i+5];
         Cluster_Id_Other_Ensemble = f[i+6];
 
-        r.msgs.push_back(strprintf("Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble));
         r.msgs.emplace_back(1, strprintf("Asw flags=0x%X", Asw_flags));
         r.msgs.emplace_back(1, strprintf("New flag=%d %s announcement", New_flag, New_flag?"newly introduced":"repeated"));
         r.msgs.emplace_back(1, strprintf("Region flag=%d last byte %s",
@@ -95,9 +96,10 @@ fig_result_t fig0_26(fig0_common_t& fig0, const display_settings_t &disp)
             i++;
         }
         // decode announcement switching types
+        r.msgs.emplace_back(1, "Announcement switching:");
         for (j = 0; j < 16; j++) {
             if (Asw_flags & (1 << j)) {
-                r.msgs.emplace_back(2, strprintf("Announcement switching=%s", get_announcement_type(j)));
+                r.msgs.emplace_back(2, strprintf("- %s", get_announcement_type(j)));
             }
         }
     }

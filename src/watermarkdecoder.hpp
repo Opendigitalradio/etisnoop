@@ -63,7 +63,8 @@ class WatermarkDecoder
 
             }
 
-            printf("Found SYNC at offset %zu out of %zu\n", bit_ix - alternance_count, m_confind_bits.size());
+            fprintf(stderr, "Found SYNC at offset %zu out of %zu\n",
+                    bit_ix - alternance_count, m_confind_bits.size());
 
             std::stringstream watermark_ss;
 

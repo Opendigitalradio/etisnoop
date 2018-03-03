@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -82,8 +82,8 @@ void usage(void)
 {
     fprintf(stderr,
             "Opendigitalradio ETISnoop analyser %s compiled at %s, %s\n\n"
-            "The ETISnoop analyser decodes and prints out a RAW ETI file in a\n"
-            "form that makes analysis easier.\n"
+            "The ETISnoop analyser decodes a RAW ETI file and prints out\n"
+            "its contents in YAML for easier analysis.\n"
             "\n"
             "  http://www.opendigitalradio.org\n"
             "\n"
@@ -94,7 +94,7 @@ void usage(void)
             "   -s <filename.yaml>\n"
             "           statistics mode: decode all subchannels and measure audio level, write statistics to file\n"
             "   -n N    stop analysing after N ETI frames\n"
-            "   -f      analyse FIC carousel\n"
+            "   -f      analyse FIC carousel (no YAML output)\n"
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
             "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n"
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
     FILE* etifd;
 
     if (file_name == "-") {
-        printf("Analysing stdin\n");
+        fprintf(stderr, "Analysing stdin\n");
         etifd = stdin;
     }
     else {
@@ -214,5 +214,4 @@ int main(int argc, char *argv[])
     eti_analyser.eti_analyse();
     fclose(etifd);
 }
-
 

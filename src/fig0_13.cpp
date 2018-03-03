@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -108,20 +108,21 @@ fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
 
     complete |= fig0_13_is_complete(SId, SCIdS);
 
-    r.msgs.push_back(strprintf("SId=0x%X", SId));
-    r.msgs.push_back(strprintf("SCIdS=%u", SCIdS));
-    r.msgs.push_back(strprintf("No=%u", No));
+    r.msgs.emplace_back(strprintf("SId=0x%X", SId));
+    r.msgs.emplace_back(strprintf("SCIdS=%u", SCIdS));
 
+    r.msgs.emplace_back("User applications:");
     for (int numapp = 0; numapp < No; numapp++) {
         uint16_t user_app_type = ((f[k] << 8) |
                 (f[k+1] & 0xE0)) >> 5;
         uint8_t  user_app_len  = f[k+1] & 0x1F;
         k+=2;
 
-        r.msgs.emplace_back(1, strprintf("User Application %d '%s'; length %u",
+        r.msgs.emplace_back(1, "-");
+        r.msgs.emplace_back(2, strprintf("User Application=%d '%s'",
                 user_app_type,
-                get_fig_0_13_userapp(user_app_type).c_str(),
-                user_app_len));
+                get_fig_0_13_userapp(user_app_type).c_str()));
+        r.msgs.emplace_back(2, strprintf("length=%u", user_app_len));
     }
 
     r.complete = complete;

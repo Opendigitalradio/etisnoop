@@ -180,7 +180,7 @@ int get_eti_frame(FILE* inputfile, int stream_type, void* buf)
     }
 
     if (frameSize > 6144) { // there might be a better limit
-        printf("Wrong frame size %u in ETI file!\n", frameSize);
+        fprintf(stderr, "Wrong frame size %u in ETI file!\n", frameSize);
         return -1;
     }
 
@@ -188,7 +188,7 @@ int get_eti_frame(FILE* inputfile, int stream_type, void* buf)
     if (read_bytes != frameSize) {
         // A short read of a frame (i.e. reading an incomplete frame)
         // is not tolerated. Input files must not contain incomplete frames
-        printf("Incomplete frame in ETI file!\n");
+        fprintf(stderr, "Incomplete frame in ETI file!\n");
         return -1;
     }
 

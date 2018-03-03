@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -65,7 +65,8 @@ fig_result_t fig0_28(fig0_common_t& fig0, const display_settings_t &disp)
         Rfa = (f[i+1] >> 6) & 0x01;
         Region_Id_Current_Ensemble = f[i+1] & 0x3F;
         PI = ((uint16_t)f[i+2] << 8) | (uint16_t)f[i+3];
-        r.msgs.push_back(strprintf("Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("Cluster Id Current Ensemble=0x%X", Cluster_Id_Current_Ensemble));
 
         if (Cluster_Id_Current_Ensemble == 0) {
             r.errors.push_back("Cluster Id Current Ensemble invalid value 0");

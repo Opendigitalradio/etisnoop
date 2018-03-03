@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -75,18 +75,18 @@ fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
             if ((flag_field != 0) && ((j <= 5) || (j == 8) ||
                         (j == 10) || (j == 13) || (j == 14) ||
                         (j == 19) || (j == 26) || (j == 28))) {
-                r.errors.push_back(strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
+                r.errors.push_back(strprintf("OE %d FIG 0/%d=carried in AIC, invalid configuration, shall always be carried entirely in the FIC",
                             fig0.oe(), j));
             }
             else if ((flag_field != 0) && ((j == 21) || (j == 24))) {
-                r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
+                r.msgs.emplace_back(1, strprintf("OE %d FIG 0/%d=carried in AIC, same shall be carried in FIC", fig0.oe(), j));
             }
             else if (flag_field != 0) {
                 if (fig0.oe() == 0) {
-                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
+                    r.msgs.emplace_back(1, strprintf("OE %d FIG 0/%d=carried in AIC, same shall be carried in FIC", fig0.oe(), j));
                 }
                 else {  // fig0.oe() == 1
-                r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 0/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
+                r.msgs.emplace_back(1, strprintf("OE %d FIG 0/%d=carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
                 }
             }
         }
@@ -96,10 +96,10 @@ fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
             flag_field = FIG_type1_flag_field & ((uint32_t)1 << j);
             if (flag_field != 0) {
                 if (fig0.oe() == 0) {
-                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 1/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
+                    r.msgs.emplace_back(1, strprintf("OE %d FIG 1/%d=carried in AIC, same shall be carried in FIC", fig0.oe(), j));
                 }
                 else {  // fig0.oe() == 1
-                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 1/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
+                    r.msgs.emplace_back(1, strprintf("OE %d FIG 1/%d=carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
                 }
             }
         }
@@ -109,10 +109,10 @@ fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp)
             flag_field = FIG_type2_flag_field & ((uint32_t)1 << j);
             if (flag_field != 0) {
                 if (fig0.oe() == 0) {
-                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 2/%d carried in AIC, same shall be carried in FIC", fig0.oe(), j));
+                    r.msgs.emplace_back(1, strprintf("OE %d FIG 2/%d=carried in AIC, same shall be carried in FIC", fig0.oe(), j));
                 }
                 else {  // fig0.oe() == 1
-                    r.msgs.emplace_back(1, strprintf("fig0.oe()=%d FIG 2/%d carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
+                    r.msgs.emplace_back(1, strprintf("OE %d FIG 2/%d=carried in AIC, may be carried entirely in AIC", fig0.oe(), j));
                 }
             }
         }

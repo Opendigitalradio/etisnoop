@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -72,8 +72,9 @@ fig_result_t fig0_16(fig0_common_t& fig0, const display_settings_t &disp)
         Continuation_flag = (f[i+4] >> 1) & 0x01;
         Update_flag = f[i+4] & 0x01;
 
-        r.msgs.push_back(strprintf("SId=0x%X", SId));
-        r.msgs.push_back(strprintf("PNum=0x%X ", PNum) + pnum_to_str(PNum));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("SId=0x%X", SId));
+        r.msgs.emplace_back(1, strprintf("PNum=0x%X ", PNum) + pnum_to_str(PNum));
 
         if (Rfa != 0) {
             r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
@@ -83,10 +84,10 @@ fig_result_t fig0_16(fig0_common_t& fig0, const display_settings_t &disp)
             r.errors.push_back(strprintf(", Rfu=0x%X invalid value", Rfu));
         }
 
-        r.msgs.push_back(strprintf("Continuation flag=%d: the programme will %s",
+        r.msgs.emplace_back(1, strprintf("Continuation flag=%d, the programme will %s",
                 Continuation_flag,
                 Continuation_flag ? "be interrupted but continued later" : "not be subject to a planned interruption"));
-        r.msgs.push_back(strprintf("Update flag=%d %sre-direction",
+        r.msgs.emplace_back(1, strprintf("Update flag=%d %sre-direction",
                 Update_flag, Update_flag ? "" : "no "));
         i += 5;
 
@@ -94,10 +95,10 @@ fig_result_t fig0_16(fig0_common_t& fig0, const display_settings_t &disp)
             // In the case of a re-direction, the New SId and New PNum shall be appended
             if (i < (fig0.figlen - 1)) {
                 New_SId = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
-                r.msgs.push_back(strprintf("New SId=0x%X", New_SId));
+                r.msgs.emplace_back(1, strprintf("New SId=0x%X", New_SId));
                 if (i < (fig0.figlen - 3)) {
                     New_PNum = ((uint16_t)f[i+2] << 8) | ((uint16_t)f[i+3]);
-                    r.msgs.push_back(strprintf("New PNum=0x%X ", New_PNum) + pnum_to_str(New_PNum));
+                    r.msgs.emplace_back(1, strprintf("New PNum=0x%X ", New_PNum) + pnum_to_str(New_PNum));
                 }
                 else {
                     r.errors.push_back("missing New PNum !");

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -79,9 +79,10 @@ fig_result_t fig0_22(fig0_common_t& fig0, const display_settings_t &disp)
         MainId = f[i] & 0x7F;
         r.complete |= fig0_22_is_complete(MS, MainId);
         key = (fig0.oe() << 8) | (fig0.pd() << 7) | MainId;
-        r.msgs.push_back(strprintf("M/S=%d %sidentifier",
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("M/S=%d %sidentifier",
                     MS, MS?"Sub-":"Main "));
-        r.msgs.push_back(strprintf("MainId=0x%X", MainId));
+        r.msgs.emplace_back(1, strprintf("MainId=0x%X", MainId));
         // check MainId value
         if ((Mode_Identity == 1) || (Mode_Identity == 2) || (Mode_Identity == 4)) {
             if (MainId > 69) {
@@ -96,7 +97,7 @@ fig_result_t fig0_22(fig0_common_t& fig0, const display_settings_t &disp)
             }
         }
         // print database key
-        r.msgs.push_back(strprintf("database key=0x%X", key));
+        r.msgs.emplace_back(1, strprintf("database key=0x%X", key));
         i++;
         if (MS == 0) {
             // Main identifier
@@ -109,7 +110,7 @@ fig_result_t fig0_22(fig0_common_t& fig0, const display_settings_t &disp)
                 gps_pos.latitude = (double)((int32_t)((((int32_t)Latitude_coarse) << 4) | (uint32_t)Latitude_fine)) * 90 / 524288;
                 gps_pos.longitude = (double)((int32_t)((((int32_t)Longitude_coarse) << 4) | (uint32_t)Longitude_fine)) * 180 / 524288;
                 fig0_22_key_Lat_Lng[key] = gps_pos;
-                r.msgs.push_back(strprintf("Lat Lng coarse=0x%X 0x%X, Lat Lng fine=0x%X 0x%X => Lat Lng=%f, %f",
+                r.msgs.emplace_back(1, strprintf("Lat Lng coarse=0x%X 0x%X, Lat Lng fine=0x%X 0x%X => Lat Lng=%f, %f",
                         Latitude_coarse, Longitude_coarse, Latitude_fine, Longitude_fine,
                         gps_pos.latitude, gps_pos.longitude));
                 i += 5;
@@ -127,14 +128,16 @@ fig_result_t fig0_22(fig0_common_t& fig0, const display_settings_t &disp)
                 if (Rfu != 0) {
                     r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
                 }
-                r.msgs.push_back(strprintf("Number of SubId fields=%d%s",
+                r.msgs.emplace_back(1, strprintf("Number of SubId fields=%d%s",
                         Nb_SubId_fields, (Nb_SubId_fields == 0)?", CEI":""));
                 i++;
 
+                r.msgs.emplace_back(1, "SubId Fields:");
                 for(j = i; ((j < (i + (Nb_SubId_fields * 6))) && (j < (fig0.figlen - 5))); j += 6) {
                     // iterate over SubId fields
                     SubId = f[j] >> 3;
-                    r.msgs.emplace_back(1, strprintf("SubId=0x%X", SubId));
+                    r.msgs.emplace_back(2, "-");
+                    r.msgs.emplace_back(3, strprintf("SubId=0x%X", SubId));
                     // check SubId value
                     if ((SubId == 0) || (SubId > 23)) {
                         r.errors.push_back("invalid value");
@@ -143,20 +146,20 @@ fig_result_t fig0_22(fig0_common_t& fig0, const display_settings_t &disp)
                     TD = ((f[j] & 0x03) << 8) | f[j+1];
                     Latitude_offset = (f[j+2] << 8) | f[j+3];
                     Longitude_offset = (f[j+4] << 8) | f[j+5];
-                    r.msgs.emplace_back(1, strprintf("TD=%d us", TD));
-                    r.msgs.emplace_back(1, strprintf("Lat Lng offset=0x%X 0x%X", Latitude_offset, Longitude_offset));
+                    r.msgs.emplace_back(3, strprintf("TD=%d us", TD));
+                    r.msgs.emplace_back(3, strprintf("Lat Lng offset=0x%X 0x%X", Latitude_offset, Longitude_offset));
 
                     if (fig0_22_key_Lat_Lng.count(key) > 0) {
                         // latitude longitude available in database for Main Identifier
                         latitude_sub = (90 * (double)Latitude_offset / 524288) + fig0_22_key_Lat_Lng[key].latitude;
                         longitude_sub = (180 * (double)Longitude_offset / 524288) + fig0_22_key_Lat_Lng[key].longitude;
-                        r.msgs.emplace_back(2, strprintf(" => Lat Lng=%f, %f", latitude_sub, longitude_sub));
+                        r.msgs.emplace_back(3, strprintf("Lat Lng=%f, %f", latitude_sub, longitude_sub));
                     }
                     else {
                         // latitude longitude not available in database for Main Identifier
                         latitude_sub = 90 * (double)Latitude_offset / 524288;
                         longitude_sub = 180 * (double)Longitude_offset / 524288;
-                        r.msgs.emplace_back(2, strprintf(" => Lat Lng=%f, %f wrong value because"
+                        r.msgs.emplace_back(3, strprintf("Lat Lng=%f, %f wrong value because"
                                     " Main identifier latitude/longitude not available in database", latitude_sub, longitude_sub));
                     }
                 }

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -59,19 +59,19 @@ fig_result_t fig0_10(fig0_common_t& fig0, const display_settings_t &disp)
         uint8_t seconds = f[5] >> 2;
         uint16_t milliseconds = ((uint16_t)(f[5] & 0x3) << 8) | f[6];
 
-        r.msgs.emplace_back("long form");
+        r.msgs.emplace_back("form=long");
         r.msgs.push_back(strprintf("MJD=0x%X %s", MJD, dateStr));
-        r.msgs.push_back(strprintf("LSI %u", LSI));
-        r.msgs.push_back(strprintf("ConfInd %u", ConfInd));
-        r.msgs.push_back(strprintf("UTC Time: %02d:%02d:%02d.%d",
+        r.msgs.push_back(strprintf("LSI=%u", LSI));
+        r.msgs.push_back(strprintf("ConfInd=%u", ConfInd));
+        r.msgs.push_back(strprintf("UTC Time=%02d:%02d:%02d.%d",
                     hours, minutes, seconds, milliseconds));
     }
     else {
-        r.msgs.emplace_back("short form");
+        r.msgs.emplace_back("form=short");
         r.msgs.push_back(strprintf("MJD=0x%X %s", MJD, dateStr));
-        r.msgs.push_back(strprintf("LSI %u", LSI));
-        r.msgs.push_back(strprintf("ConfInd %u", ConfInd));
-        r.msgs.push_back(strprintf("UTC Time: %02d:%02d", hours, minutes));
+        r.msgs.push_back(strprintf("LSI=%u", LSI));
+        r.msgs.push_back(strprintf("ConfInd=%u", ConfInd));
+        r.msgs.push_back(strprintf("UTC Time=%02d:%02d", hours, minutes));
     }
 
     r.complete = true;

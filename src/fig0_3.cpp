@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -68,13 +68,14 @@ fig_result_t fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
         DSCTy = f[i+2] & 0x3F;
         SubChId = (f[i+3] >> 2);
         Packet_address = ((uint16_t)(f[i+3] & 0x03) << 8) | ((uint16_t)f[i+4]);
-        r.msgs.push_back(strprintf("SCId=0x%X", SCId));
-        r.msgs.push_back(strprintf("CAOrg flag=%d CAOrg field %s", CAOrg_flag, CAOrg_flag?"present":"absent"));
-        r.msgs.push_back(strprintf("DG flag=%d", DG_flag));
-        r.msgs.push_back(strprintf("data groups are %sused to transport the service component", DG_flag ? "not ": ""));
-        r.msgs.push_back(strprintf("DSCTy=%d %s", DSCTy, get_dscty_type(DSCTy)));
-        r.msgs.push_back(strprintf("SubChId=0x%X", SubChId));
-        r.msgs.push_back(strprintf("Packet address=0x%X", Packet_address));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("SCId=0x%X", SCId));
+        r.msgs.emplace_back(1, strprintf("CAOrg flag=%d CAOrg field %s", CAOrg_flag, CAOrg_flag?"present":"absent"));
+        r.msgs.emplace_back(1, strprintf("DG flag=%d", DG_flag));
+        r.msgs.emplace_back(1, strprintf("data groups are %sused to transport the service component", DG_flag ? "not ": ""));
+        r.msgs.emplace_back(1, strprintf("DSCTy=%d %s", DSCTy, get_dscty_type(DSCTy)));
+        r.msgs.emplace_back(1, strprintf("SubChId=0x%X", SubChId));
+        r.msgs.emplace_back(1, strprintf("Packet address=0x%X", Packet_address));
 
         if (Rfa != 0) {
             r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
@@ -90,7 +91,7 @@ fig_result_t fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
                 CAOrg = ((uint16_t)f[i] << 8) | ((uint16_t)f[i+1]);
                 CAMode = (f[i] >> 5);
                 SharedFlag = f[i+1];
-        r.msgs.push_back(strprintf("CAOrg=0x%X CAMode=%d \"%s\" SharedFlag=0x%X%s",
+                r.msgs.emplace_back(1, strprintf("CAOrg=0x%X CAMode=%d \"%s\" SharedFlag=0x%X%s",
                         CAOrg, CAMode, get_ca_mode(CAMode), SharedFlag, (SharedFlag == 0) ? " invalid" : ""));
             }
             else {

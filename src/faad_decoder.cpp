@@ -109,7 +109,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
             int core_sr_index = m_dac_rate ? (m_sbr_flag ? 6 : 3) : (m_sbr_flag ? 8 : 5);   // 24/48/16/32 kHz
             int core_ch_config = get_aac_channel_configuration();
             if(core_ch_config == -1) {
-                printf("Unrecognized mpeg surround config (ignored): %d\n", m_mpeg_surround_config);
+                fprintf(stderr, "Unrecognized mpeg surround config (ignored): %d\n", m_mpeg_surround_config);
                 return false;
             }
 
@@ -124,7 +124,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
             long int init_result = NeAACDecInit2(m_faad_handle.decoder, asc, sizeof(asc), &samplerate, &channels);
             if(init_result != 0) {
                 /* If some error initializing occured, skip the file */
-                printf("Error initializing decoder library: %s\n", NeAACDecGetErrorMessage(-init_result));
+                fprintf(stderr, "Error initializing decoder library: %s\n", NeAACDecGetErrorMessage(-init_result));
                 NeAACDecClose(m_faad_handle.decoder);
                 return false;
             }
@@ -140,15 +140,15 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
         size_t samples  = hInfo.samples;
 
 #if 0
-        printf("bytes consumed %d\n", (int)(hInfo.bytesconsumed));
-        printf("samplerate = %d, samples = %zu, channels = %d,"
+        fprintf(stderr, "bytes consumed %d\n", (int)(hInfo.bytesconsumed));
+        fprintf(stderr, "samplerate = %d, samples = %zu, channels = %d,"
                 " error = %d, sbr = %d\n", m_sample_rate, samples,
                 m_channels, hInfo.error, hInfo.sbr);
-        printf("header = %d\n", hInfo.header_type);
+        fprintf(stderr, "header = %d\n", hInfo.header_type);
 #endif
 
         if (hInfo.error != 0) {
-            printf("FAAD Warning: %s\n",
+            fprintf(stderr, "FAAD Warning: %s\n",
                     faacDecGetErrorMessage(hInfo.error));
             return false;
         }
@@ -161,7 +161,7 @@ bool FaadDecoder::decode(vector<vector<uint8_t> > aus)
 
         if (samples) {
             if (m_channels != 1 and m_channels != 2) {
-                printf("Cannot handle %d channels\n", m_channels);
+                fprintf(stderr, "Cannot handle %d channels\n", m_channels);
             }
 
             m_stats.peak_level_left = 0;

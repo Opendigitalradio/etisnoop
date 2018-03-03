@@ -42,11 +42,11 @@ fig_result_t fig0_0(fig0_common_t& fig0, const display_settings_t &disp)
     }
 
     const uint8_t cid  = (f[1] & 0xF0) >> 4;
-    r.msgs.emplace_back(1, strprintf("Country ID=%d", cid));
+    r.msgs.emplace_back(strprintf("Country ID=%d", cid));
 
     const uint16_t eref = (f[1] & 0x0F)*256 + \
                            f[2];
-    r.msgs.emplace_back(1, strprintf("Ensemble reference=%d", eref));
+    r.msgs.emplace_back(strprintf("Ensemble reference=%d", eref));
 
     const uint8_t ch = (f[3] & 0xC0) >> 6;
     r.msgs.push_back(strprintf("Change flag=%d", ch));

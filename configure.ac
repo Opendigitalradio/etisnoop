@@ -34,8 +34,6 @@ AC_SEARCH_LIBS([NeAACDecDecode], [faad], [], [
   AC_MSG_ERROR([unable to find libfaad])
 ])
 
-AC_CHECK_LIB([rt], [clock_gettime], [], [AC_MSG_ERROR([library rt is missing])])
-
 AM_CONDITIONAL([IS_GIT_REPO], [test -d '.git'])
 
 AC_CONFIG_FILES([Makefile])

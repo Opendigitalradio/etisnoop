@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -65,15 +65,16 @@ fig_result_t fig0_17(fig0_common_t& fig0, const display_settings_t &disp)
         L_flag = ((f[i+2] >> 5) & 0x01);
         CC_flag = ((f[i+2] >> 4) & 0x01);
         Rfa = (f[i+2] & 0x0F);
-        r.msgs.push_back(strprintf("SId=0x%X", SId));
-        r.msgs.push_back(strprintf(
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("SId=0x%X", SId));
+        r.msgs.emplace_back(1, strprintf(
                     "S/D=%d Programme Type codes and language (when present), %srepresent the current programme contents",
                     SD_flag, SD_flag?"":"may not "));
-        r.msgs.push_back(strprintf("P/S=%d %s service component",
+        r.msgs.emplace_back(1, strprintf("P/S=%d %s service component",
                     PS_flag, PS_flag?"secondary":"primary"));
-        r.msgs.push_back(strprintf("L flag=%d language field %s",
+        r.msgs.emplace_back(1, strprintf("L flag=%d language field %s",
                 L_flag, L_flag?"present":"absent"));
-        r.msgs.push_back(strprintf("CC flag=%d complementary code and preceding Rfa and Rfu fields %s",
+        r.msgs.emplace_back(1, strprintf("CC flag=%d complementary code and preceding Rfa and Rfu fields %s",
                 CC_flag, CC_flag?"present":"absent"));
 
         if (Rfa != 0) {
@@ -84,7 +85,7 @@ fig_result_t fig0_17(fig0_common_t& fig0, const display_settings_t &disp)
         if (L_flag != 0) {
             if (i < fig0.figlen) {
                 Language = f[i];
-                r.msgs.push_back(strprintf("Language=0x%X %s", Language,
+                r.msgs.emplace_back(1, strprintf("Language=0x%X %s", Language,
                         get_language_name(Language)));
             }
             else {
@@ -103,7 +104,7 @@ fig_result_t fig0_17(fig0_common_t& fig0, const display_settings_t &disp)
                 r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
             }
             Int_code = f[i] & 0x1F;
-            r.msgs.push_back(strprintf("Int code=0x%X %s", Int_code,
+            r.msgs.emplace_back(1, strprintf("Int code=0x%X %s", Int_code,
                         get_programme_type(get_international_table(), Int_code)));
             i++;
         }
@@ -122,7 +123,7 @@ fig_result_t fig0_17(fig0_common_t& fig0, const display_settings_t &disp)
                     r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
                 }
                 Comp_code = f[i] & 0x1F;
-                r.msgs.push_back(strprintf("Comp code=0x%X %s", Comp_code,
+                r.msgs.emplace_back(1, strprintf("Comp code=0x%X %s", Comp_code,
                             get_programme_type(get_international_table(), Comp_code)));
                 i++;
             }

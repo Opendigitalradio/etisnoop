@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -69,7 +69,8 @@ fig_result_t fig0_14(fig0_common_t& fig0, const display_settings_t &disp)
         SubChId = f[i] >> 2;
         r.complete |= fig0_14_is_complete(SubChId);
         FEC_scheme = f[i] & 0x3;
-        r.msgs.push_back(strprintf("SubChId=0x%X", SubChId));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("SubChId=0x%X", SubChId));
         r.msgs.emplace_back(1, strprintf("FEC scheme=%d %s",
                 FEC_scheme, FEC_schemes_str[FEC_scheme]));
         i++;

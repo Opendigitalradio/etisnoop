@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -66,11 +66,12 @@ fig_result_t fig0_19(fig0_common_t& fig0, const display_settings_t &disp)
         New_flag = (f[i+3] >> 7);
         Region_flag = (f[i+3] >> 6) & 0x1;
         SubChId = (f[i+3] & 0x3F);
-        r.msgs.push_back(strprintf("Cluster Id=0x%02x", Cluster_Id));
-        r.msgs.push_back(strprintf("Asw flags=0x%04x", Asw_flags));
-        r.msgs.push_back(strprintf("New flag=%d %s", New_flag, (New_flag)?"new":"repeat"));
-        r.msgs.push_back(strprintf("Region flag=%d last byte %s", Region_flag, (Region_flag)?"present":"absent"));
-        r.msgs.push_back(strprintf("SubChId=%d", SubChId));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("Cluster Id=0x%02x", Cluster_Id));
+        r.msgs.emplace_back(1, strprintf("Asw flags=0x%04x", Asw_flags));
+        r.msgs.emplace_back(1, strprintf("New flag=%d %s", New_flag, (New_flag)?"new":"repeat"));
+        r.msgs.emplace_back(1, strprintf("Region flag=%d last byte %s", Region_flag, (Region_flag)?"present":"absent"));
+        r.msgs.emplace_back(1, strprintf("SubChId=%d", SubChId));
         if (Region_flag) {
             if (i < (fig0.figlen - 4)) {
                 // read region lower part
@@ -79,16 +80,17 @@ fig_result_t fig0_19(fig0_common_t& fig0, const display_settings_t &disp)
                 if (Rfa != 0) {
                     r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
                 }
-                r.msgs.push_back(strprintf("Region Lower Part=0x%02x", RegionId_LP));
+                r.msgs.emplace_back(1, strprintf("Region Lower Part=0x%02x", RegionId_LP));
             }
             else {
                 r.errors.push_back("missing Region Lower Part, fig length too short !");
             }
         }
         // decode announcement switching types
+        r.msgs.emplace_back(1, strprintf("Announcement switching:"));
         for(j = 0; j < 16; j++) {
             if (Asw_flags & (1 << j)) {
-                r.msgs.emplace_back(1, strprintf("Announcement switching=%s", get_announcement_type(j)));
+                r.msgs.emplace_back(2, strprintf("- %s", get_announcement_type(j)));
             }
         }
         i += (4 + Region_flag);

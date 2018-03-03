@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -63,7 +63,8 @@ fig_result_t fig0_27(fig0_common_t& fig0, const display_settings_t &disp)
         Rfu = f[i+2] >> 4;
         Number_PI_codes = f[i+2] & 0x0F;
         key = (fig0.oe() << 5) | (fig0.pd() << 4) | Number_PI_codes;
-        r.msgs.push_back(strprintf("SId=0x%X", SId));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("SId=0x%X", SId));
         if (Rfu != 0) {
             r.errors.push_back(strprintf("Rfu=%d invalid value", Rfu));
         }
@@ -75,14 +76,15 @@ fig_result_t fig0_27(fig0_common_t& fig0, const display_settings_t &disp)
         // CEI Change Event Indication
         if (Number_PI_codes == 0) {
             // The Change Event Indication (CEI) is signalled by the Number of PI codes field = 0
-            r.msgs.emplace_back(1, "CEI");
+            r.msgs.emplace_back(1, "CEI=true");
         }
         i += 3;
 
+        r.msgs.emplace_back(1, "PI Codes:");
         for (j = 0; j < Number_PI_codes && i < fig0.figlen - 1; j++) {
             // iterate over PI
             PI = ((uint16_t)f[i] << 8) | (uint16_t)f[i+1];
-            r.msgs.emplace_back(2, strprintf("PI=0x%X", PI));
+            r.msgs.emplace_back(2, strprintf("- 0x%X", PI));
             i += 2;
         }
         if (j != Number_PI_codes) {

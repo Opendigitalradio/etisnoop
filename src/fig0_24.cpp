@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -76,11 +76,12 @@ fig_result_t fig0_24(fig0_common_t& fig0, const display_settings_t &disp)
         key = ((uint64_t)fig0.oe() << 33) | ((uint64_t)fig0.pd() << 32) | \
               (uint64_t)SId;
 
-        r.msgs.push_back(strprintf("PD=%d", fig0.pd()));
-        r.msgs.push_back(strprintf("SId=0x%X", SId));
-        r.msgs.push_back(strprintf("CAId=%d", CAId));
-        r.msgs.push_back(strprintf("Number of EId=%d", Number_of_EIds));
-        r.msgs.push_back(strprintf("database key=%09" PRId64, key));
+        r.msgs.emplace_back("-");
+        r.msgs.emplace_back(1, strprintf("PD=%d", fig0.pd()));
+        r.msgs.emplace_back(1, strprintf("SId=0x%X", SId));
+        r.msgs.emplace_back(1, strprintf("CAId=%d", CAId));
+        r.msgs.emplace_back(1, strprintf("Number of EId=%d", Number_of_EIds));
+        r.msgs.emplace_back(1, strprintf("database key=%09" PRId64, key));
 
         if (Rfa != 0) {
             r.errors.push_back(strprintf("Rfa=%d invalid value", Rfa));
@@ -88,15 +89,21 @@ fig_result_t fig0_24(fig0_common_t& fig0, const display_settings_t &disp)
 
         // CEI Change Event Indication
         if (Number_of_EIds == 0) {
-            r.msgs.emplace_back("CEI");
+            r.msgs.emplace_back("CEI=true");
         }
         i++;
 
+        std::stringstream eid_ss;
         for (j = i; ((j < (i + (Number_of_EIds * 2))) && (j < fig0.figlen)); j += 2) {
             // iterate over EIds
             EId = ((uint16_t)f[j] <<8) | (uint16_t)f[j+1];
-            r.msgs.emplace_back(1, strprintf("EId 0x%04x", EId));
+            if (j > i) {
+                eid_ss << ", ";
+            }
+            eid_ss << strprintf("0x%04x", EId);
         }
+        r.msgs.emplace_back(1, "EIds: [" + eid_ss.str() + "]");
+
         i += (Number_of_EIds * 2);
     }
 

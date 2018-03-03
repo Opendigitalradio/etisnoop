@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -48,23 +48,38 @@ struct display_settings_t {
 
 std::string strprintf(const char* fmt, ...);
 
-void printbuf(std::string header,
+void printbuf(const std::string& header,
         const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
-        std::string desc="");
+        const std::string& desc="",
+        const std::string& value="");
 
-void printfig(std::string header,
+void printfig(const std::string& header,
         const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
-        std::string desc="");
+        const std::string& desc="",
+        const std::string& value="");
 
-void printbuf(std::string header,
+void printbuf(const std::string& header,
         int indent,
         uint8_t* buffer,
         size_t size,
-        std::string desc="");
+        const std::string& desc="",
+        const std::string& value="");
+
+void printbuf(const std::string& header, int indent = 0);
+
+void printvalue(const std::string& header,
+        int indent = 0,
+        const std::string& desc="",
+        const std::string& value="");
+
+void printvalue(const std::string& header,
+        const display_settings_t &disp,
+        const std::string& desc="",
+        const std::string& value="");
 
 void printinfo(const std::string &header,
         const display_settings_t &disp,
@@ -72,6 +87,8 @@ void printinfo(const std::string &header,
 
 void printinfo(const std::string &header,
         int min_verb);
+
+void printsequencestart(int indent = 0);
 
 // sprintfMJD: convert MJD (Modified Julian Date) into date string
 int sprintfMJD(char *dst, int mjd);
