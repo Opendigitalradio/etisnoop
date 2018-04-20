@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -46,6 +46,7 @@ extern std::atomic<bool> quit;
 
 struct eti_analyse_config_t {
     FILE* etifd = nullptr;
+    FILE* ficfd = nullptr;
     bool ignore_error = false;
     std::map<int, StreamSnoop> streams_to_decode;
     std::list<std::pair<int, int> > figs_to_display;
@@ -67,9 +68,12 @@ class ETI_Analyser {
             ensemble(),
             wm_decoder() {}
 
-        void eti_analyse(void);
+        void analyse(void);
 
     private:
+        void eti_analyse(void);
+        void fic_analyse(void);
+
         void decodeFIG(
                 const eti_analyse_config_t &config,
                 FIGalyser &figs,

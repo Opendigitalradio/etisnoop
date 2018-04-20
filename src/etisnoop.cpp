@@ -72,7 +72,7 @@ const struct option longopts[] = {
     {"help",               no_argument,        0, 'h'},
     {"ignore-error",       no_argument,        0, 'e'},
     {"input",              required_argument,  0, 'i'},
-    {"input-file",         no_argument,        0, 'i'},
+    {"input-fic",          required_argument,  0, 'I'},
     {"num-frames",         required_argument,  0, 'n'},
     {"statistics",         required_argument,  0, 's'},
     {"verbose",            no_argument,        0, 'v'},
@@ -85,10 +85,14 @@ void usage(void)
             "The ETISnoop analyser decodes a RAW ETI file and prints out\n"
             "its contents in YAML for easier analysis.\n"
             "\n"
+            "It can also read a FIC dump from file.\n"
+            "\n"
             "  http://www.opendigitalradio.org\n"
             "\n"
-            "Usage: etisnoop [options] [-i filename]\n"
+            "Usage: etisnoop [options] [(-i|-I) filename]\n"
             "\n"
+            "   -i      the file contains RAW ETI\n"
+            "   -I      the file contains FIC\n"
             "   -v      increase verbosity (can be given more than once)\n"
             "   -d N    decode subchannel N into .msc file and if DAB+, decode to .wav file\n"
             "   -s <filename.yaml>\n"
@@ -121,11 +125,13 @@ int main(int argc, char *argv[])
     int index;
     int ch = 0;
     string file_name("-");
+    bool file_contains_eti = false;
+    bool file_contains_fic = false;
 
     eti_analyse_config_t config;
 
     while(ch != -1) {
-        ch = getopt_long(argc, argv, "d:efF:hi:n:rRs:vw", longopts, &index);
+        ch = getopt_long(argc, argv, "d:efF:hi:I:n:rRs:vw", longopts, &index);
         switch (ch) {
             case 'd':
                 {
@@ -163,6 +169,11 @@ int main(int argc, char *argv[])
                 break;
             case 'i':
                 file_name = optarg;
+                file_contains_eti = true;
+                break;
+            case 'I':
+                file_name = optarg;
+                file_contains_fic = true;
                 break;
             case 'n':
                 config.num_frames_to_decode = std::atoi(optarg);
@@ -195,23 +206,39 @@ int main(int argc, char *argv[])
         }
     }
 
-    FILE* etifd;
 
-    if (file_name == "-") {
-        fprintf(stderr, "Analysing stdin\n");
-        etifd = stdin;
+    if (file_contains_eti and file_contains_fic) {
+        fprintf(stderr, "-i and -I are mutually exclusive\n");
+        return 1;
+    }
+    else if (file_contains_eti or file_contains_fic) {
+        FILE* fd;
+        if (file_name == "-") {
+            fprintf(stderr, "Analysing stdin\n");
+            fd = stdin;
+        }
+        else {
+            fd = fopen(file_name.c_str(), "r");
+            if (fd == NULL) {
+                perror("File open failed");
+                return 1;
+            }
+        }
+
+        if (file_contains_eti) {
+            config.etifd = fd;
+        }
+        else {
+            config.ficfd = fd;
+        }
+
+        ETI_Analyser eti_analyser(config);
+        eti_analyser.analyse();
+        fclose(fd);
     }
     else {
-        etifd = fopen(file_name.c_str(), "r");
-        if (etifd == NULL) {
-            perror("File open failed");
-            return 1;
-        }
+        fprintf(stderr, "Must specify either -i or -I\n");
+        return 1;
     }
-    config.etifd = etifd;
-
-    ETI_Analyser eti_analyser(config);
-    eti_analyser.eti_analyse();
-    fclose(etifd);
 }
 

@@ -91,6 +91,15 @@ static void print_fig_result(const fig_result_t& fig_result, const display_setti
     }
 }
 
+void ETI_Analyser::analyse()
+{
+    if (config.etifd != nullptr) {
+        return eti_analyse();
+    }
+    else if (config.ficfd != nullptr) {
+        return fic_analyse();
+    }
+}
 
 void ETI_Analyser::eti_analyse()
 {
@@ -427,6 +436,7 @@ void ETI_Analyser::eti_analyse()
             printvalue("FIG Length", 1, "FIC length in bytes", to_string(ficl*4));
             printvalue("FIC", 1);
             fib = p + 12 + 4*nst;
+
             for (int i = 0; i < ficl*4/32; i++) {
                 printsequencestart(2);
                 printvalue("FIB", 3, "", to_string(i));
@@ -444,7 +454,8 @@ void ETI_Analyser::eti_analyse()
                 if (crccorrect)
                     printvalue("CRC", 3, "", "OK");
                 else {
-                    printvalue("CRC", 3, "", strprintf("Mismatch: %02x", i, crc));
+                    printvalue("CRC", 3, "",
+                            strprintf("Mismatch: %04x %04x", crc, figcrc));
                 }
 
                 printvalue("FIGs", 3);
@@ -638,6 +649,83 @@ void ETI_Analyser::eti_analyse()
     }
 
     figs_cleardb();
+}
+
+void ETI_Analyser::fic_analyse()
+{
+    if (config.analyse_fig_rates) {
+        rate_display_header(config.analyse_fig_rates_per_second);
+    }
+
+    FILE *stat_fd = nullptr;
+    if (not config.statistics_filename.empty()) {
+        stat_fd = fopen(config.statistics_filename.c_str(), "w");
+        if (stat_fd == nullptr) {
+            fprintf(stderr, "Could not open statistics file: %s\n",
+                    strerror(errno));
+            return;
+        }
+    }
+
+    bool running = true;
+    int i = 0;
+    while (running) {
+        FIGalyser figs;
+        uint8_t fib[32];
+        if (fread(fib, 32, 1, config.ficfd) == 0) {
+            break;
+        }
+
+        printsequencestart(2);
+        printvalue("FIB", 3, "", to_string(i));
+        figs.set_fib(i);
+        rate_new_fib(i);
+
+        const uint16_t figcrc = fib[30]*256 + fib[31];
+        uint16_t crc = 0xffff;
+        for (int j = 0; j < 30; j++) {
+            crc = update_crc_ccitt(crc, fib[j]);
+        }
+        crc =~ crc;
+        const bool crccorrect = (crc == figcrc);
+        if (crccorrect)
+            printvalue("CRC", 3, "", "OK");
+        else {
+            printvalue("CRC", 3, "",
+                    strprintf("Mismatch: %04x %04x", crc, figcrc));
+        }
+
+        printvalue("FIGs", 3);
+
+        uint8_t *fig = fib;
+        bool endmarker = false;
+        int figcount = 0;
+        while (!endmarker) {
+            uint8_t figtype, figlen;
+            figtype = (fig[0] & 0xE0) >> 5;
+            if (figtype != 7) {
+                figlen = fig[0] & 0x1F;
+
+                printsequencestart(4);
+                decodeFIG(config, figs, fig+1, figlen, figtype, 5, crccorrect);
+                fig += figlen + 1;
+                figcount += figlen + 1;
+                if (figcount >= 29)
+                    endmarker = true;
+            }
+            else {
+                endmarker = true;
+            }
+        }
+
+        if (quit.load()) running = false;
+
+        if (config.analyse_fic_carousel) {
+            figs.analyse(1);
+        }
+
+        i = (i+1) % 3;
+    }
 }
 
 void ETI_Analyser::decodeFIG(
