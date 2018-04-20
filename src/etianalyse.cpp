@@ -225,7 +225,7 @@ void ETI_Analyser::eti_analyse()
         printbuf("FCT", 2, p+4, 1, "Frame Count", to_string(fct));
         if (last_fct != -1) {
             if ((last_fct + 1) % 250 != fct) {
-                printbuf("Error: FCT not contiguous", 2);
+                fprintf(stderr, "Error: FCT not contiguous\n");
             }
         }
         last_fct = fct;
