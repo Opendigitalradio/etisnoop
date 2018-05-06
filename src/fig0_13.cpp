@@ -116,13 +116,53 @@ fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
         uint16_t user_app_type = ((f[k] << 8) |
                 (f[k+1] & 0xE0)) >> 5;
         uint8_t  user_app_len  = f[k+1] & 0x1F;
-        k+=2;
+        k += 2;
 
         r.msgs.emplace_back(1, "-");
         r.msgs.emplace_back(2, strprintf("User Application=%d '%s'",
                 user_app_type,
                 get_fig_0_13_userapp(user_app_type).c_str()));
         r.msgs.emplace_back(2, strprintf("length=%u", user_app_len));
+
+        if (user_app_len >= 2) {
+            bool ca_flag = (f[k] >> 7) & 0x1;
+            r.msgs.emplace_back(2, strprintf("CAflag=%d", ca_flag));
+
+            bool ca_org_flag = (f[k] >> 6) & 0x1;
+            r.msgs.emplace_back(2, strprintf("CAOrgflag=%d", ca_org_flag));
+
+            uint8_t xpad_appty = f[k] & 0x1F;
+            r.msgs.emplace_back(2, strprintf("XPAD_AppTy=%d", xpad_appty));
+
+            bool dg_flag = (f[k+1] >> 7) & 0x1;
+            r.msgs.emplace_back(2, strprintf("DGflag=%d", dg_flag));
+
+            uint8_t dscty = f[k+1] & 0x3F;
+            r.msgs.emplace_back(2, strprintf("DSCTy=%d", dscty));
+
+            k += 2;
+            size_t effective_uadata_len = user_app_len - 2;
+
+            if (ca_org_flag) {
+                if (user_app_len < 4) {
+                    r.errors.push_back("User Application Data Length too short to contain CAOrg!");
+                }
+                else {
+                    uint16_t ca_org = (f[k] << 8) | f[k+1];
+                    k += 2;
+                    effective_uadata_len -= 2;
+                    r.msgs.emplace_back(2, strprintf("ca_org=%u", ca_org));
+                }
+            }
+
+            std::string ua_data = "UA Data=";
+            for (size_t i = 0; i < effective_uadata_len; i++) {
+                ua_data += strprintf("0x%02x ", f[k + i]);
+            }
+            r.msgs.emplace_back(2, move(ua_data));
+        }
+
+
     }
 
     r.complete = complete;
