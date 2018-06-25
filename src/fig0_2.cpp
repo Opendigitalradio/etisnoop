@@ -154,27 +154,27 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
                 else
                     r.msgs.emplace_back(3, strprintf("ASCTy=Unknown ASCTy (%d)", scty));
 
-                r.msgs.emplace_back(3, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("SubChannel ID=0x%02X", subchid));
                 r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
             else if (timd == 1) {
                 // MSC stream data
                 r.msgs.emplace_back(3, "Mode=data stream");
                 r.msgs.emplace_back(3, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
-                r.msgs.emplace_back(3, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("SubChannel ID=0x%02X", subchid));
                 r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
             else if (timd == 2) {
                 // FIDC
                 r.msgs.emplace_back(3, "Mode=FIDC");
                 r.msgs.emplace_back(3, strprintf("DSCTy=%d %s", scty, get_dscty_type(scty)));
-                r.msgs.emplace_back(3, strprintf("Fast Information Data Channel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("Fast Information Data Channel ID=0x%02X", subchid));
                 r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
             else if (timd == 3) {
                 // MSC Packet mode
                 r.msgs.emplace_back(3, "Mode=MSC Packet");
-                r.msgs.emplace_back(3, strprintf("SubChannel ID=%02X", subchid));
+                r.msgs.emplace_back(3, strprintf("SubChannel ID=0x%02X", subchid));
                 r.msgs.emplace_back(3, strprintf("CA=%d", ca));
             }
 
