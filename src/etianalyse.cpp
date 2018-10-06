@@ -598,11 +598,14 @@ void ETI_Analyser::eti_analyse()
                                         case subchannel_t::protection_eep_option_t::EEP_A:
                                             fprintf(stat_fd, "          protection: EEP %d-A\n",
                                                     subch.protection_level + 1);
+                                            break;
                                         case subchannel_t::protection_eep_option_t::EEP_B:
                                             fprintf(stat_fd, "          protection: EEP %d-B\n",
                                                     subch.protection_level + 1);
+                                            break;
                                         default:
                                             fprintf(stat_fd, "          protection: unknown\n");
+                                            break;
                                     }
 
                                     fprintf(stat_fd, "          size: %d\n", subch.size);
