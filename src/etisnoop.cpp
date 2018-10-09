@@ -102,6 +102,7 @@ void usage(void)
             "   -r      analyse FIG rates in FIGs per second\n"
             "   -R      analyse FIG rates in frames per FIG\n"
             "   -w      decode CRC-DABMUX and ODR-DabMux watermark.\n"
+            "   -e      decode frames with SYNC error and decode FIGs with invalid CRC\n"
             "   -F <type>/<ext>\n"
             "           add FIG type/ext to list of FIGs to display.\n"
             "           if the option is not given, all FIGs are displayed.\n"

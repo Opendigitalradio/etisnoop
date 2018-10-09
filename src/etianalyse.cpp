@@ -458,25 +458,27 @@ void ETI_Analyser::eti_analyse()
                             strprintf("Mismatch: %04x %04x", crc, figcrc));
                 }
 
-                printvalue("FIGs", 3);
+                if (crccorrect or config.ignore_error) {
+                    printvalue("FIGs", 3);
 
-                bool endmarker = false;
-                int figcount = 0;
-                while (!endmarker) {
-                    uint8_t figtype, figlen;
-                    figtype = (fig[0] & 0xE0) >> 5;
-                    if (figtype != 7) {
-                        figlen = fig[0] & 0x1F;
+                    bool endmarker = false;
+                    int figcount = 0;
+                    while (!endmarker) {
+                        uint8_t figtype, figlen;
+                        figtype = (fig[0] & 0xE0) >> 5;
+                        if (figtype != 7) {
+                            figlen = fig[0] & 0x1F;
 
-                        printsequencestart(4);
-                        decodeFIG(config, figs, fig+1, figlen, figtype, 5, crccorrect);
-                        fig += figlen + 1;
-                        figcount += figlen + 1;
-                        if (figcount >= 29)
+                            printsequencestart(4);
+                            decodeFIG(config, figs, fig+1, figlen, figtype, 5, crccorrect);
+                            fig += figlen + 1;
+                            figcount += figlen + 1;
+                            if (figcount >= 29)
+                                endmarker = true;
+                        }
+                        else {
                             endmarker = true;
-                    }
-                    else {
-                        endmarker = true;
+                        }
                     }
                 }
 
@@ -698,26 +700,28 @@ void ETI_Analyser::fic_analyse()
                     strprintf("Mismatch: %04x %04x", crc, figcrc));
         }
 
-        printvalue("FIGs", 3);
+        if (crccorrect or config.ignore_error) {
+            printvalue("FIGs", 3);
 
-        uint8_t *fig = fib;
-        bool endmarker = false;
-        int figcount = 0;
-        while (!endmarker) {
-            uint8_t figtype, figlen;
-            figtype = (fig[0] & 0xE0) >> 5;
-            if (figtype != 7) {
-                figlen = fig[0] & 0x1F;
+            uint8_t *fig = fib;
+            bool endmarker = false;
+            int figcount = 0;
+            while (!endmarker) {
+                uint8_t figtype, figlen;
+                figtype = (fig[0] & 0xE0) >> 5;
+                if (figtype != 7) {
+                    figlen = fig[0] & 0x1F;
 
-                printsequencestart(4);
-                decodeFIG(config, figs, fig+1, figlen, figtype, 5, crccorrect);
-                fig += figlen + 1;
-                figcount += figlen + 1;
-                if (figcount >= 29)
+                    printsequencestart(4);
+                    decodeFIG(config, figs, fig+1, figlen, figtype, 5, crccorrect);
+                    fig += figlen + 1;
+                    figcount += figlen + 1;
+                    if (figcount >= 29)
+                        endmarker = true;
+                }
+                else {
                     endmarker = true;
-            }
-            else {
-                endmarker = true;
+                }
             }
         }
 
