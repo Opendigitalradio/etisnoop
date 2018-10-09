@@ -801,14 +801,11 @@ void ETI_Analyser::decodeFIG(
             break;
         case 2:
             {// EXTENDED LABELS
-                uint16_t ext,oe;
-
-                uint8_t toggle_flag = (f[0] & 0x80) >> 7;
-                uint8_t segment_index = (f[0] & 0x70) >> 4;
-                oe = (f[0] & 0x08) >> 3;
-                ext = f[0] & 0x07;
-
+                const uint16_t ext = f[0] & 0x07;
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, ext), indent);
+
+                fig2_common_t fig2(ensemble, f, figlen);
+                auto fig_result = fig2_select(fig2, disp);
 
                 printvalue("FIG", disp, "", strprintf("2/%d", ext));
 
@@ -818,12 +815,12 @@ void ETI_Analyser::decodeFIG(
 
                 if (disp.print) {
                     printvalue("Length", disp, "", to_string(figlen));
-                    printvalue("OE", disp, "", to_string(oe));
-                    printvalue("Toggle flag", disp, "", to_string(toggle_flag));
-                    printvalue("Segment index", disp, "", to_string(segment_index));
+                    printvalue("RFU", disp, "", to_string(fig2.rfu()));
+                    printvalue("Toggle flag", disp, "", to_string(fig2.toggle_flag()));
+                    printvalue("Segment index", disp, "", to_string(fig2.segment_index()));
                 }
 
-                figs.push_back(figtype, ext, figlen);
+                figs.push_back(figtype, fig2.ext(), figlen);
 
                 bool complete = true;
                 rate_announce_fig(figtype, ext, complete);

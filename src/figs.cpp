@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -110,3 +110,8 @@ fig_result_t fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
     return r;
 }
 
+
+fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
+{
+    return {};
+}

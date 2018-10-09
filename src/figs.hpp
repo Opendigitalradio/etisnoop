@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -102,6 +102,29 @@ struct fig1_common_t {
     uint8_t ext() { return f[0] & 0x07; }
 };
 
+struct fig2_common_t {
+    fig2_common_t(
+            ensemble_database::ensemble_t &ens,
+            uint8_t* fig_data,
+            uint16_t fig_len) :
+        fibcrccorrect(true),
+        ensemble(ens),
+        f(fig_data),
+        figlen(fig_len) { }
+
+    // The ensemble only gets updated when the fib crc is ok
+    bool fibcrccorrect;
+    ensemble_database::ensemble_t& ensemble;
+
+    uint8_t* f;
+    uint16_t figlen;
+
+    uint8_t toggle_flag() { return (f[0] & 0x80) >> 7; }
+    uint8_t segment_index() { return (f[0] & 0x70) >> 4; }
+    uint16_t rfu() { return (f[0] & 0x08) >> 3; }
+    uint16_t ext() { return f[0] & 0x07; }
+};
+
 // FIG 0/11 and 0/22 struct
 struct Lat_Lng {
     double latitude, longitude;
@@ -145,4 +168,6 @@ fig_result_t fig0_28(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_31(fig0_common_t& fig0, const display_settings_t &disp);
 
 fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp);
+
+fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp);
 
