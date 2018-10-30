@@ -681,6 +681,9 @@ void ETI_Analyser::fic_analyse()
             break;
         }
 
+        printf("---\n");
+        printvalue("LIDATA", 0);
+        printvalue("FIC", 1);
         printsequencestart(2);
         printvalue("FIB", 3, "", to_string(i));
         figs.set_fib(i);
