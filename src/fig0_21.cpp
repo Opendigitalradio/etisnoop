@@ -226,7 +226,7 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             const uint8_t Control_field_trans_mode = (Control_field >> 1) & 0x07;
                             if ((Control_field & 0x10) == 0) {
                                 r.msgs.emplace_back(5,
-                                        strprintf("%d KHz", freq));
+                                        strprintf("%d kHz", freq));
                                 if ((Control_field & 0x01) == 0) {
                                     r.msgs.emplace_back(5,
                                             "geographically adjacent area");
@@ -252,7 +252,7 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             }
                             else {  // (Control_field & 0x10) == 0x10
                                 r.msgs.emplace_back(5,
-                                        strprintf("%d KHz,"
+                                        strprintf("%d kHz,"
                                             "invalid Control field b23 0x%x",
                                             freq, Control_field));
                             }
@@ -287,12 +287,12 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             if (RandM == 0xA) {
                                 if (freq < 16) {
                                     r.msgs.emplace_back(5,
-                                            strprintf("%d KHz",
+                                            strprintf("%d kHz",
                                                 144 + ((uint32_t)freq * 9)));
                                 }
                                 else {  // f[k] >= 16
                                     r.msgs.emplace_back(5,
-                                            strprintf("%d KHz",
+                                            strprintf("%d kHz",
                                                 387 + ((uint32_t)freq * 9)));
                                 }
                             }
@@ -330,7 +330,7 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
                             i += bytes_per_entry;
                             if (freq != 0) {
                                 r.msgs.emplace_back(5,
-                                        strprintf("%d KHz", freq));
+                                        strprintf("%d kHz", freq));
                             }
                             else {
                                 r.errors.emplace_back(
@@ -377,7 +377,7 @@ fig_result_t fig0_21(fig0_common_t& fig0, const display_settings_t &disp)
 
                             if (freq != 0) {
                                 r.msgs.emplace_back(5,
-                                        strprintf("%d KHz", freq));
+                                        strprintf("%d kHz", freq));
                             }
                             else {
                                 r.errors.emplace_back(
