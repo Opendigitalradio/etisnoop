@@ -91,6 +91,19 @@ static void print_fig_result(const fig_result_t& fig_result, const display_setti
     }
 }
 
+static std::string flag_to_shortlabel(const ensemble_database::label_t label)
+{
+    stringstream shortlabel;
+    for (size_t i = 0; i < label.label.size(); ++i) {
+        if (label.shortlabel_flag & 0x8000 >> i) {
+            shortlabel << label.label[i];
+        }
+    }
+
+    return shortlabel.str();
+}
+
+
 void ETI_Analyser::analyse()
 {
     if (config.etifd != nullptr) {
@@ -565,9 +578,8 @@ void ETI_Analyser::eti_analyse()
         fprintf(stat_fd, "---\n");
         fprintf(stat_fd, "ensemble:\n");
         fprintf(stat_fd, "    id: 0x%x\n", ensemble.EId);
-        fprintf(stat_fd, "    label: %s\n", ensemble.label.c_str());
-        fprintf(stat_fd, "    shortlabel: %s\n",
-                flag_to_shortlabel(ensemble.label, ensemble.shortlabel_flag).c_str());
+        fprintf(stat_fd, "    label: %s\n", ensemble.label.label.c_str());
+        fprintf(stat_fd, "    shortlabel: %s\n", flag_to_shortlabel(ensemble.label).c_str());
         fprintf(stat_fd, "audio:\n");
 
         for (const auto& snoop : config.streams_to_decode) {
@@ -580,12 +592,12 @@ void ETI_Analyser::eti_analyse()
                         corresponding_service_found = true;
                         fprintf(stat_fd, "    - service_id: 0x%x\n", service.id);
                         fprintf(stat_fd, "      subchannel_id: 0x%x\n", component.subchId);
-                        fprintf(stat_fd, "      label: %s\n", service.label.c_str());
-                        fprintf(stat_fd, "      shortlabel: %s\n",
-                                flag_to_shortlabel(service.label, service.shortlabel_flag).c_str());
-                        if (not component.label.empty()) {
-                            fprintf(stat_fd, "      component_label: %s\n", component.label.c_str());
+                        fprintf(stat_fd, "      label: %s\n", service.label.label.c_str());
+                        fprintf(stat_fd, "      shortlabel: %s\n", flag_to_shortlabel(service.label).c_str());
+                        if (not component.label.label.empty()) {
+                            fprintf(stat_fd, "      component_label: %s\n", component.label.label.c_str());
                         }
+                        // TODO FIG2 labels
 
                         try {
                             const auto& subch = ensemble.get_subchannel(component.subchId);
@@ -808,13 +820,11 @@ void ETI_Analyser::decodeFIG(
             break;
         case 2:
             {// EXTENDED LABELS
-                const uint16_t ext = f[0] & 0x07;
-                const display_settings_t disp(config.is_fig_to_be_printed(figtype, ext), indent);
-
                 fig2_common_t fig2(ensemble, f, figlen);
+                const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig2.ext()), indent);
                 auto fig_result = fig2_select(fig2, disp);
 
-                printvalue("FIG", disp, "", strprintf("2/%d", ext));
+                printvalue("FIG", disp, "", strprintf("2/%d", fig2.ext()));
 
                 if (get_verbosity() > 0) {
                     printbuf("Data", disp, f, figlen);
@@ -822,15 +832,13 @@ void ETI_Analyser::decodeFIG(
 
                 if (disp.print) {
                     printvalue("Length", disp, "", to_string(figlen));
-                    printvalue("RFU", disp, "", to_string(fig2.rfu()));
-                    printvalue("Toggle flag", disp, "", to_string(fig2.toggle_flag()));
-                    printvalue("Segment index", disp, "", to_string(fig2.segment_index()));
                 }
 
                 figs.push_back(figtype, fig2.ext(), figlen);
 
-                bool complete = true;
-                rate_announce_fig(figtype, ext, complete);
+                printvalue("Decoding", disp);
+                print_fig_result(fig_result, disp+1);
+                rate_announce_fig(figtype, fig2.ext(), fig_result.complete);
             }
             break;
         case 5:

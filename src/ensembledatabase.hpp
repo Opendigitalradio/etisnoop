@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2019 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -36,8 +36,34 @@
 #include <stdexcept>
 #include <string>
 #include <list>
+#include <vector>
+#include <map>
 
 namespace ensemble_database {
+
+enum class extended_label_charset {
+    UTF8, // encoding flag = 0
+    UCS2, // encoding flag = 1
+};
+
+struct label_t {
+    // FIG 1 Label and shortlabel
+    std::string label;
+    uint16_t shortlabel_flag;
+
+    // Extended Label from FIG 2
+    std::map<int, std::vector<uint8_t> > segments;
+    size_t segment_count = 0; // number if actual segments (not segment count as in spec)
+    extended_label_charset charset;
+    uint8_t toggle_flag = 0;
+
+    // Assemble all segments into a UTF-8 string. Returns an
+    // empty string if not all segments received.
+    std::string assemble() const;
+
+    // Return a string that represents segment count and completeness
+    std::string assembly_state() const;
+};
 
 struct subchannel_t {
     uint8_t id;
@@ -66,8 +92,8 @@ struct component_t {
 
     bool primary;
 
-    std::string label;
-    uint16_t shortlabel_flag;
+    label_t label;
+
     /* TODO
     uint8_t type;
 
@@ -77,8 +103,8 @@ struct component_t {
 
 struct service_t {
     uint32_t id;
-    std::string label;
-    uint16_t shortlabel_flag;
+    label_t label;
+
     bool programme_not_data;
 
     std::list<component_t> components;
@@ -98,8 +124,7 @@ class not_found : public std::runtime_error
 
 struct ensemble_t {
     uint16_t EId;
-    std::string label;
-    uint16_t shortlabel_flag;
+    label_t label;
 
     std::list<service_t> services;
     std::list<subchannel_t> subchannels;

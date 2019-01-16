@@ -119,10 +119,32 @@ struct fig2_common_t {
     uint8_t* f;
     uint16_t figlen;
 
-    uint8_t toggle_flag() { return (f[0] & 0x80) >> 7; }
-    uint8_t segment_index() { return (f[0] & 0x70) >> 4; }
-    uint16_t rfu() { return (f[0] & 0x08) >> 3; }
-    uint16_t ext() { return f[0] & 0x07; }
+    uint8_t toggle_flag() const { return (f[0] & 0x80) >> 7; }
+    uint8_t segment_index() const { return (f[0] & 0x70) >> 4; }
+    uint16_t rfu() const { return (f[0] & 0x08) >> 3; }
+    uint16_t ext() const { return f[0] & 0x07; }
+    size_t identifier_len() const {
+        switch (ext()) {
+            case 0: // Ensemble label
+                return 2;
+            case 1: // Programme service label
+                return 2;
+            case 4: // Service component label
+                {
+                    uint8_t pd = (f[1] & 0x80) >> 7;
+                    return (pd == 0) ? 3 : 5;
+                }
+            case 5: // Data service label
+                return 5;
+            case 6: // X-PAD user application label
+                {
+                    uint8_t pd = (f[1] & 0x80) >> 7;
+                    return (pd == 0) ? 4 : 6;
+                }
+            default:
+                return 0;
+        }
+    }
 };
 
 // FIG 0/11 and 0/22 struct

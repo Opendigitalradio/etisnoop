@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2017 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2019 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -27,11 +27,69 @@
 
 */
 
+#include <locale>
+#include <codecvt>
+#include <sstream>
 #include "ensembledatabase.hpp"
 
 namespace ensemble_database {
 
 using namespace std;
+
+static string ucs2toutf8(const uint8_t *ucs2, size_t len_bytes)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> ucsconv;
+
+    wstring ucs2label;
+
+    for (size_t i = 0; i < len_bytes-1; i+=2) {
+        ucs2label += (wchar_t)(ucs2[i] * 256 + ucs2[i+1]);
+    }
+
+    // Can throw range_error
+    return ucsconv.to_bytes(ucs2label);
+}
+
+
+string label_t::assemble() const
+{
+    vector<uint8_t> segments_cat;
+    for (size_t i = 0; i < segment_count; i++) {
+        if (segments.count(i) == 0) {
+            return "";
+        }
+        else {
+            const auto& s = segments.at(i);
+            copy(s.begin(), s.end(), back_inserter(segments_cat));
+        }
+    }
+
+    switch (charset) {
+        case extended_label_charset::UTF8:
+            return string(segments_cat.begin(), segments_cat.end());
+        case extended_label_charset::UCS2:
+            try {
+                return ucs2toutf8(segments_cat.data(), segments_cat.size());
+            }
+            catch (const range_error&) {
+                return "";
+            }
+    }
+    throw logic_error("invalid charset");
+}
+
+string label_t::assembly_state() const
+{
+    stringstream ss;
+    ss << "[";
+    for (const auto& s : segments) {
+        ss << s.first << ",";
+    }
+
+    ss << "count=" << segment_count << "]";
+
+    return ss.str();
+}
 
 component_t& service_t::get_component(uint32_t subchannel_id)
 {

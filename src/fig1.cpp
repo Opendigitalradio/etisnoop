@@ -61,8 +61,8 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 
                 if (fig1.fibcrccorrect) {
                     fig1.ensemble.EId = eid;
-                    fig1.ensemble.label = label;
-                    fig1.ensemble.shortlabel_flag = flag;
+                    fig1.ensemble.label.label = label;
+                    fig1.ensemble.label.shortlabel_flag = flag;
                 }
             }
             break;
@@ -78,8 +78,8 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 if (fig1.fibcrccorrect) {
                     try {
                         auto& service = fig1.ensemble.get_service(sid);
-                        service.label = label;
-                        service.shortlabel_flag = flag;
+                        service.label.label = label;
+                        service.label.shortlabel_flag = flag;
                     }
                     catch (ensemble_database::not_found &e) {
                         r.errors.push_back("Not yet in DB");

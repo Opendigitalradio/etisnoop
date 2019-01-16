@@ -41,6 +41,7 @@ etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/fig0_8.cpp \
 					   src/fig0_9.cpp \
 					   src/fig1.cpp \
+					   src/fig2.cpp \
 					   src/figs.cpp src/figs.hpp \
 					   src/firecode.c src/firecode.h \
 					   src/lib_crc.c src/lib_crc.h \

@@ -111,7 +111,3 @@ fig_result_t fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
 }
 
 
-fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
-{
-    return {};
-}
