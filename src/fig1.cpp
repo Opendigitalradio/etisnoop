@@ -31,23 +31,37 @@
 
 using namespace std;
 
+static ensemble_database::charset_e charset_to_charset(uint8_t charset)
+{
+    using ensemble_database::charset_e;
+    if (charset == (uint8_t)charset_e::COMPLETE_EBU_LATIN) {
+        return charset_e::COMPLETE_EBU_LATIN;
+    }
+    else if (charset == (uint8_t)charset_e::UTF8) {
+        return charset_e::UTF8;
+    }
+    else if (charset == (uint8_t)charset_e::UCS2) {
+        return charset_e::UCS2;
+    }
+    else {
+        throw runtime_error("unsupported charset" + to_string(charset));
+    }
+}
+
 // SHORT LABELS
 fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 {
-    uint16_t ext,charset;
-    uint16_t flag;
-    char label[17];
+    vector<uint8_t> label(16);
     fig_result_t r;
     uint8_t* f = fig1.f;
 
-    charset = (f[0] & 0xF0) >> 4;
+    uint8_t charset = (f[0] & 0xF0) >> 4;
     //oe = (f[0] & 0x08) >> 3;
-    ext = f[0] & 0x07;
+    uint16_t ext = f[0] & 0x07;
     r.msgs.push_back(strprintf("Charset=%d", charset));
 
-    memcpy(label, f+fig1.figlen-18, 16);
-    label[16] = 0x00;
-    flag = f[fig1.figlen-2] * 256 + \
+    memcpy(label.data(), f+fig1.figlen-18, 16);
+    uint16_t flag = f[fig1.figlen-2] * 256 + \
            f[fig1.figlen-1];
 
     switch (ext) {
@@ -56,13 +70,16 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 uint16_t eid;
                 eid = f[1] * 256 + f[2];
                 r.msgs.push_back(strprintf("Ensemble ID=0x%04X", eid));
-                r.msgs.push_back(strprintf("Label=\"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
 
                 if (fig1.fibcrccorrect) {
                     fig1.ensemble.EId = eid;
-                    fig1.ensemble.label.label = label;
+                    fig1.ensemble.label.label_bytes = label;
                     fig1.ensemble.label.shortlabel_flag = flag;
+                    fig1.ensemble.label.charset = charset_to_charset(charset);
+
+                    r.msgs.push_back(strprintf("Label=\"%s\"", fig1.ensemble.label.label().c_str()));
+                    r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
+                    r.msgs.push_back(strprintf("Short label=%s", fig1.ensemble.label.shortlabel().c_str()));
                 }
             }
             break;
@@ -71,15 +88,18 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
             {   // ETSI EN 300 401 8.1.14.1
                 uint16_t sid;
                 sid = f[1] * 256 + f[2];
-                r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
-                r.msgs.push_back(strprintf("Label=\"%s\"", label));
-                r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
 
                 if (fig1.fibcrccorrect) {
                     try {
                         auto& service = fig1.ensemble.get_service(sid);
-                        service.label.label = label;
+                        service.label.label_bytes = label;
                         service.label.shortlabel_flag = flag;
+                        service.label.charset = charset_to_charset(charset);
+
+                        r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
+                        r.msgs.push_back(strprintf("Label=\"%s\"", service.label.label().c_str()));
+                        r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
+                        r.msgs.push_back(strprintf("Short label=%s", service.label.shortlabel().c_str()));
                     }
                     catch (ensemble_database::not_found &e) {
                         r.errors.push_back("Not yet in DB");
@@ -106,7 +126,8 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 }
                 r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
                 r.msgs.push_back(strprintf("Service Component ID=0x%04X", SCIdS));
-                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                // TODO put label into ensembledatabase
+                r.msgs.push_back(strprintf("Label bytes=\"%s\"", string(label.begin(), label.end()).c_str()));
                 r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
             }
             break;
@@ -120,7 +141,8 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                       f[4];
 
                 r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
-                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                // TODO put label into ensembledatabase
+                r.msgs.push_back(strprintf("Label bytes=\"%s\"", string(label.begin(), label.end()).c_str()));
                 r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
             }
             break;
@@ -161,7 +183,8 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
                 r.msgs.push_back(strprintf("Service Component ID=0x%04X", SCIdS));
                 r.msgs.push_back(strprintf("X-PAD App=%02X (", xpadapp) + xpadappdesc + ")");
-                r.msgs.push_back(strprintf("Label=\"%s\"", label));
+                // TODO put label into ensembledatabase
+                r.msgs.push_back(strprintf("Label bytes=\"%s\"", string(label.begin(), label.end()).c_str()));
                 r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
             }
             break;

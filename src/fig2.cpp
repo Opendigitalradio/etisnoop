@@ -40,6 +40,7 @@ static void handle_ext_label_data_field(fig2_common_t& fig2, ensemble_database::
 
     if (label.toggle_flag != fig2.toggle_flag()) {
         label.segments.clear();
+        label.extended_label_charset = ensemble_database::charset_e::UNDEFINED;
         label.toggle_flag = fig2.toggle_flag();
     }
 
@@ -55,10 +56,10 @@ static void handle_ext_label_data_field(fig2_common_t& fig2, ensemble_database::
         r.msgs.push_back(strprintf("Total number of segments=%d", segment_count + 1));
 
         if (encoding_flag) {
-            label.charset = ensemble_database::extended_label_charset::UCS2;
+            label.extended_label_charset = ensemble_database::charset_e::UCS2;
         }
         else {
-            label.charset = ensemble_database::extended_label_charset::UTF8;
+            label.extended_label_charset = ensemble_database::charset_e::UTF8;
         }
 
         if (fig2.rfu() == 0) {

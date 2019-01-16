@@ -41,20 +41,27 @@
 
 namespace ensemble_database {
 
-enum class extended_label_charset {
-    UTF8, // encoding flag = 0
-    UCS2, // encoding flag = 1
+enum class charset_e {
+    COMPLETE_EBU_LATIN = 0,
+    UTF8 = 15, // encoding flag = 0
+    UCS2 = 6, // encoding flag = 1
+    UNDEFINED,
 };
 
 struct label_t {
-    // FIG 1 Label and shortlabel
-    std::string label;
+    // FIG 1 Label and shortlabel, in raw form
+    std::vector<uint8_t> label_bytes;
     uint16_t shortlabel_flag;
+    charset_e charset = charset_e::COMPLETE_EBU_LATIN;
+
+    // Returns a utf-8 encoded shortlabel
+    std::string shortlabel() const;
+    std::string label() const;
 
     // Extended Label from FIG 2
     std::map<int, std::vector<uint8_t> > segments;
     size_t segment_count = 0; // number if actual segments (not segment count as in spec)
-    extended_label_charset charset;
+    charset_e extended_label_charset = charset_e::UNDEFINED;
     uint8_t toggle_flag = 0;
 
     // Assemble all segments into a UTF-8 string. Returns an
@@ -91,8 +98,6 @@ struct component_t {
     uint8_t subchId;
 
     bool primary;
-
-    label_t label;
 
     /* TODO
     uint8_t type;

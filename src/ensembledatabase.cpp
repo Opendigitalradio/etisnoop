@@ -31,6 +31,7 @@
 #include <codecvt>
 #include <sstream>
 #include "ensembledatabase.hpp"
+#include "charset.hpp"
 
 namespace ensemble_database {
 
@@ -50,6 +51,37 @@ static string ucs2toutf8(const uint8_t *ucs2, size_t len_bytes)
     return ucsconv.to_bytes(ucs2label);
 }
 
+std::string label_t::label() const
+{
+    switch (charset) {
+        case charset_e::COMPLETE_EBU_LATIN:
+            return convert_ebu_to_utf8(string(label_bytes.begin(), label_bytes.end()));
+        case charset_e::UTF8:
+            return string(label_bytes.begin(), label_bytes.end());
+        case charset_e::UCS2:
+            try {
+                return ucs2toutf8(label_bytes.data(), label_bytes.size());
+            }
+            catch (const range_error&) {
+                return "";
+            }
+        case charset_e::UNDEFINED:
+            throw logic_error("charset undefined");
+    }
+    throw logic_error("invalid charset " + to_string((int)charset));
+}
+
+std::string label_t::shortlabel() const
+{
+    string shortlabel;
+    for (size_t i = 0; i < label_bytes.size(); ++i) {
+        if (shortlabel_flag & 0x8000 >> i) {
+            shortlabel += static_cast<char>(label_bytes[i]);
+        }
+    }
+
+    return shortlabel;
+}
 
 string label_t::assemble() const
 {
@@ -64,18 +96,23 @@ string label_t::assemble() const
         }
     }
 
-    switch (charset) {
-        case extended_label_charset::UTF8:
+    switch (extended_label_charset) {
+        case charset_e::COMPLETE_EBU_LATIN:
+            // FIG2 doesn't allow EBU, use FIG1 for those
+            return "";
+        case charset_e::UTF8:
             return string(segments_cat.begin(), segments_cat.end());
-        case extended_label_charset::UCS2:
+        case charset_e::UCS2:
             try {
                 return ucs2toutf8(segments_cat.data(), segments_cat.size());
             }
             catch (const range_error&) {
                 return "";
             }
+        case charset_e::UNDEFINED:
+            return "";
     }
-    throw logic_error("invalid charset");
+    throw logic_error("invalid extended label charset " + to_string((int)extended_label_charset));
 }
 
 string label_t::assembly_state() const
@@ -86,7 +123,22 @@ string label_t::assembly_state() const
         ss << s.first << ",";
     }
 
-    ss << "count=" << segment_count << "]";
+    ss << "count=" << segment_count << ",";
+    ss << "charset=";
+    switch (extended_label_charset) {
+        case charset_e::COMPLETE_EBU_LATIN:
+            throw logic_error("invalid extended label LATIN charset");
+        case charset_e::UTF8:
+            ss << "UTF8";
+            break;
+        case charset_e::UCS2:
+            ss << "UCS2";
+            break;
+        case charset_e::UNDEFINED:
+            ss << "UNDEFINED";
+            break;
+    }
+    ss << "]";
 
     return ss.str();
 }

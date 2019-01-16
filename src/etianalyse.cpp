@@ -91,19 +91,6 @@ static void print_fig_result(const fig_result_t& fig_result, const display_setti
     }
 }
 
-static std::string flag_to_shortlabel(const ensemble_database::label_t label)
-{
-    stringstream shortlabel;
-    for (size_t i = 0; i < label.label.size(); ++i) {
-        if (label.shortlabel_flag & 0x8000 >> i) {
-            shortlabel << label.label[i];
-        }
-    }
-
-    return shortlabel.str();
-}
-
-
 void ETI_Analyser::analyse()
 {
     if (config.etifd != nullptr) {
@@ -578,8 +565,8 @@ void ETI_Analyser::eti_analyse()
         fprintf(stat_fd, "---\n");
         fprintf(stat_fd, "ensemble:\n");
         fprintf(stat_fd, "    id: 0x%x\n", ensemble.EId);
-        fprintf(stat_fd, "    label: %s\n", ensemble.label.label.c_str());
-        fprintf(stat_fd, "    shortlabel: %s\n", flag_to_shortlabel(ensemble.label).c_str());
+        fprintf(stat_fd, "    label: %s\n", ensemble.label.label().c_str());
+        fprintf(stat_fd, "    shortlabel: %s\n", ensemble.label.shortlabel().c_str());
         fprintf(stat_fd, "audio:\n");
 
         for (const auto& snoop : config.streams_to_decode) {
@@ -592,12 +579,9 @@ void ETI_Analyser::eti_analyse()
                         corresponding_service_found = true;
                         fprintf(stat_fd, "    - service_id: 0x%x\n", service.id);
                         fprintf(stat_fd, "      subchannel_id: 0x%x\n", component.subchId);
-                        fprintf(stat_fd, "      label: %s\n", service.label.label.c_str());
-                        fprintf(stat_fd, "      shortlabel: %s\n", flag_to_shortlabel(service.label).c_str());
-                        if (not component.label.label.empty()) {
-                            fprintf(stat_fd, "      component_label: %s\n", component.label.label.c_str());
-                        }
-                        // TODO FIG2 labels
+                        fprintf(stat_fd, "      label: %s\n", service.label.label().c_str());
+                        fprintf(stat_fd, "      shortlabel: %s\n", service.label.shortlabel().c_str());
+                        fprintf(stat_fd, "      extended_label: %s\n", service.label.assemble().c_str());
 
                         try {
                             const auto& subch = ensemble.get_subchannel(component.subchId);
