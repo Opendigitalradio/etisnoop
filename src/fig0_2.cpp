@@ -50,7 +50,8 @@ bool fig0_2_is_complete(int services_id)
 // ETSI EN 300 401 6.3.1
 fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 {
-    uint16_t sref, sid;
+    uint16_t sref;
+    uint32_t sid;
     uint8_t cid, ecc, local, caid, ncomp, timd, ps, ca, subchid, scty;
     int k = 1;
     uint8_t* f = fig0.f;

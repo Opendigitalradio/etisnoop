@@ -135,7 +135,7 @@ struct fig2_common_t {
                     return (pd == 0) ? 3 : 5;
                 }
             case 5: // Data service label
-                return 5;
+                return 4;
             case 6: // X-PAD user application label
                 {
                     uint8_t pd = (f[1] & 0x80) >> 7;
