@@ -29,9 +29,11 @@
 
 #include <locale>
 #include <codecvt>
+#include <iomanip>
 #include <sstream>
 #include "ensembledatabase.hpp"
 #include "charset.hpp"
+#include "utils.hpp"
 
 namespace ensemble_database {
 
@@ -118,9 +120,17 @@ string label_t::assemble() const
 string label_t::assembly_state() const
 {
     stringstream ss;
-    ss << "[";
+    ss << "(";
     for (const auto& s : segments) {
-        ss << s.first << ",";
+        ss << s.first;
+        if (get_verbosity() > 1) {
+            ss << "[";
+            for (const auto& c : s.second) {
+                ss << hex << setw(2) << (int)c << " ";
+            }
+            ss << "]" << dec;
+        }
+        ss << ",";
     }
 
     ss << "count=" << segment_count << ",";
@@ -138,12 +148,12 @@ string label_t::assembly_state() const
             ss << "UNDEFINED";
             break;
     }
-    ss << "]";
+    ss << ")";
 
     return ss.str();
 }
 
-component_t& service_t::get_component(uint32_t subchannel_id)
+component_t& service_t::get_component_by_subchannel(uint32_t subchannel_id)
 {
     for (auto& component : components) {
         if (component.subchId == subchannel_id) {
@@ -151,8 +161,20 @@ component_t& service_t::get_component(uint32_t subchannel_id)
         }
     }
 
-    throw not_found("component referring to subchannel " +
+    throw not_found("component with subchannel id " +
             to_string(subchannel_id) + " not found");
+}
+
+component_t& service_t::get_component_by_scids(uint8_t scids)
+{
+    for (auto& component : components) {
+        if (component.scids == scids) {
+            return component;
+        }
+    }
+
+    throw not_found("component with SCIdS " +
+            to_string(scids) + " not found");
 }
 
 component_t& service_t::get_or_create_component(uint32_t subchannel_id)

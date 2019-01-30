@@ -83,6 +83,7 @@ fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
         Rfa = (f[i] >> 4) & 0x7;
         SCIdS = f[i] & 0x0F;
         r.complete |= fig0_8_is_complete(SId, SCIdS);
+
         r.msgs.emplace_back("-");
         r.msgs.emplace_back(1, strprintf("SId=0x%X", SId));
         r.msgs.emplace_back(1, strprintf("Ext flag=%d 8-bit Rfa %s",
@@ -103,6 +104,17 @@ fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp)
                     if (MSC_FIC_flag == 0) {
                         // MSC in stream mode and SubChId identifies the sub-channel
                         SubChId = f[i] & 0x3F;
+
+                        try {
+                            auto& srv = fig0.ensemble.get_service(SId);
+                            auto& component = srv.get_component_by_subchannel(SubChId);
+                            component.scids = SCIdS;
+                        }
+                        catch (ensemble_database::not_found &e) {
+                            r.errors.push_back("Not yet in DB");
+                        }
+
+
                         r.msgs.emplace_back(1, strprintf("MSC/FIC flag=%d MSC, SubChId=0x%X", MSC_FIC_flag, SubChId));
                     }
                     else {

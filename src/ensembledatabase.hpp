@@ -94,10 +94,14 @@ struct subchannel_t {
 };
 
 struct component_t {
-    uint32_t service_id;
+    uint32_t service_id = 0;
     uint8_t subchId;
 
+    uint8_t scids = 255; // 255 is invalid, as scids is only 4 bits wide
+
     bool primary;
+
+    label_t label;
 
     /* TODO
     uint8_t type;
@@ -114,7 +118,8 @@ struct service_t {
 
     std::list<component_t> components;
 
-    component_t& get_component(uint32_t subchannel_id);
+    component_t& get_component_by_subchannel(uint32_t subchannel_id);
+    component_t& get_component_by_scids(uint8_t scids);
     component_t& get_or_create_component(uint32_t subchannel_id);
 
     // TODO PTy language announcement

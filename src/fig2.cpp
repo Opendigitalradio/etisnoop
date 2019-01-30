@@ -185,10 +185,12 @@ fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
 
                     try {
                         auto& service = fig2.ensemble.get_service(sid);
-                        handle_ext_label_data_field(fig2, service.label, disp, r);
+                        auto& comp = service.get_component_by_scids(SCIdS);
 
-                        const auto complete_label = service.label.assemble();
-                        r.msgs.push_back(strprintf("Label segments=\"%s\"", service.label.assembly_state().c_str()));
+                        handle_ext_label_data_field(fig2, comp.label, disp, r);
+
+                        const auto complete_label = comp.label.assemble();
+                        r.msgs.push_back(strprintf("Label segments=\"%s\"", comp.label.assembly_state().c_str()));
                         if (not complete_label.empty()) {
                             r.msgs.push_back(strprintf("Label=\"%s\"", complete_label.c_str()));
                         }
