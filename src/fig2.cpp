@@ -66,7 +66,7 @@ static void handle_ext_label_data_field(fig2_common_t& fig2, ensemble_database::
             const uint8_t rfa = (f[0] & 0x0F);
             r.msgs.push_back(strprintf("rfa=%d", rfa));
             const uint16_t char_flag = f[1] * 256 + f[2];
-            r.msgs.push_back(strprintf("character flag=%d", char_flag));
+            r.msgs.push_back(strprintf("character flag=%04x", char_flag));
 
             if (len_bytes <= 3) {
                 throw runtime_error("FIG2 label length too short");
@@ -78,7 +78,7 @@ static void handle_ext_label_data_field(fig2_common_t& fig2, ensemble_database::
         else {
             // ETSI TS 103 176 draft V2.2.1 (2018-08) gives a new meaning to rfu
             const uint8_t text_control = (f[0] & 0x0F);
-            r.msgs.push_back(strprintf("character flag=0x%02x", text_control));
+            r.msgs.push_back(strprintf("text control=0x%02x", text_control));
 
             if (len_bytes <= 1) {
                 throw runtime_error("FIG2 label length too short");
