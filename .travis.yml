@@ -1,6 +1,6 @@
 language: c++
 sudo: required
-dist: trusty
+dist: xenial
 
 addons: &addons
   apt:
@@ -8,23 +8,23 @@ addons: &addons
       - ubuntu-toolchain-r-test
     packages: &packages
       - libzmq3-dev
-      - libzmq3
+      - libzmq5
       - libfaad-dev
       - libfaad2
       - automake
-      - g++-6
+      - g++-9
 
 script:
   - |
     ./bootstrap.sh
-    CC=gcc-6 CXX=g++-6 ./configure
+    CC=gcc-9 CXX=g++-9 ./configure
     make
   - |
     wget http://downloads.sourceforge.net/faac/faad2-2.7.tar.bz2
     tar -f faad2-2.7.tar.bz2 -x
     cd faad2-2.7
-    CC=gcc-6 CXX=g++-6 ./configure
+    CC=gcc-9 CXX=g++-9 ./configure
     make
     cd ..
-    make CC=gcc-6 CXX=g++-6 -f Makefile.faadalyse
+    make CC=gcc-9 CXX=g++-9 -f Makefile.faadalyse
 
