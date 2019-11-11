@@ -1,11 +1,11 @@
 language: c++
 sudo: required
-dist: xenial
+dist: bionic
 
 addons: &addons
   apt:
     sources: &sources
-      - ubuntu-toolchain-r-test
+      - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages: &packages
       - libzmq3-dev
       - libzmq5
