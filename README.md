@@ -13,7 +13,7 @@ Build
 etisnoop is using autotools. If you do not have a release containing a ./configure script,
 run ./bootstrap.sh
 
-Install prerequisites: A C++ compiler with complete C++11 support.
+Install prerequisites: A C++ compiler with complete C++11 support and `libfaad-dev`
 
 Then do
 
