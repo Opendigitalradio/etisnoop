@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2020 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -111,7 +111,7 @@ fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
     r.msgs.emplace_back(strprintf("SId=0x%X", SId));
     r.msgs.emplace_back(strprintf("SCIdS=%u", SCIdS));
 
-    r.msgs.emplace_back("User applications:");
+    r.msgs.emplace_back(strprintf("User applications(%d):", No));
     for (int numapp = 0; numapp < No; numapp++) {
         uint16_t user_app_type = ((f[k] << 8) |
                 (f[k+1] & 0xE0)) >> 5;
