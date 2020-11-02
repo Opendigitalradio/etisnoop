@@ -39,6 +39,7 @@ etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/fig0_3.cpp \
 					   src/fig0_5.cpp \
 					   src/fig0_6.cpp \
+					   src/fig0_7.cpp \
 					   src/fig0_8.cpp \
 					   src/fig0_9.cpp \
 					   src/fig1.cpp \

@@ -125,33 +125,37 @@ fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
         r.msgs.emplace_back(2, strprintf("length=%u", user_app_len));
 
         if (user_app_len >= 2) {
-            bool ca_flag = (f[k] >> 7) & 0x1;
-            r.msgs.emplace_back(2, strprintf("CAflag=%d", ca_flag));
+            size_t effective_uadata_len = user_app_len;
 
-            bool ca_org_flag = (f[k] >> 6) & 0x1;
-            r.msgs.emplace_back(2, strprintf("CAOrgflag=%d", ca_org_flag));
+            if (fig0.pd() == 0) { // Programme services contain the X-PAD data field
+                bool ca_flag = (f[k] >> 7) & 0x1;
+                r.msgs.emplace_back(2, strprintf("CAflag=%d", ca_flag));
 
-            uint8_t xpad_appty = f[k] & 0x1F;
-            r.msgs.emplace_back(2, strprintf("XPAD_AppTy=%d", xpad_appty));
+                bool ca_org_flag = (f[k] >> 6) & 0x1;
+                r.msgs.emplace_back(2, strprintf("CAOrgflag=%d", ca_org_flag));
 
-            bool dg_flag = (f[k+1] >> 7) & 0x1;
-            r.msgs.emplace_back(2, strprintf("DGflag=%d", dg_flag));
+                uint8_t xpad_appty = f[k] & 0x1F;
+                r.msgs.emplace_back(2, strprintf("XPAD_AppTy=%d", xpad_appty));
 
-            uint8_t dscty = f[k+1] & 0x3F;
-            r.msgs.emplace_back(2, strprintf("DSCTy=%d", dscty));
+                bool dg_flag = (f[k+1] >> 7) & 0x1;
+                r.msgs.emplace_back(2, strprintf("DGflag=%d", dg_flag));
 
-            k += 2;
-            size_t effective_uadata_len = user_app_len - 2;
+                uint8_t dscty = f[k+1] & 0x3F;
+                r.msgs.emplace_back(2, strprintf("DSCTy=%d", dscty));
 
-            if (ca_org_flag) {
-                if (user_app_len < 4) {
-                    r.errors.push_back("User Application Data Length too short to contain CAOrg!");
-                }
-                else {
-                    uint16_t ca_org = (f[k] << 8) | f[k+1];
-                    k += 2;
-                    effective_uadata_len -= 2;
-                    r.msgs.emplace_back(2, strprintf("ca_org=%u", ca_org));
+                k += 2;
+                effective_uadata_len -= 2;
+
+                if (ca_org_flag) {
+                    if (user_app_len < 4) {
+                        r.errors.push_back("User Application Data Length too short to contain CAOrg!");
+                    }
+                    else {
+                        uint16_t ca_org = (f[k] << 8) | f[k+1];
+                        k += 2;
+                        effective_uadata_len -= 2;
+                        r.msgs.emplace_back(2, strprintf("ca_org=%u", ca_org));
+                    }
                 }
             }
 

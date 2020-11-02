@@ -305,3 +305,15 @@ int absolute_to_dB(int16_t value)
     return value ? round(20*log10((double)value / int16_max)) : -90;
 }
 
+uint32_t read_u32_from_buf(const uint8_t *buf)
+{
+    return buf[0] * 256uL * 256uL * 256uL +
+           buf[1] * 256uL * 256uL +
+           buf[2] * 256uL +
+           buf[3];
+}
+
+uint16_t read_u16_from_buf(const uint8_t *buf)
+{
+    return buf[0] * 256uL + buf[1];
+}

@@ -53,7 +53,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 {
     vector<uint8_t> label(16);
     fig_result_t r;
-    uint8_t* f = fig1.f;
+    uint8_t *f = fig1.f;
 
     uint8_t charset = (f[0] & 0xF0) >> 4;
     //oe = (f[0] & 0x08) >> 3;
@@ -61,14 +61,12 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
     r.msgs.push_back(strprintf("Charset=%d", charset));
 
     memcpy(label.data(), f+fig1.figlen-18, 16);
-    uint16_t flag = f[fig1.figlen-2] * 256 + \
-           f[fig1.figlen-1];
+    uint16_t flag = read_u16_from_buf(f + (fig1.figlen-2));
 
     switch (ext) {
         case 0: // FIG 1/0 Ensemble label
             {   // ETSI EN 300 401 8.1.13
-                uint16_t eid;
-                eid = f[1] * 256 + f[2];
+                uint16_t eid = read_u16_from_buf(f + 1);
                 r.msgs.push_back(strprintf("Ensemble ID=0x%04X", eid));
 
                 if (fig1.fibcrccorrect) {
@@ -86,8 +84,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 
         case 1: // FIG 1/1 Programme service label
             {   // ETSI EN 300 401 8.1.14.1
-                uint16_t sid;
-                sid = f[1] * 256 + f[2];
+                uint16_t sid = read_u16_from_buf(f + 1);
 
                 if (fig1.fibcrccorrect) {
                     try {
@@ -115,14 +112,10 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 pd    = (f[1] & 0x80) >> 7;
                 SCIdS =  f[1] & 0x0F;
                 if (pd == 0) {
-                    sid = f[2] * 256 + \
-                          f[3];
+                    sid = read_u16_from_buf(f + 2);
                 }
                 else {
-                    sid = f[2] * 256 * 256 * 256 + \
-                          f[3] * 256 * 256 + \
-                          f[4] * 256 + \
-                          f[5];
+                    sid = read_u32_from_buf(f + 2);
                 }
                 r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
                 r.msgs.push_back(strprintf("Service Component ID=0x%04X", SCIdS));
@@ -135,10 +128,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
         case 5: // FIG 1/5 Data service label
             {   // ETSI EN 300 401 8.1.14.2
                 uint32_t sid;
-                sid = f[1] * 256 * 256 * 256 + \
-                      f[2] * 256 * 256 + \
-                      f[3] * 256 + \
-                      f[4];
+                sid = read_u32_from_buf(f + 1);
 
                 r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
                 // TODO put label into ensembledatabase
@@ -157,15 +147,11 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 pd    = (f[1] & 0x80) >> 7;
                 SCIdS =  f[1] & 0x0F;
                 if (pd == 0) {
-                    sid = f[2] * 256 + \
-                          f[3];
+                    sid = read_u16_from_buf(f + 2);
                     xpadapp = f[4] & 0x1F;
                 }
                 else {
-                    sid = f[2] * 256 * 256 * 256 + \
-                          f[3] * 256 * 256 + \
-                          f[4] * 256 + \
-                          f[5];
+                    sid = read_u32_from_buf(f + 2);
                     xpadapp = f[6] & 0x1F;
                 }
 

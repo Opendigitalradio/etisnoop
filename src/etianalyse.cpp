@@ -282,7 +282,7 @@ void ETI_Analyser::eti_analyse()
         }
 
         // LIDATA - FC - FL
-        fl = (p[6] & 0x07) * 256 + p[7];
+        fl = (p[6] & 0x07) * 256uL + p[7];
         {
             printbuf("FL", 2, nullptr, 0, "Frame Length in words", to_string(fl));
         }
@@ -306,7 +306,7 @@ void ETI_Analyser::eti_analyse()
             scid = (p[8 + 4*i] & 0xFC) >> 2;
 
             printvalue("SCID", 3, "Sub-channel Identifier", to_string(scid));
-            sad[i] = (p[8+4*i] & 0x03) * 256 + p[9+4*i];
+            sad[i] = (p[8+4*i] & 0x03) * 256uL + p[9+4*i];
 
             printvalue("SAD", 3, "Sub-channel Start Address", to_string(sad[i]));
             tpl = (p[10+4*i] & 0xFC) >> 2;
@@ -384,7 +384,7 @@ void ETI_Analyser::eti_analyse()
                 printvalue("Table switch", 5, "", to_string(tsw));
                 printvalue("Index", 5, "", to_string(uepidx));
             }
-            stl[i] = (p[10+4*i] & 0x03) * 256 + \
+            stl[i] = (p[10+4*i] & 0x03) * 256uL +
                       p[11+4*i];
             printvalue("STL", 3, "Sub-channel Stream Length", to_string(stl[i]));
             printvalue("bitrate", 3, "kbit/s", to_string(stl[i]*8/3));
@@ -405,10 +405,10 @@ void ETI_Analyser::eti_analyse()
 
         // EOH
         printbuf("EOH", 1, p + 8 + 4*nst, 4, "End Of Header");
-        uint16_t mnsc = p[8 + 4*nst] * 256 + p[8 + 4*nst + 1];
+        uint16_t mnsc = read_u16_from_buf(p + (8 + 4*nst));
         printbuf("MNSC", 2, p+8+4*nst, 2, "Multiplex Network Signalling Channel", strprintf("%04x", mnsc));
 
-        crch = p[8 + 4*nst + 2]*256 + p[8 + 4*nst + 3];
+        crch = read_u16_from_buf(p + (8 + 4*nst + 2));
         crc  = 0xffff;
 
         for (int i=4; i < 8 + 4*nst + 2; i++) {
@@ -444,7 +444,7 @@ void ETI_Analyser::eti_analyse()
                 figs.set_fib(i);
                 rate_new_fib(i);
 
-                const uint16_t figcrc = fib[30]*256 + fib[31];
+                const uint16_t figcrc = read_u16_from_buf(fib + 30);
                 crc = 0xffff;
                 for (int j = 0; j < 30; j++) {
                     crc = update_crc_ccitt(crc, fib[j]);
@@ -515,9 +515,7 @@ void ETI_Analyser::eti_analyse()
         printbuf("EOF", 1, p + 12 + 4*nst + ficf*ficl*4 + offset, 4);
 
         // CRC (2 Bytes)
-        crch = p[12 + 4*nst + ficf*ficl*4 + offset] * 256 + \
-               p[12 + 4*nst + ficf*ficl*4 + offset + 1];
-
+        crch = read_u16_from_buf(p + (12 + 4*nst + ficf*ficl*4 + offset));
         crc = 0xffff;
 
         for (int i = 12 + 4*nst; i < 12 + 4*nst + ficf*ficl*4 + offset; i++) {
@@ -685,7 +683,7 @@ void ETI_Analyser::fic_analyse()
         figs.set_fib(i);
         rate_new_fib(i);
 
-        const uint16_t figcrc = fib[30]*256 + fib[31];
+        const uint16_t figcrc = read_u16_from_buf(fib + 30);
         uint16_t crc = 0xffff;
         for (int j = 0; j < 30; j++) {
             crc = update_crc_ccitt(crc, fib[j]);

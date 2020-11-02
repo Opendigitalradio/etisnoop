@@ -59,22 +59,18 @@ fig_result_t fig0_2(fig0_common_t& fig0, const display_settings_t &disp)
 
     while (k < fig0.figlen) {
         if (fig0.pd() == 0) {
-            sid  =  f[k] * 256 + f[k+1];
+            sid  = read_u16_from_buf(f + k);
             ecc  = 0;
             cid  = (f[k] & 0xF0) >> 4;
-            sref = (f[k] & 0x0F) * 256 + f[k+1];
+            sref = (f[k] & 0x0F) * 256uL + f[k+1];
             k += 2;
         }
         else {
-            sid  =  f[k] * 256 * 256 * 256 + \
-                    f[k+1] * 256 * 256 + \
-                    f[k+2] * 256 + \
-                    f[k+3];
-
+            sid  = read_u32_from_buf(f + k);
             ecc  =  f[k];
             cid  = (f[k+1] & 0xF0) >> 4;
-            sref = (f[k+1] & 0x0F) * 256 * 256 + \
-                   f[k+2] * 256 + \
+            sref = (f[k+1] & 0x0F) * 256uL * 256uL +
+                   f[k+2] * 256uL +
                    f[k+3];
 
             k += 4;

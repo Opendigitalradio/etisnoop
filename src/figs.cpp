@@ -84,6 +84,7 @@ fig_result_t fig0_select(fig0_common_t& fig0, const display_settings_t &disp)
         //   4  not implemented                   // Component conditional access
         case 5: return fig0_5(fig0, disp); break; // Component language
         case 6: return fig0_6(fig0, disp); break; // Service linking
+        case 7: return fig0_7(fig0, disp); break; // Configuration information (EN 300 401 v2)
         case 8: return fig0_8(fig0, disp); break; // More component stuff
         case 9: return fig0_9(fig0, disp); break; // Country, LTO, ECC, subfield with per-service ECC and LTO
         case 10: return fig0_10(fig0, disp); break; // Date and Time

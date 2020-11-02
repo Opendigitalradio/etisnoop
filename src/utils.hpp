@@ -103,3 +103,5 @@ std::string pnum_to_str(uint16_t Programme_Number);
 // -90dB
 int absolute_to_dB(int16_t value);
 
+uint32_t read_u32_from_buf(const uint8_t *buf);
+uint16_t read_u16_from_buf(const uint8_t *buf);

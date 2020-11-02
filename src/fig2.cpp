@@ -65,7 +65,7 @@ static void handle_ext_label_data_field(fig2_common_t& fig2, ensemble_database::
         if (fig2.rfu() == 0) {
             const uint8_t rfa = (f[0] & 0x0F);
             r.msgs.push_back(strprintf("rfa=%d", rfa));
-            const uint16_t char_flag = f[1] * 256 + f[2];
+            const uint16_t char_flag = read_u16_from_buf(f + 1);
             r.msgs.push_back(strprintf("character flag=%04x", char_flag));
 
             if (len_bytes <= 3) {
@@ -114,7 +114,7 @@ fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
     switch (fig2.ext()) {
         case 0: // Ensemble label
             {   // ETSI EN 300 401 8.1.13
-                uint16_t eid = f[1] * 256 + f[2];
+                uint16_t eid = read_u16_from_buf(f + 1);
                 if (fig2.figlen <= header_length + fig2.identifier_len()) {
                     r.errors.push_back("FIG2 length error");
                 }
@@ -133,7 +133,7 @@ fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
 
         case 1: // Programme service label
             {   // ETSI EN 300 401 8.1.14.1
-                uint16_t sid = f[1] * 256 + f[2];
+                uint16_t sid = read_u16_from_buf(f + 1);
                 if (fig2.figlen <= header_length + fig2.identifier_len()) {
                     r.errors.push_back("FIG2 length error");
                 }
@@ -162,14 +162,10 @@ fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
                 uint8_t pd    = (f[1] & 0x80) >> 7;
                 uint8_t SCIdS =  f[1] & 0x0F;
                 if (pd == 0) {
-                    sid = f[2] * 256 + \
-                          f[3];
+                    sid = read_u16_from_buf(f + 2);
                 }
                 else {
-                    sid = f[2] * 256 * 256 * 256 + \
-                          f[3] * 256 * 256 + \
-                          f[4] * 256 + \
-                          f[5];
+                    sid = read_u32_from_buf(f + 2);
                 }
                 if (fig2.figlen <= header_length + fig2.identifier_len()) {
                     r.errors.push_back("FIG2 length error");
@@ -204,10 +200,7 @@ fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
 
         case 5: // Data service label
             {   // ETSI EN 300 401 8.1.14.2
-                uint32_t sid = f[1] * 256 * 256 * 256 + \
-                      f[2] * 256 * 256 + \
-                      f[3] * 256 + \
-                      f[4];
+                uint32_t sid = read_u32_from_buf(f + 1);
 
                 if (fig2.figlen <= header_length + fig2.identifier_len()) {
                     r.errors.push_back("FIG2 length error");
@@ -242,15 +235,11 @@ fig_result_t fig2_select(fig2_common_t& fig2, const display_settings_t &disp)
                 pd    = (f[1] & 0x80) >> 7;
                 SCIdS =  f[1] & 0x0F;
                 if (pd == 0) {
-                    sid = f[2] * 256 + \
-                          f[3];
+                    sid = read_u16_from_buf(f + 2);
                     xpadapp = f[4] & 0x1F;
                 }
                 else {
-                    sid = f[2] * 256 * 256 * 256 + \
-                          f[3] * 256 * 256 + \
-                          f[4] * 256 + \
-                          f[5];
+                    sid = read_u32_from_buf(f + 2);
                     xpadapp = f[6] & 0x1F;
                 }
 

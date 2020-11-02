@@ -46,7 +46,7 @@ static string ucs2toutf8(const uint8_t *ucs2, size_t len_bytes)
     wstring ucs2label;
 
     for (size_t i = 0; i < len_bytes-1; i+=2) {
-        ucs2label += (wchar_t)(ucs2[i] * 256 + ucs2[i+1]);
+        ucs2label += (wchar_t)(ucs2[i] * 256uL + ucs2[i+1]);
     }
 
     // Can throw range_error

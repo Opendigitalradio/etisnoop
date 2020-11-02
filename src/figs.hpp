@@ -169,6 +169,7 @@ fig_result_t fig0_3(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_5(fig0_common_t& fig0, const display_settings_t &disp);
 void fig0_6_cleardb();
 fig_result_t fig0_6(fig0_common_t& fig0, const display_settings_t &disp);
+fig_result_t fig0_7(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_8(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_9(fig0_common_t& fig0, const display_settings_t &disp);
 fig_result_t fig0_10(fig0_common_t& fig0, const display_settings_t &disp);

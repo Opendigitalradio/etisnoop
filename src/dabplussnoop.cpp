@@ -149,7 +149,7 @@ bool DabPlusSnoop::decode()
         m_ps_flag                = (audio_params & 0x08) ? true : false;
         m_mpeg_surround_config   = (audio_params & 0x07);
 
-        int num_aus;
+        int num_aus = 0;
         if (!m_dac_rate && m_sbr_flag) num_aus = 2;
         // AAC core sampling rate 16 kHz
         else if (m_dac_rate && m_sbr_flag) num_aus = 3;

@@ -35,7 +35,7 @@ fig_result_t fig0_0(fig0_common_t& fig0, const display_settings_t &disp)
     fig_result_t r;
     uint8_t* f = fig0.f;
 
-    const uint16_t eid  =  f[1]*256+f[2];
+    const uint16_t eid = read_u16_from_buf(f + 1);
     r.msgs.push_back(strprintf("Ensemble ID=0x%02x", eid));
     if (fig0.fibcrccorrect) {
         fig0.ensemble.EId = eid;
