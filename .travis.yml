@@ -1,30 +1,32 @@
 language: c++
-sudo: required
-dist: bionic
+os: linux
+dist: focal
 
 addons: &addons
   apt:
-    sources: &sources
-      - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages: &packages
       - libzmq3-dev
       - libzmq5
       - libfaad-dev
       - libfaad2
       - automake
-      - g++-9
+      - g++-10
 
 script:
   - |
+    export CC=gcc-10
+    export CXX=g++-10
     ./bootstrap.sh
-    CC=gcc-9 CXX=g++-9 ./configure
+    ./configure
     make
   - |
+    export CC=gcc-10
+    export CXX=g++-10
     wget http://downloads.sourceforge.net/faac/faad2-2.7.tar.bz2
     tar -f faad2-2.7.tar.bz2 -x
     cd faad2-2.7
-    CC=gcc-9 CXX=g++-9 ./configure
+    ./configure
     make
     cd ..
-    make CC=gcc-9 CXX=g++-9 -f Makefile.faadalyse
+    make -f Makefile.faadalyse
 
