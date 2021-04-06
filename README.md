@@ -31,8 +31,9 @@ etisnoop [options] [(-i|-I) filename]
    -i      the file contains RAW ETI
    -I      the file contains FIC
    -v      increase verbosity (can be given more than once)
-   -d N    decode subchannel N into stream-N.msc file
-           if DAB+: decode audio to stream-N.wav file and extract PAD to stream-N.msc
+   -d N    decode subchannel N into stream-N.dab file
+           if DAB+: decode audio to stream-N.wav file and extract PAD to stream-N.dab
+           (superframes with RS coding)
    -s <filename.yaml>
            statistics mode: decode all subchannels and measure audio level, write statistics to file
    -n N    stop analysing after N ETI frames
@@ -46,8 +47,8 @@ etisnoop [options] [(-i|-I) filename]
            if the option is not given, all FIGs are displayed.
 ```
 
-You can open the stream-N.msc file in https://www.basicmaster.de/xpadxpert/ 
-(remark: in case of DAB please rename the .msc to .mp2)
+You can open the stream-N.dab file in https://www.basicmaster.de/xpadxpert/ 
+(remark: in case of DAB please rename the .dab to .mp2)
 
 Hint: subchannel N means the (N+1)th subchannel in a mux (including data subchannels!)
 
