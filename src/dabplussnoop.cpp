@@ -133,7 +133,7 @@ bool DabPlusSnoop::decode()
             return false;
         }
         else if (rs_errors > 0) {
-            printf("RS Decoder for stream %d: %d uncorrected errors\n",
+            printf("RS Decoder for stream %d: %d corrected errors\n",
                     m_index, rs_errors);
         }
 
