@@ -48,7 +48,7 @@ struct eti_analyse_config_t {
     FILE* etifd = nullptr;
     FILE* ficfd = nullptr;
     bool ignore_error = false;
-    std::map<int, StreamSnoop> streams_to_decode;
+    std::map<int /* subch index */, StreamSnoop> streams_to_decode;
     std::list<std::pair<int, int> > figs_to_display;
     bool analyse_fic_carousel = false;
     bool analyse_fig_rates = false;

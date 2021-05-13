@@ -84,8 +84,7 @@ he_aac_super_frame(subchannel_index)
 class DabPlusSnoop
 {
     public:
-        void set_subchannel_index(unsigned subchannel_index)
-        {
+        void set_subchannel_index(unsigned subchannel_index) {
             m_subchannel_index = subchannel_index;
         }
 
@@ -93,8 +92,7 @@ class DabPlusSnoop
             m_write_to_wav_file = enable;
         }
 
-        void set_index(int index)
-        {
+        void set_index(int index) {
             m_index = index;
         }
 
@@ -148,10 +146,13 @@ class StreamSnoop
             dps.set_subchannel_index(subchannel_index);
         }
 
-        void set_index(int index)
-        {
+        void set_index(int index) {
             m_index = index;
             dps.set_index(index);
+        }
+
+        int get_index() const {
+            return m_index;
         }
 
         void push(uint8_t* streamdata, size_t streamsize);

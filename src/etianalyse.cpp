@@ -389,17 +389,17 @@ void ETI_Analyser::eti_analyse()
             printvalue("STL", 3, "Sub-channel Stream Length", to_string(stl[i]));
             printvalue("bitrate", 3, "kbit/s", to_string(stl[i]*8/3));
 
-            if (config.statistics and config.streams_to_decode.count(i) == 0) {
+            if (config.statistics and config.streams_to_decode.count(scid) == 0) {
                 config.streams_to_decode.emplace(std::piecewise_construct,
-                        std::make_tuple(i),
+                        std::make_tuple(scid),
                         std::make_tuple(false)); // do not dump to file
-                config.streams_to_decode.at(i).subchid = scid;
+                config.streams_to_decode.at(scid).subchid = scid;
             }
 
-            if (config.streams_to_decode.count(i) > 0) {
-                config.streams_to_decode.at(i).set_subchannel_index(stl[i]/3);
-                config.streams_to_decode.at(i).set_index(i);
-                config.streams_to_decode.at(i).subchid = scid;
+            if (config.streams_to_decode.count(scid) > 0) {
+                config.streams_to_decode.at(scid).set_subchannel_index(stl[i]/3);
+                config.streams_to_decode.at(scid).set_index(i);
+                config.streams_to_decode.at(scid).subchid = scid;
             }
         }
 
@@ -499,15 +499,22 @@ void ETI_Analyser::eti_analyse()
             printsequencestart(2);
             printvalue("Id", 3, "", to_string(i));
             printvalue("Length", 3, "", to_string(stl[i]*8));
-            printvalue("Selected for decoding", 3, "",
-                    (config.streams_to_decode.count(i) > 0 ? "true" : "false"));
+
+            int subch_ix = -1;
+            for (const auto& el : config.streams_to_decode) {
+                if (el.second.get_index() == i) {
+                    subch_ix = el.first;
+                    break;
+                }
+            }
+            printvalue("Selected for decoding", 3, "", (subch_ix == -1 ? "false" : "true"));
 
             if (get_verbosity() > 1) {
                 printbuf("Data", 3, streamdata, stl[i]*8);
             }
 
-            if (config.streams_to_decode.count(i) > 0) {
-                config.streams_to_decode.at(i).push(streamdata, stl[i]*8);
+            if (subch_ix != -1) {
+                config.streams_to_decode.at(subch_ix).push(streamdata, stl[i]*8);
             }
         }
 
