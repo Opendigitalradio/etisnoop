@@ -1,7 +1,7 @@
 ETISnoop analyser
 =================
 
-The ETISnoop analyser decodes a RAW ETI file and prints out
+The ETISnoop analyser decodes a RAW ETI (see https://wiki.opendigitalradio.org/Ensemble_Transport_Interface ) file and prints out
 its contents in YAML for easier analysis.
 
 It can show information about the signalling, details about the FIGs,
@@ -20,6 +20,37 @@ Then do
     ./configure
     make
     sudo make install
+    
+
+Usage
+-----
+
+```
+etisnoop [options] [(-i|-I) filename]
+
+   -i      the file contains RAW ETI
+   -I      the file contains FIC
+   -v      increase verbosity (can be given more than once)
+   -d N    decode subchannel N into stream-N.dab file
+           if DAB+: decode audio to stream-N.wav file and extract PAD to stream-N.dab
+           (superframes with RS coding)
+   -s <filename.yaml>
+           statistics mode: decode all subchannels and measure audio level, write statistics to file
+   -n N    stop analysing after N ETI frames
+   -f      analyse FIC carousel (no YAML output)
+   -r      analyse FIG rates in FIGs per second
+   -R      analyse FIG rates in frames per FIG
+   -w      decode CRC-DABMUX and ODR-DabMux watermark.
+   -e      decode frames with SYNC error and decode FIGs with invalid CRC
+   -F <type>/<ext>
+           add FIG type/ext to list of FIGs to display.
+           if the option is not given, all FIGs are displayed.
+```
+
+You can open the stream-N.dab file in https://www.basicmaster.de/xpadxpert/ 
+(remark: in case of DAB please rename the .dab to .mp2)
+
+Hint: subchannel N means the (N+1)th subchannel in a mux (including data subchannels!)
 
 About
 -----

@@ -338,7 +338,7 @@ void StreamSnoop::push(uint8_t* streamdata, size_t streamsize)
     // First dump to subchannel file (superframe+parity word)
     if (m_dump_to_file and m_raw_data_stream_fd == nullptr) {
         stringstream dump_filename;
-        dump_filename << "stream-" << m_index << ".msc";
+        dump_filename << "stream-" << m_index << ".dab";
 
         m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
 
