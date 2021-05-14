@@ -392,14 +392,12 @@ void ETI_Analyser::eti_analyse()
             if (config.statistics and config.streams_to_decode.count(scid) == 0) {
                 config.streams_to_decode.emplace(std::piecewise_construct,
                         std::make_tuple(scid),
-                        std::make_tuple(false)); // do not dump to file
-                config.streams_to_decode.at(scid).subchid = scid;
+                        std::make_tuple(scid, false)); // do not dump to file
             }
 
             if (config.streams_to_decode.count(scid) > 0) {
                 config.streams_to_decode.at(scid).set_subchannel_index(stl[i]/3);
-                config.streams_to_decode.at(scid).set_index(i);
-                config.streams_to_decode.at(scid).subchid = scid;
+                config.streams_to_decode.at(scid).stream_index = i;
             }
         }
 
@@ -500,21 +498,21 @@ void ETI_Analyser::eti_analyse()
             printvalue("Id", 3, "", to_string(i));
             printvalue("Length", 3, "", to_string(stl[i]*8));
 
-            int subch_ix = -1;
+            int subchid = -1;
             for (const auto& el : config.streams_to_decode) {
-                if (el.second.get_index() == i) {
-                    subch_ix = el.first;
+                if (el.second.stream_index == i) {
+                    subchid = el.first;
                     break;
                 }
             }
-            printvalue("Selected for decoding", 3, "", (subch_ix == -1 ? "false" : "true"));
+            printvalue("Selected for decoding", 3, "", (subchid == -1 ? "false" : "true"));
 
             if (get_verbosity() > 1) {
                 printbuf("Data", 3, streamdata, stl[i]*8);
             }
 
-            if (subch_ix != -1) {
-                config.streams_to_decode.at(subch_ix).push(streamdata, stl[i]*8);
+            if (subchid != -1) {
+                config.streams_to_decode.at(subchid).push(streamdata, stl[i]*8);
             }
         }
 

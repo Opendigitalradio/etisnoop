@@ -138,10 +138,10 @@ int main(int argc, char *argv[])
         switch (ch) {
             case 'd':
                 {
-                int subchix = atoi(optarg);
+                int subchid = atoi(optarg);
                 config.streams_to_decode.emplace(std::piecewise_construct,
-                        std::make_tuple(subchix),
-                        std::make_tuple(true)); // dump to file
+                        std::make_tuple(subchid),
+                        std::make_tuple(subchid, true)); // dump to file
                 }
                 break;
             case 'e':

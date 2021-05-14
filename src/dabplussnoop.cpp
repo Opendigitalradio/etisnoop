@@ -133,8 +133,8 @@ bool DabPlusSnoop::decode()
             return false;
         }
         else if (rs_errors > 0) {
-            printf("RS Decoder for stream %d: %d corrected errors\n",
-                    m_index, rs_errors);
+            printf("RS Decoder for subchannel %d: %d corrected errors\n",
+                    subchid, rs_errors);
         }
 
         // -- Parse he_aac_super_frame
@@ -300,7 +300,7 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
     stringstream ss_filename;
 
     if (m_write_to_wav_file) {
-        ss_filename << "stream-" << m_index;
+        ss_filename << "stream-" << subchid;
     }
 
     if (!m_faad_decoder.is_initialised()) {
@@ -315,7 +315,6 @@ bool DabPlusSnoop::analyse_au(vector<vector<uint8_t> >& aus)
 StreamSnoop::StreamSnoop(StreamSnoop&& other)
 {
     dps = move(other.dps);
-    m_index = other.m_index;
     m_raw_data_stream_fd = other.m_raw_data_stream_fd;
     other.m_raw_data_stream_fd = nullptr;
     m_dump_to_file = other.m_dump_to_file;
@@ -331,14 +330,14 @@ StreamSnoop::~StreamSnoop()
 
 void StreamSnoop::push(uint8_t* streamdata, size_t streamsize)
 {
-    if (m_index == -1) {
-        throw std::runtime_error("StreamSnoop not properly initialised");
+    if (subchid == -1) {
+        throw logic_error("StreamSnoop not properly initialised");
     }
 
     // First dump to subchannel file (superframe+parity word)
     if (m_dump_to_file and m_raw_data_stream_fd == nullptr) {
         stringstream dump_filename;
-        dump_filename << "stream-" << m_index << ".dab";
+        dump_filename << "stream-" << subchid << ".dab";
 
         m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
 

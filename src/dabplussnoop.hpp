@@ -81,8 +81,7 @@ he_aac_super_frame(subchannel_index)
 #pragma once
 
 // DabPlusSnoop is responsible for decoding DAB+ audio
-class DabPlusSnoop
-{
+class DabPlusSnoop {
     public:
         void set_subchannel_index(unsigned subchannel_index) {
             m_subchannel_index = subchannel_index;
@@ -92,18 +91,15 @@ class DabPlusSnoop
             m_write_to_wav_file = enable;
         }
 
-        void set_index(int index) {
-            m_index = index;
-        }
-
         void push(uint8_t* streamdata, size_t streamsize);
 
         audio_statistics_t get_audio_statistics(void) const;
 
+        int subchid = -1;
+
     private:
         /* Data needed for FAAD */
         FaadDecoder m_faad_decoder;
-        int  m_index = -1;
         bool m_write_to_wav_file = false;
 
         bool m_ps_flag = false;
@@ -125,14 +121,13 @@ class DabPlusSnoop
 
 // StreamSnoop is responsible for saving msc data into files,
 // and calling DabPlusSnoop's decode routine if it's a DAB+ subchannel
-class StreamSnoop
-{
+class StreamSnoop {
     public:
-        StreamSnoop(bool dump_to_file) :
+        StreamSnoop(int subchid, bool dump_to_file) :
             dps(),
-            m_index(-1),
             m_raw_data_stream_fd(nullptr),
             m_dump_to_file(dump_to_file) {
+                dps.subchid = subchid;
                 dps.enable_wav_file_output(dump_to_file);
             }
         ~StreamSnoop();
@@ -146,24 +141,15 @@ class StreamSnoop
             dps.set_subchannel_index(subchannel_index);
         }
 
-        void set_index(int index) {
-            m_index = index;
-            dps.set_index(index);
-        }
-
-        int get_index() const {
-            return m_index;
-        }
-
         void push(uint8_t* streamdata, size_t streamsize);
 
         audio_statistics_t get_audio_statistics(void) const;
 
-        uint32_t subchid;
+        int subchid = -1;
+        int stream_index = -1;
 
     private:
         DabPlusSnoop dps;
-        int m_index;
         FILE* m_raw_data_stream_fd;
         bool m_dump_to_file;
 };
