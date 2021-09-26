@@ -17,6 +17,7 @@ Install prerequisites: A C++ compiler with complete C++11 support and `libfaad-d
 
 Then do
 
+    autoreconf -fis
     ./configure
     make
     sudo make install
