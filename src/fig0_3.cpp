@@ -72,7 +72,6 @@ fig_result_t fig0_3(fig0_common_t& fig0, const display_settings_t &disp)
         r.msgs.emplace_back(1, strprintf("SCId=0x%X", SCId));
         r.msgs.emplace_back(1, strprintf("CAOrg flag=%d CAOrg field %s", CAOrg_flag, CAOrg_flag?"present":"absent"));
         r.msgs.emplace_back(1, strprintf("DG flag=%d", DG_flag));
-        r.msgs.emplace_back(1, strprintf("data groups are %sused to transport the service component", DG_flag ? "not ": ""));
         r.msgs.emplace_back(1, strprintf("DSCTy=%d %s", DSCTy, get_dscty_type(DSCTy)));
         r.msgs.emplace_back(1, strprintf("SubChId=0x%X", SubChId));
         r.msgs.emplace_back(1, strprintf("Packet address=0x%X", Packet_address));
