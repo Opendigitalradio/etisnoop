@@ -125,6 +125,7 @@ class StreamSnoop {
     public:
         StreamSnoop(int subchid, bool dump_to_file) :
             dps(),
+            m_subchid(subchid),
             m_raw_data_stream_fd(nullptr),
             m_dump_to_file(dump_to_file) {
                 dps.subchid = subchid;
@@ -145,11 +146,11 @@ class StreamSnoop {
 
         audio_statistics_t get_audio_statistics(void) const;
 
-        int subchid = -1;
         int stream_index = -1;
 
     private:
         DabPlusSnoop dps;
+        int m_subchid = -1;
         FILE* m_raw_data_stream_fd;
         bool m_dump_to_file;
 };

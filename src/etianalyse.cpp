@@ -577,8 +577,7 @@ void ETI_Analyser::eti_analyse()
 
             for (const auto& service : ensemble.services) {
                 for (const auto& component : service.components) {
-                    if (component.subchId == snoop.second.subchid and
-                            component.primary) {
+                    if (component.subchId == snoop.first and component.primary) {
                         corresponding_service_found = true;
                         fprintf(stat_fd, "    - service_id: 0x%x\n", service.id);
                         fprintf(stat_fd, "      subchannel_id: 0x%x\n", component.subchId);

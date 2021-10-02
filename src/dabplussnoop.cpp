@@ -330,14 +330,14 @@ StreamSnoop::~StreamSnoop()
 
 void StreamSnoop::push(uint8_t* streamdata, size_t streamsize)
 {
-    if (subchid == -1) {
+    if (m_subchid == -1) {
         throw logic_error("StreamSnoop not properly initialised");
     }
 
     // First dump to subchannel file (superframe+parity word)
     if (m_dump_to_file and m_raw_data_stream_fd == nullptr) {
         stringstream dump_filename;
-        dump_filename << "stream-" << subchid << ".dab";
+        dump_filename << "stream-" << m_subchid << ".dab";
 
         m_raw_data_stream_fd = fopen(dump_filename.str().c_str(), "w");
 
