@@ -159,10 +159,14 @@ fig_result_t fig0_13(fig0_common_t& fig0, const display_settings_t &disp)
                 }
             }
 
-            std::string ua_data = "UA Data=";
+            std::string ua_data = "UA Data=[";
             for (size_t i = 0; i < effective_uadata_len; i++) {
-                ua_data += strprintf("0x%02x ", f[k + i]);
+                ua_data += strprintf("0x%02x", f[k + i]);
+                if (i + 1 < effective_uadata_len) {
+                    ua_data += ", ";
+                }
             }
+            ua_data += "]";
             r.msgs.emplace_back(2, move(ua_data));
         }
 

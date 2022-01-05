@@ -46,8 +46,8 @@ fig_result_t fig0_7(fig0_common_t& fig0, const display_settings_t &disp)
         const uint8_t services = service_count >> 10;
         const uint16_t count = service_count & 0x3FF;
 
-        r.msgs.push_back(strprintf("Services =%d", services));
-        r.msgs.push_back(strprintf("Count =%d", count));
+        r.msgs.push_back(strprintf("Services=%d", services));
+        r.msgs.push_back(strprintf("Count=%d", count));
     }
 
     r.complete = true;

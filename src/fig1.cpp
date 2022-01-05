@@ -77,7 +77,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
 
                     r.msgs.push_back(strprintf("Label=\"%s\"", fig1.ensemble.label.label().c_str()));
                     r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
-                    r.msgs.push_back(strprintf("Short label=%s", fig1.ensemble.label.shortlabel().c_str()));
+                    r.msgs.push_back(strprintf("Short label=\"%s\"", fig1.ensemble.label.shortlabel().c_str()));
                 }
             }
             break;
@@ -96,7 +96,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                         r.msgs.push_back(strprintf("Service ID=0x%04X", sid));
                         r.msgs.push_back(strprintf("Label=\"%s\"", service.label.label().c_str()));
                         r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
-                        r.msgs.push_back(strprintf("Short label=%s", service.label.shortlabel().c_str()));
+                        r.msgs.push_back(strprintf("Short label=\"%s\"", service.label.shortlabel().c_str()));
                     }
                     catch (ensemble_database::not_found &e) {
                         r.errors.push_back("Not yet in DB");
