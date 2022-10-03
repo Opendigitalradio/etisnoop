@@ -26,19 +26,21 @@
 
 #include "figs.hpp"
 #include <cstdio>
-#include <unordered_set>
+#include <vector>
+#include <algorithm>
 
-static std::unordered_set<int> subchannels_seen;
+static std::vector<int> subchannels_seen;
 
-bool fig0_1_is_complete(int subch_id)
+bool fig0_1_is_complete(fig0_common_t& fig0, int subch_id)
 {
-    bool complete = subchannels_seen.count(subch_id);
+    bool complete = std::count(subchannels_seen.begin(), subchannels_seen.end(), subch_id) > 0;
 
     if (complete) {
+        fig0.wm_decoder.push_fig0_1_bit(subchannels_seen.front() < subchannels_seen.back());
         subchannels_seen.clear();
     }
     else {
-        subchannels_seen.insert(subch_id);
+        subchannels_seen.push_back(subch_id);
     }
 
     return complete;
@@ -55,7 +57,7 @@ fig_result_t fig0_1(fig0_common_t& fig0, const display_settings_t &disp)
     while (i <= fig0.figlen-3) {
         // iterate over subchannels
         int subch_id = f[i] >> 2;
-        r.complete |= fig0_1_is_complete(subch_id);
+        r.complete |= fig0_1_is_complete(fig0, subch_id);
 
         int start_addr = ((f[i] & 0x03) << 8) |
             (f[i+1]);

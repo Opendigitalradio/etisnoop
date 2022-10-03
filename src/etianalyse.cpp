@@ -644,7 +644,7 @@ void ETI_Analyser::eti_analyse()
 
     if (config.decode_watermark) {
         std::string watermark(wm_decoder.calculate_watermark());
-        printf("Watermark:\n  %s\n", watermark.c_str());
+        printf("Watermark: %s\n", watermark.c_str());
     }
 
     if (config.analyse_fig_rates) {

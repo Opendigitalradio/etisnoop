@@ -51,7 +51,7 @@ etisnoop_SOURCES     = src/dabplussnoop.cpp src/dabplussnoop.hpp \
 					   src/rsdecoder.cpp src/rsdecoder.hpp \
 					   src/tables.cpp src/tables.hpp \
 					   src/utils.cpp src/utils.hpp \
-					   src/watermarkdecoder.hpp \
+					   src/watermarkdecoder.hpp src/watermarkdecoder.cpp \
 					   src/wavfile.c src/wavfile.h \
 					   src/fec/char.h \
 					   src/fec/decode_rs_char.c src/fec/decode_rs.h \

@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2022 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
 
     This program is free software: you can redistribute it and/or modify
@@ -32,68 +32,21 @@
 class WatermarkDecoder
 {
     public:
-        WatermarkDecoder() {}
+        WatermarkDecoder();
 
-        void push_confind_bit(bool confind)
-        {
-            // The ConfInd of FIG 0/10 contains the CRC-DABMUX and ODR-DabMux watermark
-            m_confind_bits.push_back(confind);
-        }
+        // The order of FIG0_1 subchannels represents the bits
+        void push_fig0_1_bit(bool bit);
 
-        std::string calculate_watermark()
-        {
-            // First try to find the 0x55 0x55 sync in the waternark data
-            size_t bit_ix;
-            int alternance_count = 0;
-            bool last_bit = 1;
-            for (bit_ix = 0; bit_ix < m_confind_bits.size(); bit_ix++) {
-                if (alternance_count == 16) {
-                    break;
-                }
-                else {
-                    if (last_bit != m_confind_bits[bit_ix]) {
-                        last_bit = m_confind_bits[bit_ix];
-                        alternance_count++;
-                    }
-                    else {
-                        alternance_count = 0;
-                        last_bit = 1;
-                    }
-                }
+        // The ConfInd of FIG 0/10 contains the CRC-DABMUX and ODR-DabMux watermark
+        void push_confind_bit(bool confind);
 
-            }
-
-            fprintf(stderr, "Found SYNC at offset %zu out of %zu\n",
-                    bit_ix - alternance_count, m_confind_bits.size());
-
-            std::stringstream watermark_ss;
-
-            uint8_t b = 0;
-            size_t i = 0;
-            while (bit_ix < m_confind_bits.size()) {
-
-                b |= m_confind_bits[bit_ix] << (7 - i);
-
-                if (i == 7) {
-                    watermark_ss << (char)b;
-
-                    b = 0;
-                    i = 0;
-                }
-                else {
-                    i++;
-                }
-
-                bit_ix += 2;
-            }
-
-            return watermark_ss.str();
-        }
+        std::string calculate_watermark();
 
     private:
         const WatermarkDecoder& operator=(const WatermarkDecoder&) = delete;
         WatermarkDecoder(const WatermarkDecoder&) = delete;
 
         std::vector<bool> m_confind_bits;
+        std::vector<bool> m_fig0_1_bits;
 };
 

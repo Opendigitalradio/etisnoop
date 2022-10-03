@@ -65,7 +65,7 @@ struct fig0_common_t {
         figlen(fig_len),
         ensemble(ens),
         fibcrccorrect(true),
-        wm_decoder(wm_dec) { }
+        wm_decoder(wm_dec) {}
 
     uint8_t* f;
     uint16_t figlen;
