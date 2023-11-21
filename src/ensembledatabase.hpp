@@ -33,6 +33,7 @@
 #  include "config.h"
 #endif
 
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <list>
