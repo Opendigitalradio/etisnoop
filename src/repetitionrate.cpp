@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2024 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,11 +20,15 @@
 */
 
 #include "repetitionrate.hpp"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <sstream>
+#include <string>
 #include <vector>
+#include <array>
 #include <map>
 #include <set>
-#include <cmath>
-#include <limits>
 
 using namespace std;
 
@@ -53,6 +57,8 @@ struct FIGRateInfo {
 
     // Which FIBs this FIG was seen in
     set<int> in_fib;
+
+    vector<uint8_t> lengths;
 };
 
 
@@ -61,7 +67,7 @@ static map<FIGTypeExt, FIGRateInfo> fig_rates;
 static int current_frame_number = 0;
 static int current_fib = 0;
 
-void rate_announce_fig(int figtype, int figextension, bool complete)
+void rate_announce_fig(int figtype, int figextension, bool complete, uint8_t figlen)
 {
     FIGTypeExt f = {.figtype = figtype, .figextension = figextension};
 
@@ -77,111 +83,111 @@ void rate_announce_fig(int figtype, int figextension, bool complete)
         rate.frames_complete.push_back(current_frame_number);
     }
     rate.in_fib.insert(current_fib);
+    rate.lengths.push_back(figlen);
 }
 
-// Calculate the minimal, maximum and average repetition rate (FIGs per
-// second).
-void rate_min_max_avg(
+static double rate_avg(
         const std::vector<int>& fig_positions,
-        double* min,
-        double* max,
-        double* avg,
         bool per_second)
 {
-    double avg_interval =
+    // Average interval is 1/N \sum_{i} pos_{i+1} - pos_{i}
+    // but this sums out all the intermediate pos_{i}, leaving us
+    // with 1/N (pos_{last} - pos_{first})
+    //
+    // N = size - 1 because we sum intervals, not points in time,
+    // and there's one less interval than there are points.
+
+    double avg =
         (double)(fig_positions.back() - fig_positions.front()) /
         (double)(fig_positions.size() - 1);
-
-    int min_delta = std::numeric_limits<int>::max();
-    int max_delta = 0;
-    for (size_t i = 1; i < fig_positions.size(); i++) {
-        const int delta = fig_positions[i] - fig_positions[i-1];
-
-        // Min
-        if (min_delta > delta) {
-            min_delta = delta;
-        }
-
-        // Max
-        if (max_delta < delta) {
-            max_delta = delta;
-        }
-    }
-
-    *avg = avg_interval;
-    *min = min_delta;
-    *max = max_delta;
-
     if (per_second) {
-        *avg = 1.0 /
-            (*avg * FRAME_DURATION);
-        *min = 1.0 / (*min * FRAME_DURATION);
-        *max = 1.0 / (*min * FRAME_DURATION);
+        avg = 1.0 / (avg * FRAME_DURATION);
     }
-
+    return avg;
 }
 
-void rate_display_header(bool per_second)
+static double length_avg(const std::vector<uint8_t>& lengths)
 {
-    if (per_second) {
-        printf("FIG carousel analysis. Format:\n"
-                "  min, average, max FIGs per second (total count) - \n"
-                "  min, average, max complete FIGs per second (total count)\n");
+    double avg = 0.0;
+    for (const uint8_t l : lengths) {
+        avg += l;
     }
-    else {
-        printf("FIG carousel analysis. Format:\n"
-                "  min, average, max frames per FIG (total count) - \n"
-                "  min, average, max frames per complete FIGs (total count)\n");
-    }
+    return avg / (double)lengths.size();
 }
 
-void rate_display_analysis(bool clear, bool per_second)
+static string length_histogram(const std::vector<uint8_t>& lengths)
 {
+    const array<const char*, 7> hist_chars({"▁", "▂", "▃", "▄", "▅", "▆", "▇"});
+
+    // FIB length is 30
+    vector<size_t> histogram(30);
+    for (const uint8_t l : lengths) {
+        histogram.at(l)++;
+    }
+
+    const double max_hist = *std::max_element(histogram.cbegin(), histogram.cend());
+
+    stringstream ss;
+    ss << "[";
+    for (const size_t h : histogram) {
+        uint8_t char_ix = floor((double)h / (max_hist+1) * hist_chars.size());
+        ss << hist_chars.at(char_ix);
+    }
+    ss << "]";
+
+    return ss.str();
+}
+
+
+void rate_display_analysis(bool per_second)
+{
+
+#define GREPPABLE_PREFIX "CAROUSEL "
+
+    if (per_second) {
+        printf(GREPPABLE_PREFIX
+        "FIG T/EXT  AVG  (COUNT) -   AVG  (COUNT) -  LEN - LENGTH HISTOGRAM               IN FIB(S)\n");
+    }
+
     for (auto& fig_rate : fig_rates) {
         auto& frames_present = fig_rate.second.frames_present;
         auto& frames_complete = fig_rate.second.frames_complete;
 
-        double min = 0.0;
-        double max = 0.0;
-        double avg = 0.0;
-
         const size_t n_present = frames_present.size();
         const size_t n_complete = frames_complete.size();
+        printf(GREPPABLE_PREFIX);
+
         if (n_present >= 2) {
+            double avg = rate_avg(frames_present, per_second);
 
-            rate_min_max_avg(frames_present, &min, &max, &avg, per_second);
-
-            printf("FIG%2d/%2d %4.2f %4.2f %4.2f (%5zu)",
+            printf("FIG%2d/%2d %6.2f (%5zu)",
                     fig_rate.first.figtype, fig_rate.first.figextension,
-                    min, avg, max,
+                    avg,
                     n_present);
 
             if (n_complete >= 2) {
-                rate_min_max_avg(frames_complete, &min, &max, &avg, per_second);
+                double avg = rate_avg(frames_complete, per_second);
 
-                printf(" - %4.2f %4.2f %4.2f (%5zu)",
-                        min, avg, max,
-                        n_present);
+                printf(" - %6.2f (%5zu)", avg, n_complete);
             }
             else {
                 printf(" - None complete");
             }
         }
         else {
-            printf("FIG%2d/%2d 0",
+            printf("FIG%2d/%2d ",
                     fig_rate.first.figtype, fig_rate.first.figextension);
         }
 
-        printf(" - in FIB(s):");
+        printf(" - %4.1f %s - ",
+                length_avg(fig_rate.second.lengths),
+                length_histogram(fig_rate.second.lengths).c_str());
+
         for (auto& fib : fig_rate.second.in_fib) {
             printf(" %d", fib);
         }
         printf("\n");
 
-    }
-
-    if (clear) {
-        fig_rates.clear();
     }
 }
 

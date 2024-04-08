@@ -39,9 +39,8 @@ bool fig0_6_is_complete(int link_key)
     if (complete) {
         links_seen.clear();
     }
-    else {
-        links_seen.insert(link_key);
-    }
+
+    links_seen.insert(link_key);
 
     return complete;
 }

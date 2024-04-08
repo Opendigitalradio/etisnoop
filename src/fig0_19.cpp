@@ -39,9 +39,8 @@ bool fig0_19_is_complete(int clusters_id)
     if (complete) {
         clusters_seen.clear();
     }
-    else {
-        clusters_seen.insert(clusters_id);
-    }
+
+    clusters_seen.insert(clusters_id);
 
     return complete;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016 Matthias P. Braendli (http://www.opendigitalradio.org)
+    Copyright (C) 2024 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,28 +20,21 @@
 */
 
 #pragma once
-#include "utils.hpp"
+#include <cstdint>
 
 /* Tell the repetition rate analyser that we have received a given FIG.
  * The complete flag should be set to true every time a complete
  * set of information for that FIG has been received
  */
-void rate_announce_fig(int figtype, int figextension, bool complete);
+void rate_announce_fig(int figtype, int figextension, bool complete, uint8_t figlen);
 
 /* Tell the repetition rate analyser that a new FIB starts.
  */
 void rate_new_fib(int fib);
 
-/* Print small header to explain rate display
- * per_second: if true, rates are calculated in FIGs per second.
- * If false, rate is given in frames per FIG
- */
-void rate_display_header(bool per_second);
-
 /* Print analysis.
- * optionally clear all statistics
  * per_second: if true, rates are calculated in FIGs per second.
  * If false, rate is given in frames per FIG
  */
-void rate_display_analysis(bool clear, bool per_second);
+void rate_display_analysis(bool per_second);
 

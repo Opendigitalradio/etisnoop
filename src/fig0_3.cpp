@@ -38,9 +38,9 @@ bool fig0_3_is_complete(int components_id)
     if (complete) {
         components_ids_seen.clear();
     }
-    else {
-        components_ids_seen.insert(components_id);
-    }
+
+    components_ids_seen.insert(components_id);
+
 
     return complete;
 }

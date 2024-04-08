@@ -39,9 +39,8 @@ bool fig0_17_is_complete(int services_id)
     if (complete) {
         services_ids_seen.clear();
     }
-    else {
-        services_ids_seen.insert(services_id);
-    }
+
+    services_ids_seen.insert(services_id);
 
     return complete;
 }

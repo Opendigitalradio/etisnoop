@@ -39,9 +39,8 @@ bool fig0_14_is_complete(int subch_id)
     if (complete) {
         subch_ids_seen.clear();
     }
-    else {
-        subch_ids_seen.insert(subch_id);
-    }
+
+    subch_ids_seen.insert(subch_id);
 
     return complete;
 }

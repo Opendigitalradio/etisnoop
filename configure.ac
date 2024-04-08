@@ -14,7 +14,7 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 
-AX_CXX_COMPILE_STDCXX(11,noext,mandatory)
+AX_CXX_COMPILE_STDCXX(17,noext,mandatory)
 
 AC_PROG_CC_STDC
 # Added for automake 1.13 on CentOS 7, obsolecent starting with automake 1.14

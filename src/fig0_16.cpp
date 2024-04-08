@@ -44,9 +44,8 @@ bool fig0_16_is_complete(SId_t SId, PNum_t PNum)
     if (complete) {
         components_seen.clear();
     }
-    else {
-        components_seen.insert(key);
-    }
+
+    components_seen.insert(key);
 
     return complete;
 }

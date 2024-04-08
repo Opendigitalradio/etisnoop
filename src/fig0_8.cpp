@@ -46,9 +46,9 @@ bool fig0_8_is_complete(SId_t SId, SCIdS_t SCIdS)
     if (complete) {
         components_seen.clear();
     }
-    else {
-        components_seen.insert(key);
-    }
+
+    components_seen.insert(key);
+
 
     return complete;
 }

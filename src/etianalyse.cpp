@@ -137,10 +137,6 @@ void ETI_Analyser::eti_analyse()
             fprintf(stderr, "?\n");
     }
 
-    if (config.analyse_fig_rates) {
-        rate_display_header(config.analyse_fig_rates_per_second);
-    }
-
     FILE *stat_fd = nullptr;
     if (not config.statistics_filename.empty()) {
         stat_fd = fopen(config.statistics_filename.c_str(), "w");
@@ -226,7 +222,7 @@ void ETI_Analyser::eti_analyse()
         printbuf("FSYNC", 1, p + 1, 3, "", desc);
 
         // LIDATA
-        printbuf("LIDATA");
+        printbuf("LIDATA", 0);
         // LIDATA - FC
         printbuf("FC", 1, p+4, 4, "Frame Characterization field");
         // LIDATA - FC - FCT
@@ -507,9 +503,7 @@ void ETI_Analyser::eti_analyse()
             }
             printvalue("Selected for decoding", 3, "", (subchid == -1 ? "false" : "true"));
 
-            if (get_verbosity() > 1) {
-                printbuf("Data", 3, streamdata, stl[i]*8);
-            }
+            printbuf("Data", 3, streamdata, stl[i]*8);
 
             if (subchid != -1) {
                 config.streams_to_decode.at(subchid).push(streamdata, stl[i]*8);
@@ -548,7 +542,7 @@ void ETI_Analyser::eti_analyse()
         printbuf("TIST", 1, p + tist_ix, 4, "Time Stamp (ms)", sdesc);
 
         if (config.analyse_fig_rates and (fct % 250) == 0) {
-            rate_display_analysis(false, config.analyse_fig_rates_per_second);
+            rate_display_analysis(config.analyse_fig_rates_per_second);
         }
 
         num_frames++;
@@ -648,7 +642,7 @@ void ETI_Analyser::eti_analyse()
     }
 
     if (config.analyse_fig_rates) {
-        rate_display_analysis(false, config.analyse_fig_rates_per_second);
+        rate_display_analysis(config.analyse_fig_rates_per_second);
     }
 
     figs_cleardb();
@@ -656,10 +650,6 @@ void ETI_Analyser::eti_analyse()
 
 void ETI_Analyser::fic_analyse()
 {
-    if (config.analyse_fig_rates) {
-        rate_display_header(config.analyse_fig_rates_per_second);
-    }
-
     FILE *stat_fd = nullptr;
     if (not config.statistics_filename.empty()) {
         stat_fd = fopen(config.statistics_filename.c_str(), "w");
@@ -754,9 +744,7 @@ void ETI_Analyser::decodeFIG(
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig0.ext()), indent);
 
                 printvalue("FIG", disp, "", strprintf("0/%d", fig0.ext()));
-                if (get_verbosity() > 0) {
-                    printbuf("Data", disp, f, figlen);
-                }
+                printbuf("Data", disp, f, figlen);
 
                 if (disp.print) {
                     printvalue("Length", disp, "", to_string(figlen));
@@ -773,7 +761,7 @@ void ETI_Analyser::decodeFIG(
                 printvalue("Decoding", disp);
                 print_fig_result(fig_result, disp+1);
 
-                rate_announce_fig(figtype, fig0.ext(), fig_result.complete);
+                rate_announce_fig(figtype, fig0.ext(), fig_result.complete, figlen);
             }
             break;
 
@@ -785,9 +773,7 @@ void ETI_Analyser::decodeFIG(
                 const display_settings_t disp(config.is_fig_to_be_printed(figtype, fig1.ext()), indent);
 
                 printvalue("FIG", disp, "", strprintf("1/%d", fig1.ext()));
-                if (get_verbosity() > 0) {
-                    printbuf("Data", disp, f, figlen);
-                }
+                printbuf("Data", disp, f, figlen);
 
                 if (disp.print) {
                     printvalue("Length", disp, "", to_string(figlen));
@@ -801,7 +787,7 @@ void ETI_Analyser::decodeFIG(
                 fig_result.figext = fig1.ext();
                 printvalue("Decoding", disp);
                 print_fig_result(fig_result, disp+1);
-                rate_announce_fig(figtype, fig1.ext(), fig_result.complete);
+                rate_announce_fig(figtype, fig1.ext(), fig_result.complete, figlen);
             }
             break;
         case 2:
@@ -812,9 +798,7 @@ void ETI_Analyser::decodeFIG(
 
                 printvalue("FIG", disp, "", strprintf("2/%d", fig2.ext()));
 
-                if (get_verbosity() > 0) {
-                    printbuf("Data", disp, f, figlen);
-                }
+                printbuf("Data", disp, f, figlen);
 
                 if (disp.print) {
                     printvalue("Length", disp, "", to_string(figlen));
@@ -824,7 +808,7 @@ void ETI_Analyser::decodeFIG(
 
                 printvalue("Decoding", disp);
                 print_fig_result(fig_result, disp+1);
-                rate_announce_fig(figtype, fig2.ext(), fig_result.complete);
+                rate_announce_fig(figtype, fig2.ext(), fig_result.complete, figlen);
             }
             break;
         case 5:
@@ -840,9 +824,7 @@ void ETI_Analyser::decodeFIG(
 
                 printvalue("FIG", disp, "", strprintf("5/%d", ext));
 
-                if (get_verbosity() > 0) {
-                    printbuf("Data", disp, f, figlen);
-                }
+                printbuf("Data", disp, f, figlen);
 
                 if (disp.print) {
                     printvalue("Length", disp, "", to_string(figlen));
@@ -854,7 +836,7 @@ void ETI_Analyser::decodeFIG(
                 figs.push_back(figtype, ext, figlen);
 
                 bool complete = true; // TODO verify
-                rate_announce_fig(figtype, ext, complete);
+                rate_announce_fig(figtype, ext, complete, figlen);
             }
             break;
         case 6:

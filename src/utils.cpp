@@ -160,7 +160,7 @@ void printbuf(const std::string& header,
         const std::string& desc,
         const std::string& value)
 {
-    display_settings_t disp(true, indent);
+    display_settings_t disp(verbosity > 1, indent);
     printyaml(header, disp, buffer, size, desc, value);
 }
 
@@ -171,15 +171,7 @@ void printbuf(const string& header,
         const std::string& desc,
         const std::string& value)
 {
-    display_settings_t d = disp;
-    d.print = (verbosity > 0);
-    printyaml(header, d, buffer, size, desc, value);
-}
-
-void printbuf(const std::string& header, int indent)
-{
-    display_settings_t disp(true, indent);
-    return printyaml(header, disp);
+    printyaml(header, disp, buffer, size, desc, value);
 }
 
 void printfig(const string& header,
@@ -219,12 +211,6 @@ void printinfo(const string &header,
         }
         printf("info: %s\n", header.c_str());
     }
-}
-
-void printinfo(const std::string &header, int min_verb)
-{
-    const display_settings_t disp(true, 0);
-    printinfo(header, min_verb);
 }
 
 void printsequencestart(int indent)

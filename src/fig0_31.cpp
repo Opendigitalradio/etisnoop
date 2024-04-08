@@ -39,9 +39,9 @@ bool fig0_31_is_complete(uint64_t figtype_flags)
     if (complete) {
         figtype_flags_seen.clear();
     }
-    else {
-        figtype_flags_seen.insert(figtype_flags);
-    }
+
+    figtype_flags_seen.insert(figtype_flags);
+
 
     return complete;
 }

@@ -39,9 +39,8 @@ bool fig0_21_is_complete(int region_id)
     if (complete) {
         regions_seen.clear();
     }
-    else {
-        regions_seen.insert(region_id);
-    }
+
+    regions_seen.insert(region_id);
 
     return complete;
 }

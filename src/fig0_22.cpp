@@ -41,9 +41,8 @@ bool fig0_22_is_complete(int M_S, int MainId)
     if (complete) {
         identifiers_seen.clear();
     }
-    else {
-        identifiers_seen.insert(identifier);
-    }
+
+    identifiers_seen.insert(identifier);
 
     return complete;
 }

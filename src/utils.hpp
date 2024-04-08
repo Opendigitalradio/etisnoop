@@ -48,13 +48,6 @@ struct display_settings_t {
 
 std::string strprintf(const char* fmt, ...);
 
-void printbuf(const std::string& header,
-        const display_settings_t &disp,
-        uint8_t* buffer,
-        size_t size,
-        const std::string& desc="",
-        const std::string& value="");
-
 void printfig(const std::string& header,
         const display_settings_t &disp,
         uint8_t* buffer,
@@ -64,12 +57,18 @@ void printfig(const std::string& header,
 
 void printbuf(const std::string& header,
         int indent,
+        uint8_t* buffer=nullptr,
+        size_t size=0,
+        const std::string& desc="",
+        const std::string& value="");
+
+void printbuf(const std::string& header,
+        const display_settings_t &disp,
         uint8_t* buffer,
         size_t size,
         const std::string& desc="",
         const std::string& value="");
 
-void printbuf(const std::string& header, int indent = 0);
 
 void printvalue(const std::string& header,
         int indent = 0,

@@ -25,6 +25,7 @@
 */
 
 #include "figs.hpp"
+#include <algorithm>
 #include <cstdio>
 #include <string>
 #include <cstring>
@@ -46,6 +47,21 @@ static ensemble_database::charset_e charset_to_charset(uint8_t charset)
     else {
         throw runtime_error("unsupported charset" + to_string(charset));
     }
+}
+
+static std::vector<uint16_t> service_labels_seen;
+
+bool fig1_1_is_complete(uint16_t sid)
+{
+    bool complete = std::count(service_labels_seen.begin(), service_labels_seen.end(), sid) > 0;
+
+    if (complete) {
+        service_labels_seen.clear();
+    }
+
+    service_labels_seen.push_back(sid);
+
+    return complete;
 }
 
 // SHORT LABELS
@@ -78,6 +94,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                     r.msgs.push_back(strprintf("Label=\"%s\"", fig1.ensemble.label.label().c_str()));
                     r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
                     r.msgs.push_back(strprintf("Short label=\"%s\"", fig1.ensemble.label.shortlabel().c_str()));
+                    r.complete = true;
                 }
             }
             break;
@@ -97,6 +114,8 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                         r.msgs.push_back(strprintf("Label=\"%s\"", service.label.label().c_str()));
                         r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
                         r.msgs.push_back(strprintf("Short label=\"%s\"", service.label.shortlabel().c_str()));
+
+                        r.complete = fig1_1_is_complete(sid);
                     }
                     catch (ensemble_database::not_found &e) {
                         r.errors.push_back("Not yet in DB");
@@ -122,6 +141,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 // TODO put label into ensembledatabase
                 r.msgs.push_back(strprintf("Label bytes=\"%s\"", string(label.begin(), label.end()).c_str()));
                 r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
+                r.complete = true; // TODO wrong
             }
             break;
 
@@ -134,6 +154,7 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 // TODO put label into ensembledatabase
                 r.msgs.push_back(strprintf("Label bytes=\"%s\"", string(label.begin(), label.end()).c_str()));
                 r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
+                r.complete = true; // TODO wrong
             }
             break;
 
@@ -172,12 +193,11 @@ fig_result_t fig1_select(fig1_common_t& fig1, const display_settings_t &disp)
                 // TODO put label into ensembledatabase
                 r.msgs.push_back(strprintf("Label bytes=\"%s\"", string(label.begin(), label.end()).c_str()));
                 r.msgs.push_back(strprintf("Short label mask=0x%04X", flag));
+                r.complete = true; // TODO wrong
             }
             break;
     }
 
-    // FIG1s always contain a complete set of information
-    r.complete = true;
     return r;
 }
 

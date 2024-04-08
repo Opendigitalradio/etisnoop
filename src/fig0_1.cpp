@@ -39,9 +39,8 @@ bool fig0_1_is_complete(fig0_common_t& fig0, int subch_id)
         fig0.wm_decoder.push_fig0_1_bit(subchannels_seen.front() < subchannels_seen.back());
         subchannels_seen.clear();
     }
-    else {
-        subchannels_seen.push_back(subch_id);
-    }
+
+    subchannels_seen.push_back(subch_id);
 
     return complete;
 }
