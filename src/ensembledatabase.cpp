@@ -82,7 +82,22 @@ std::string label_t::shortlabel() const
         }
     }
 
-    return shortlabel;
+    switch (charset) {
+        case charset_e::COMPLETE_EBU_LATIN:
+            return convert_ebu_to_utf8( shortlabel );
+        case charset_e::UTF8:
+            return shortlabel;
+        case charset_e::UCS2:
+            try {
+                return ucs2toutf8((uint8_t*)shortlabel.c_str(), shortlabel.length());
+            }
+            catch (const range_error&) {
+                return "";
+            }
+        case charset_e::UNDEFINED:
+            throw logic_error("charset undefined");
+    }
+    throw logic_error("invalid charset " + to_string((int)charset));
 }
 
 string label_t::assemble() const
