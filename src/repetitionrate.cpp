@@ -171,7 +171,7 @@ void rate_display_analysis(bool per_second)
                 printf(" - %6.2f (%5zu)", avg, n_complete);
             }
             else {
-                printf(" - None complete");
+                printf(" - None complete ");
             }
         }
         else {
