@@ -1,5 +1,6 @@
 CC=gcc
 CXX=g++
+FAADVERSION  = faad2-2.8.8
 CFLAGS   = -Wall -g --std=c99
 CXXFLAGS = -Wall -g --std=c++11 -DDPS_DEBUG=1
 SOURCES  = src/dabplussnoop.cpp \
@@ -31,12 +32,12 @@ HEADERS =  src/dabplussnoop.hpp \
 all: faadalyse
 
 faadalyse: libfaad $(SOURCES) $(CSOURCES) $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(SOURCES) -Ifaad2-2.7/include -c
+	$(CXX) $(CXXFLAGS) $(SOURCES) -I$(FAADVERSION)/include -c
 	$(CC) $(CFLAGS) $(CSOURCES) -c
-	$(CXX) *.o faad2-2.7/libfaad/.libs/libfaad.a -o faadalyse
+	$(CXX) *.o $(FAADVERSION)/libfaad/.libs/libfaad.a -o faadalyse
 
 libfaad:
-	make -C ./faad2-2.7
+	make -C ./$(FAADVERSION)
 
 clean:
 	rm -f faadalyse *.o
