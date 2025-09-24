@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
+    Copyright (C) 2025 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,63 +31,55 @@
 
 #include <string>
 #include <cstdint>
-#include <cinttypes>
 
 void set_verbosity(int v);
 int  get_verbosity(void);
 
-struct display_settings_t {
-    display_settings_t(bool _print, int _indent) :
-        print(_print), indent(_indent) {}
-
-    display_settings_t operator+(int indent_offset) const;
-
-    bool print;
-    int indent;
-};
-
 std::string strprintf(const char* fmt, ...);
 
-void printfig(const std::string& header,
-        const display_settings_t &disp,
-        uint8_t* buffer,
-        size_t size,
-        const std::string& desc="",
-        const std::string& value="");
+struct display_settings_t {
+    display_settings_t(bool print, int indent) :
+        _print(print), _indent(indent) {}
 
-void printbuf(const std::string& header,
-        int indent,
-        uint8_t* buffer=nullptr,
-        size_t size=0,
-        const std::string& desc="",
-        const std::string& value="");
+    display_settings_t indent() const {
+        return display_settings_t(_print, _indent+1);
+    }
 
-void printbuf(const std::string& header,
-        const display_settings_t &disp,
-        uint8_t* buffer,
-        size_t size,
-        const std::string& desc="",
-        const std::string& value="");
+    int get_indent() const { return _indent; }
 
+    void set_print(bool p) { _print = p; }
 
-void printvalue(const std::string& header,
-        int indent = 0,
-        const std::string& desc="",
-        const std::string& value="");
+    void printsequencestart();
 
-void printvalue(const std::string& header,
-        const display_settings_t &disp,
-        const std::string& desc="",
-        const std::string& value="");
+    void printinfo(const std::string &header,
+            int min_verb);
 
-void printinfo(const std::string &header,
-        const display_settings_t &disp,
-        int min_verb);
+    void printvalue(const std::string& header,
+            const std::string& desc="",
+            const std::string& value="");
 
-void printinfo(const std::string &header,
-        int min_verb);
+    void printfig(const std::string& header,
+            uint8_t* buffer = nullptr,
+            size_t size = 0,
+            const std::string& desc="",
+            const std::string& value="");
 
-void printsequencestart(int indent = 0);
+    void printbuf(const std::string& header,
+            uint8_t* buffer = nullptr,
+            size_t size = 0,
+            const std::string& desc="",
+            const std::string& value="");
+
+    private:
+    bool _print;
+    int _indent;
+
+    void printyaml(const std::string& header,
+            uint8_t* buffer = nullptr,
+            size_t size = 0,
+            const std::string& desc = "",
+            const std::string& value = "");
+};
 
 // sprintfMJD: convert MJD (Modified Julian Date) into date string
 int sprintfMJD(char *dst, int mjd);

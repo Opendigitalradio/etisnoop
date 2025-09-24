@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2014 CSP Innovazione nelle ICT s.c.a r.l. (http://www.csp.it/)
-    Copyright (C) 2018 Matthias P. Braendli (http://www.opendigitalradio.org)
     Copyright (C) 2015 Data Path
+    Copyright (C) 2025 Matthias P. Braendli (http://www.opendigitalradio.org)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ class ETI_Analyser {
                 uint8_t* f,
                 uint8_t figlen,
                 uint16_t figtype,
-                int indent,
+                display_settings_t disp,
                 bool fibcrccorrect);
 
         eti_analyse_config_t &config;

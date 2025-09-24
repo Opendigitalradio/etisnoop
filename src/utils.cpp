@@ -48,11 +48,6 @@ int get_verbosity()
     return verbosity;
 }
 
-display_settings_t display_settings_t::operator+(int indent_offset) const
-{
-    return display_settings_t(print, indent+indent_offset);
-}
-
 std::string strprintf(const char* fmt, ...)
 {
     int size = 512;
@@ -76,16 +71,15 @@ std::string strprintf(const char* fmt, ...)
     return str;
 }
 
-static void printyaml(const string& header,
-        const display_settings_t &disp,
-        uint8_t* buffer = nullptr,
-        size_t size = 0,
-        const std::string& desc = "",
-        const std::string& value = "")
+void display_settings_t::printyaml(const string& header,
+        uint8_t* buffer,
+        size_t size,
+        const std::string& desc,
+        const std::string& value)
 {
-    if (disp.print) {
+    if (_print) {
         stringstream ss;
-        for (int i = 0; i < disp.indent; i++) {
+        for (int i = 0; i < _indent; i++) {
             ss << " ";
         }
 
@@ -98,7 +92,7 @@ static void printyaml(const string& header,
         else {
             if (not value.empty()) {
                 ss << "\n";
-                for (int i = 0; i < disp.indent + 1; i++) {
+                for (int i = 0; i < _indent + 1; i++) {
                     ss << " ";
                 }
                 ss << strprintf("value: %s", value.c_str());
@@ -106,7 +100,7 @@ static void printyaml(const string& header,
 
             if (not desc.empty()) {
                 ss << "\n";
-                for (int i = 0; i < disp.indent + 1; i++) {
+                for (int i = 0; i < _indent + 1; i++) {
                     ss << " ";
                 }
                 ss << strprintf("desc: %s", desc.c_str());
@@ -115,7 +109,7 @@ static void printyaml(const string& header,
             if (buffer and verbosity > 0) {
                 if (size != 0) {
                     ss << "\n";
-                    for (int i = 0; i < disp.indent + 1; i++) {
+                    for (int i = 0; i < _indent + 1; i++) {
                         ss << " ";
                     }
                     ss << "data: [";
@@ -128,9 +122,9 @@ static void printyaml(const string& header,
                             num_printed++;
                         }
 
-                        if (num_printed + disp.indent + 1 + 7 > 60 ) {
+                        if (num_printed + _indent + 1 + 7 > 60 ) {
                             ss << "\n";
-                            for (int i = 0; i < disp.indent + 8; i++) {
+                            for (int i = 0; i < _indent + 8; i++) {
                                 ss << " ";
                             }
                             num_printed = 2;
@@ -153,72 +147,50 @@ static void printyaml(const string& header,
     }
 }
 
-void printbuf(const std::string& header,
-        int indent,
+void display_settings_t::printbuf(const string& header,
         uint8_t* buffer,
         size_t size,
         const std::string& desc,
         const std::string& value)
 {
-    display_settings_t disp(verbosity > 1, indent);
-    printyaml(header, disp, buffer, size, desc, value);
+    printyaml(header, buffer, size, desc, value);
 }
 
-void printbuf(const string& header,
-        const display_settings_t &disp,
+void display_settings_t::printfig(const string& header,
         uint8_t* buffer,
         size_t size,
         const std::string& desc,
         const std::string& value)
 {
-    printyaml(header, disp, buffer, size, desc, value);
+    printyaml(header, buffer, size, desc, value);
 }
 
-void printfig(const string& header,
-        const display_settings_t &disp,
-        uint8_t* buffer,
-        size_t size,
+void display_settings_t::printvalue(const std::string& header,
         const std::string& desc,
         const std::string& value)
 {
-    printyaml(header, disp, buffer, size, desc, value);
+    return printyaml(header, nullptr, 0, desc, value);
 }
 
-void printvalue(const std::string& header,
-        const display_settings_t &disp,
-        const std::string& desc,
-        const std::string& value)
-{
-    return printyaml(header, disp, nullptr, 0, desc, value);
-}
-
-void printvalue(const std::string& header,
-        int indent,
-        const std::string& desc,
-        const std::string& value)
-{
-    display_settings_t disp(true, indent);
-    return printyaml(header, disp, nullptr, 0, desc, value);
-}
-
-void printinfo(const string &header,
-        const display_settings_t &disp,
+void display_settings_t::printinfo(const string &header,
         int min_verb)
 {
     if (verbosity >= min_verb) {
-        for (int i = 0; i < disp.indent; i++) {
+        for (int i = 0; i < _indent; i++) {
             printf(" ");
         }
         printf("info: %s\n", header.c_str());
     }
 }
 
-void printsequencestart(int indent)
+void display_settings_t::printsequencestart()
 {
-    for (int i = 0; i < indent; i++) {
+    for (int i = 0; i < _indent; i++) {
         printf(" ");
     }
     printf("-\n");
+
+    _indent++;
 }
 
 int sprintfMJD(char *dst, int mjd) {

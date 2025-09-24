@@ -27,7 +27,7 @@
 #include "figs.hpp"
 #include <cstdio>
 #include <cstring>
-#include <map>
+#include <cinttypes>
 #include <unordered_set>
 
 static std::unordered_set<int> regions_seen;

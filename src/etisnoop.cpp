@@ -31,29 +31,23 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
-#include <stdio.h>
+#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <regex>
+#include <ctime>
+#include <csignal>
+
 #include <unistd.h>
 #include <getopt.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <string.h>
-#include <cinttypes>
-#include <string>
-#include <regex>
-#include <sstream>
-#include <time.h>
-#include <signal.h>
 
 #include "etianalyse.hpp"
-#include "dabplussnoop.hpp"
 #include "utils.hpp"
 #include "etiinput.hpp"
-#include "figs.hpp"
-#include "watermarkdecoder.hpp"
-#include "repetitionrate.hpp"
-#include "figalyser.hpp"
 
 using namespace std;
 
