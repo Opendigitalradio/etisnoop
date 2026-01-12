@@ -441,13 +441,13 @@ void ETI_Analyser::eti_analyse()
             disp_mst.printvalue("FIC");
             fib = p + 12 + 4*nst;
 
-            for (int i = 0; i < ficl*4/32; i++) {
+            for (int fib_ix = 0; fib_ix < ficl*4/32; fib_ix++) {
                 auto d = disp_mst.indent();
                 d.printsequencestart();
-                d.printvalue("FIB", "", to_string(i));
+                d.printvalue("FIB", "", to_string(fib_ix));
                 fig=fib;
-                figs.set_fib(i);
-                rate_new_fib(i);
+                figs.set_fib(fib_ix);
+                rate_new_fib(fib_ix);
 
                 const uint16_t figcrc = read_u16_from_buf(fib + 30);
                 crc = 0xffff;
@@ -466,24 +466,22 @@ void ETI_Analyser::eti_analyse()
                 if (crccorrect or config.ignore_error) {
                     d.printvalue("FIGs");
 
-                    bool endmarker = false;
                     int figcount = 0;
-                    while (!endmarker) {
+                    while (true) {
                         uint8_t figtype, figlen;
                         figtype = (fig[0] & 0xE0) >> 5;
-                        if (figtype != 7) {
-                            figlen = fig[0] & 0x1F;
 
-                            decodeFIG(config, figs, fig+1, figlen, figtype, d, crccorrect);
-                            fig += figlen + 1;
-                            figcount += figlen + 1;
-                            if (figcount >= 29)
-                                endmarker = true;
-                        }
-                        else {
-                            endmarker = true;
-                        }
+                        if (figtype == 7) break;
+
+                        figlen = fig[0] & 0x1F;
+
+                        decodeFIG(config, figs, fig+1, figlen, figtype, d, crccorrect);
+                        fig += figlen + 1;
+                        figcount += figlen + 1;
+                        if (figcount >= 29) break;
                     }
+
+                    rate_announce_fig_byte_count(fib_ix, figcount);
                 }
 
                 fib += 32;

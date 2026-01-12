@@ -32,6 +32,9 @@ void rate_announce_fig(int figtype, int figextension, bool complete, uint8_t fig
  */
 void rate_new_fib(int fib);
 
+/* Tell how many bytes in this fib were used */
+void rate_announce_fig_byte_count(int fib, uint8_t byte_count);
+
 /* Print analysis.
  * per_second: if true, rates are calculated in FIGs per second.
  * If false, rate is given in frames per FIG

@@ -119,8 +119,8 @@ static string length_histogram(const std::vector<uint8_t>& lengths)
 {
     const array<const char*, 7> hist_chars({"▁", "▂", "▃", "▄", "▅", "▆", "▇"});
 
-    // FIB length is 30
-    vector<size_t> histogram(30);
+    // FIB length is 30, 0 to 30 means we have 31 possible lengths
+    vector<size_t> histogram(31);
     for (const uint8_t l : lengths) {
         histogram.at(l)++;
     }
@@ -138,6 +138,17 @@ static string length_histogram(const std::vector<uint8_t>& lengths)
     return ss.str();
 }
 
+static map<uint8_t /* fib */, vector<uint8_t> > fib_bytes_used;
+
+void rate_announce_fig_byte_count(int fib, uint8_t byte_count)
+{
+    if (fib < 0 or fib > 2)
+        throw invalid_argument("rate_announce_fig_byte_count FIB must be 0,1 or 2");
+    if (byte_count > 30)
+        throw invalid_argument("rate_announce_fig_byte_count byte count must be <= 30");
+
+    fib_bytes_used[fib].push_back(byte_count);
+}
 
 void rate_display_analysis(bool per_second)
 {
@@ -187,8 +198,19 @@ void rate_display_analysis(bool per_second)
             printf(" %d", fib);
         }
         printf("\n");
-
     }
+
+    printf("\nBytes by FIG\n");
+    for (const auto& fib_lengths : fib_bytes_used) {
+        const uint8_t fib = fib_lengths.first;
+        const auto& lengths = fib_lengths.second;
+
+        printf(" %d %4.1f %s\n",
+                fib,
+                length_avg(lengths),
+                length_histogram(lengths).c_str());
+    }
+
 }
 
 void rate_new_fib(int fib)
